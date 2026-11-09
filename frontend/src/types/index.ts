@@ -14,6 +14,7 @@ export interface User {
   role_name: string; // Nome formatado da role (Administrador, Gerente, Vendedor, SDR)
   must_change_password?: boolean;
   partner_id?: number | null;
+  status_acesso?: "ativo" | "convite_pendente" | "convite_expirado" | "desativado" | null;
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;
@@ -787,7 +788,8 @@ export interface BoardFilters extends PaginationParams {
 
 export interface CreateUserRequest {
   email: string;
-  password: string;
+  modo: "convite" | "senha";
+  password?: string;
   name: string; // Nome completo (obrigatório)
   username?: string;
   phone?: string;

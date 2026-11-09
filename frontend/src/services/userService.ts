@@ -45,8 +45,8 @@ class UserService {
   /**
    * Cria um novo usuário
    */
-  async create(data: CreateUserRequest): Promise<User> {
-    const response = await api.post<User>("/api/v1/users", data);
+  async create(data: CreateUserRequest): Promise<User & { email_enviado?: boolean }> {
+    const response = await api.post<User & { email_enviado?: boolean }>("/api/v1/users", data);
     return response.data;
   }
 

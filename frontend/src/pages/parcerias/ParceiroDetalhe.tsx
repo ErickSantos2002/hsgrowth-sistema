@@ -10,8 +10,12 @@ import ContratoDoParceiro from "../../components/parcerias/ContratoDoParceiro";
 import EtapasParceria from "../../components/parcerias/EtapasParceria";
 import ModalTrava from "../../components/parcerias/ModalTrava";
 import { errosDoForm, paraTela, propsDeTexto } from "../../components/parcerias/campos";
+import FormularioDeAcesso, { type DadosDoAcesso } from "../../components/acessos/FormularioDeAcesso";
+import StatusDoAcesso from "../../components/acessos/StatusDoAcesso";
+import AcoesDoConvite from "../../components/acessos/AcoesDoConvite";
+import { useConfirm } from "../../contexts/ConfirmContext";
 import { useAuth } from "../../hooks/useAuth";
-import { showError, showSuccess } from "../../utils/toast";
+import { showError, showSuccess, showWarning } from "../../utils/toast";
 import userService from "../../services/userService";
 import { EVIDENCIA_LABEL, PERFIS_GESTAO, PERFIS_QUE_EDITAM, PERFIS_RESPONSAVEL_HS, QUALIFICACAO_OPCOES } from "../../constants/parcerias";
 import parceriasService, {
@@ -44,8 +48,11 @@ export default function ParceiroDetalhe() {
   const id = Number(partnerId);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { confirm } = useConfirm();
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
   const podeEditar = PERFIS_QUE_EDITAM.includes(user?.role ?? "");
+  // Login do vendedor (dar acesso, reenviar, desativar): só o dono do parceiro e a gestão.
+  const podeGerirLogin = gestao || user?.role === "partner";
 
   const [parceiro, setParceiro] = useState<Parceiro | null>(null);
   const [form, setForm] = useState<ParceiroForm>({});
@@ -55,7 +62,7 @@ export default function ParceiroDetalhe() {
   const [acessos, setAcessos] = useState<Acesso[]>([]);
   const [usuariosHs, setUsuariosHs] = useState<{ value: string; label: string }[]>([]);
   const [novoMembro, setNovoMembro] = useState({ name: "", email: "", phone: "" });
-  const [novoAcesso, setNovoAcesso] = useState({ name: "", email: "", password: "" });
+  const [darAcessoA, setDarAcessoA] = useState<number | null>(null);
   const [perdendo, setPerdendo] = useState(false);
 
   const preencher = (p: Parceiro) => {
@@ -142,6 +149,15 @@ export default function ParceiroDetalhe() {
   };
 
   const alternarMembro = async (m: Membro) => {
+    if (m.is_active && m.user_id) {
+      const ok = await confirm({
+        title: "Desativar vendedor",
+        message: "O acesso dele ao CRM também será desativado.",
+        confirmText: "Desativar",
+        isDanger: true,
+      });
+      if (!ok) return;
+    }
     try {
       await parceriasService.atualizarMembro(id, m.id, { is_active: !m.is_active });
       setEquipe(await parceriasService.listarEquipe(id));
@@ -150,14 +166,32 @@ export default function ParceiroDetalhe() {
     }
   };
 
-  const criarAcesso = async () => {
+  const criarAcesso = async (dados: DadosDoAcesso) => {
     try {
-      await parceriasService.criarAcesso(id, novoAcesso);
-      setNovoAcesso({ name: "", email: "", password: "" });
+      const r = await parceriasService.criarAcesso(id, {
+        name: dados.name ?? "", email: dados.email ?? "", modo: dados.modo, password: dados.password,
+      });
       setAcessos(await parceriasService.listarAcessos(id));
-      showSuccess("Acesso criado. Passe o e-mail e a senha ao parceiro.");
+      if (dados.modo === "senha") showSuccess("Acesso criado. Passe o e-mail e a senha ao parceiro; ele troca a senha no 1º login.");
+      else if (r.email_enviado) showSuccess("Acesso criado. Convite enviado por e-mail.");
+      else showWarning("Acesso criado, mas não conseguimos enviar o e-mail. Use Copiar link.");
     } catch (err) {
       showError(mensagemDeErro(err, "Erro ao criar o acesso."));
+      throw err;
+    }
+  };
+
+  const darAcessoAoMembro = async (m: Membro, dados: DadosDoAcesso) => {
+    try {
+      const r = await parceriasService.darAcessoAoMembro(id, m.id, { modo: dados.modo, password: dados.password });
+      setDarAcessoA(null);
+      setEquipe(await parceriasService.listarEquipe(id));
+      if (dados.modo === "senha") showSuccess("Acesso criado. Passe a senha ao vendedor; ele troca no 1º login.");
+      else if (r.email_enviado) showSuccess("Acesso criado. Convite enviado por e-mail.");
+      else showWarning("Acesso criado, mas não conseguimos enviar o e-mail. Use Copiar link.");
+    } catch (err) {
+      showError(mensagemDeErro(err, "Erro ao dar acesso ao vendedor."));
+      throw err;
     }
   };
 
@@ -172,7 +206,6 @@ export default function ParceiroDetalhe() {
 
   const erros = errosDoForm(form);
   const errosMembro = errosDoForm(novoMembro);
-  const errosAcesso = errosDoForm({ email: novoAcesso.email });
   const temErro = (e: Record<string, string>) => Object.keys(e).length > 0;
 
   const linhaLista = "flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50/30 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/30";
@@ -288,14 +321,40 @@ export default function ParceiroDetalhe() {
             <div className="space-y-3">
               <div className="space-y-2">
                 {equipe.map((m) => (
-                  <div key={m.id} className={linhaLista}>
-                    <span className={m.is_active ? "text-slate-900 dark:text-white" : "text-slate-400 line-through"}>
-                      {m.name} {m.email && <span className="text-xs text-slate-500">· {m.email}</span>}
-                    </span>
-                    {podeEditar && (
-                      <button onClick={() => alternarMembro(m)} className="text-xs text-slate-500 hover:text-emerald-500">
-                        {m.is_active ? "Desativar" : "Reativar"}
-                      </button>
+                  <div key={m.id}>
+                    <div className={linhaLista}>
+                      <span className={m.is_active ? "text-slate-900 dark:text-white" : "text-slate-400 line-through"}>
+                        {m.name} {m.email && <span className="text-xs text-slate-500">· {m.email}</span>}
+                      </span>
+                      <span className="flex flex-wrap items-center justify-end gap-2">
+                        {m.user_id && <StatusDoAcesso status={m.status_acesso} />}
+                        {m.user_id && podeGerirLogin && (
+                          <AcoesDoConvite
+                            url={parceriasService.urlConviteMembro(id, m.id)}
+                            status={m.status_acesso}
+                            onFeito={async () => setEquipe(await parceriasService.listarEquipe(id))}
+                          />
+                        )}
+                        {podeGerirLogin && !m.user_id && m.email && m.is_active && (
+                          <button onClick={() => setDarAcessoA(darAcessoA === m.id ? null : m.id)} className="text-xs text-slate-500 hover:text-emerald-500">
+                            Dar acesso
+                          </button>
+                        )}
+                        {podeEditar && (!m.user_id || podeGerirLogin) && (
+                          <button onClick={() => alternarMembro(m)} className="text-xs text-slate-500 hover:text-emerald-500">
+                            {m.is_active ? "Desativar" : "Reativar"}
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                    {darAcessoA === m.id && (
+                      <div className="mt-2 rounded-lg border border-gray-200/50 p-3 dark:border-slate-700/50">
+                        <FormularioDeAcesso
+                          pedirNomeEmail={false}
+                          rotuloBotao={`Dar acesso a ${m.name}`}
+                          onEnviar={(d) => darAcessoAoMembro(m, d)}
+                        />
+                      </div>
                     )}
                   </div>
                 ))}
@@ -327,31 +386,23 @@ export default function ParceiroDetalhe() {
                   {acessos.map((a) => (
                     <div key={a.id} className={linhaLista}>
                       <span className={a.is_active ? "text-slate-900 dark:text-white" : "text-slate-400 line-through"}>{a.email}</span>
-                      <button onClick={() => alternarAcesso(a)} className="text-xs text-slate-500 hover:text-emerald-500">
-                        {a.is_active ? "Desativar" : "Reativar"}
-                      </button>
+                      <span className="flex flex-wrap items-center justify-end gap-2">
+                        <StatusDoAcesso status={a.status_acesso} />
+                        <AcoesDoConvite
+                          url={parceriasService.urlConviteAcesso(id, a.id)}
+                          status={a.status_acesso}
+                          onFeito={async () => setAcessos(await parceriasService.listarAcessos(id))}
+                        />
+                        <button onClick={() => alternarAcesso(a)} className="text-xs text-slate-500 hover:text-emerald-500">
+                          {a.is_active ? "Desativar" : "Reativar"}
+                        </button>
+                      </span>
                     </div>
                   ))}
                   {acessos.length === 0 && <p className="py-2 text-center text-sm text-slate-400">Nenhum acesso criado</p>}
                 </div>
-                <div className="space-y-2 border-t border-gray-200/50 pt-3 dark:border-slate-700/50">
-                  <FormField label="Nome" required>
-                    <Input {...propsDeTexto(novoAcesso, setNovoAcesso, "name")} />
-                  </FormField>
-                  <FormField label="E-mail de login" required error={errosAcesso.email}>
-                    <Input type="email" placeholder="nome@empresa.com.br" {...propsDeTexto(novoAcesso, setNovoAcesso, "email")} />
-                  </FormField>
-                  <FormField label="Senha inicial" required hint="Mínimo de 8 caracteres">
-                    <Input type="password" {...propsDeTexto(novoAcesso, setNovoAcesso, "password")} />
-                  </FormField>
-                  <Button
-                    size="sm"
-                    fullWidth
-                    onClick={criarAcesso}
-                    disabled={!novoAcesso.name.trim() || !novoAcesso.email.trim() || temErro(errosAcesso) || novoAcesso.password.length < 8}
-                  >
-                    Criar acesso
-                  </Button>
+                <div className="border-t border-gray-200/50 pt-3 dark:border-slate-700/50">
+                  <FormularioDeAcesso pedirNomeEmail onEnviar={criarAcesso} />
                 </div>
               </div>
             </ExpandableSection>

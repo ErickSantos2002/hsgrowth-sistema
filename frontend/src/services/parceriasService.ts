@@ -1,4 +1,5 @@
 import api from "./api";
+import type { ModoAcesso, StatusAcesso, ConviteResposta } from "./acessosService";
 import type { AtividadeCard, AtividadesApi } from "./serviceActivityService";
 
 const BASE = "/api/v1/parcerias";
@@ -59,6 +60,9 @@ export interface Membro {
   email?: string | null;
   phone?: string | null;
   is_active: boolean;
+  /** Login do vendedor (null = sem login). */
+  user_id?: number | null;
+  status_acesso?: StatusAcesso | null;
 }
 
 export interface Acesso {
@@ -67,6 +71,7 @@ export interface Acesso {
   email: string;
   is_active: boolean;
   last_login_at?: string | null;
+  status_acesso: StatusAcesso;
 }
 
 export interface OportunidadeForm {
@@ -280,8 +285,17 @@ const parceriasService = {
   async listarAcessos(id: number) {
     return (await api.get<Acesso[]>(`${BASE}/parceiros/${id}/acessos`)).data;
   },
-  async criarAcesso(id: number, dados: { name: string; email: string; password: string }) {
-    return (await api.post<Acesso>(`${BASE}/parceiros/${id}/acessos`, dados)).data;
+  async criarAcesso(id: number, dados: { name: string; email: string; modo: ModoAcesso; password?: string }) {
+    return (await api.post<Acesso & { email_enviado: boolean }>(`${BASE}/parceiros/${id}/acessos`, dados)).data;
+  },
+  async darAcessoAoMembro(id: number, membroId: number, dados: { modo: ModoAcesso; password?: string }) {
+    return (await api.post<ConviteResposta>(`${BASE}/parceiros/${id}/equipe/${membroId}/acesso`, dados)).data;
+  },
+  urlConviteAcesso(id: number, userId: number) {
+    return `${BASE}/parceiros/${id}/acessos/${userId}/convite`;
+  },
+  urlConviteMembro(id: number, membroId: number) {
+    return `${BASE}/parceiros/${id}/equipe/${membroId}/acesso/convite`;
   },
   async alterarAcesso(id: number, userId: number, isActive: boolean) {
     return (await api.put<Acesso>(`${BASE}/parceiros/${id}/acessos/${userId}`, { is_active: isActive })).data;
