@@ -161,7 +161,8 @@ export default function ConsultaCnpj() {
                   onKeyDown={(e) => e.key === "Enter" && pronto && consultar()}
                 />
               </FormField>
-              <Button onClick={consultar} loading={consultando} disabled={!pronto}>
+              {/* Mesmo padding e borda do campo, para ficarem da mesma altura */}
+              <Button onClick={consultar} loading={consultando} disabled={!pronto} className="border border-transparent py-3">
                 <Search size={16} className="mr-1" /> Consultar
               </Button>
             </div>
