@@ -16,7 +16,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
 import { DEAL_TYPES, LOSS_REASONS_ACQUISITION, RELATIONSHIP_TYPES, SECTORS } from "../../constants/blueprintOptions";
 import {
-  ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, MOTIVO_SEMAFORO, PERFIS_GESTAO, PERFIS_QUE_EDITAM,
+  ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, MOTIVO_SEMAFORO, PERFIS_DO_PARCEIRO, PERFIS_GESTAO, PERFIS_QUE_EDITAM,
   SEMAFORO_COR, SEMAFORO_LABEL, formatarMoeda,
 } from "../../constants/parcerias";
 import parceriasService, {
@@ -34,6 +34,9 @@ export default function OportunidadeDetalhe() {
   const { user } = useAuth();
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
   const podeEditar = PERFIS_QUE_EDITAM.includes(user?.role ?? "");
+  const ehDoParceiro = PERFIS_DO_PARCEIRO.includes(user?.role ?? "");
+  // O vendedor do parceiro não vê a equipe (o backend nega) e só enxerga a si mesmo como responsável.
+  const ehVendedor = user?.role === "partner_member";
   const validaElegibilidade = gestao || user?.role === "finance";
 
   const [op, setOp] = useState<Oportunidade | null>(null);
@@ -46,7 +49,7 @@ export default function OportunidadeDetalhe() {
   const [clienteAberto, setClienteAberto] = useState<Client | null>(null);
   const [pessoaAberta, setPessoaAberta] = useState<Person | null>(null);
   // Clientes e Pessoas são telas de Vendas: Financeiro e parceiro não abrem.
-  const abreCadastro = !["partner", "finance"].includes(user?.role ?? "");
+  const abreCadastro = !(ehDoParceiro || user?.role === "finance");
 
   const preencher = (o: Oportunidade) => {
     setOp(o);
@@ -65,12 +68,12 @@ export default function OportunidadeDetalhe() {
       const [o, e] = await Promise.all([parceriasService.buscarOportunidade(id), parceriasService.etapas()]);
       preencher(o);
       setEtapas(e.oportunidades);
-      setEquipe(await parceriasService.listarEquipe(o.partner_id));
+      if (user?.role !== "partner_member") setEquipe(await parceriasService.listarEquipe(o.partner_id));
     } catch (err) {
       showError(mensagemDeErro(err, "Erro ao carregar a oportunidade."));
       navigate("/parcerias/oportunidades");
     }
-  }, [id, navigate]);
+  }, [id, navigate, user?.role]);
 
   useEffect(() => {
     carregar();
@@ -90,6 +93,8 @@ export default function OportunidadeDetalhe() {
       const dados = Object.fromEntries(
         Object.entries(form).map(([k, v]) => [k, typeof v === "string" && v.trim() === "" ? null : v])
       ) as OportunidadeForm;
+      // O vendedor do parceiro não troca o responsável (o backend recusa).
+      if (ehVendedor) delete dados.seller_member_id;
       preencher(await parceriasService.atualizarOportunidade(id, dados));
       showSuccess("Oportunidade salva.");
     } catch (err) {
@@ -226,7 +231,7 @@ export default function OportunidadeDetalhe() {
                 </div>
                 <p className="mt-0.5 text-xs text-slate-400">Produtos com descontos e frete.</p>
               </div>
-              {op.cnpj_resultado && user?.role !== "partner" && (
+              {op.cnpj_resultado && !ehDoParceiro && (
                 <div className={`rounded-lg border px-3 py-2 text-xs ${SEMAFORO_COR[op.cnpj_resultado]}`}>
                   <div className="font-semibold">
                     CNPJ no cadastro: {SEMAFORO_LABEL[op.cnpj_resultado]}
@@ -310,8 +315,10 @@ export default function OportunidadeDetalhe() {
                 <SelectMenu
                   value={form.seller_member_id ? String(form.seller_member_id) : ""}
                   placeholder="Sem vendedor"
-                  disabled={!podeEditar}
-                  options={equipe.filter((m) => m.is_active || m.id === op.seller_member_id).map((m) => ({ value: String(m.id), label: m.name }))}
+                  disabled={!podeEditar || ehVendedor}
+                  options={ehVendedor
+                    ? (op.seller_member_id ? [{ value: String(op.seller_member_id), label: op.seller_name ?? user?.name ?? "" }] : [])
+                    : equipe.filter((m) => m.is_active || m.id === op.seller_member_id).map((m) => ({ value: String(m.id), label: m.name }))}
                   onChange={(v) => setForm({ ...form, seller_member_id: Number(v) })}
                 />
               </FormField>

@@ -37,12 +37,14 @@ export const corDaEtapa = (codigo: string) =>
   : COLORS.board.blue;
 
 // Perfis presos à seção Parcerias — o backend nega o resto do CRM a eles.
-export const PERFIS_TRANCADOS = ["partner", "finance"];
+export const PERFIS_TRANCADOS = ["partner", "partner_member", "finance"];
 // O vendedor entra, mas só vê os parceiros dos quais é o Responsável H&S (o backend filtra).
-export const PERFIS_PARCERIAS = ["admin", "manager", "finance", "partner", "salesperson"];
+export const PERFIS_PARCERIAS = ["admin", "manager", "finance", "partner", "partner_member", "salesperson"];
+/** Lado do parceiro: o dono ou um vendedor da equipe dele. */
+export const PERFIS_DO_PARCEIRO = ["partner", "partner_member"];
 export const PERFIS_GESTAO = ["admin", "manager"];
 // Quem mexe nos cards que enxerga (o Financeiro só acompanha).
-export const PERFIS_QUE_EDITAM = ["admin", "manager", "partner", "salesperson"];
+export const PERFIS_QUE_EDITAM = ["admin", "manager", "partner", "partner_member", "salesperson"];
 // Quem pode ser escolhido como Responsável H&S — é opcional.
 export const PERFIS_RESPONSAVEL_HS = ["admin", "manager", "salesperson"];
 
@@ -79,7 +81,7 @@ export const formatarCnpj = (cnpj?: string | null) =>
     : cnpj || "";
 
 // Consulta de CNPJ: o SDR consulta mesmo sem ver os boards de Parcerias.
-export const PERFIS_CONSULTA_CNPJ = ["admin", "manager", "salesperson", "sdr", "partner"];
+export const PERFIS_CONSULTA_CNPJ = ["admin", "manager", "salesperson", "sdr", "partner", "partner_member"];
 
 export const SEMAFORO_COR: Record<string, string> = {
   verde: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",

@@ -2,9 +2,9 @@
 Schemas Pydantic para Usuários.
 Define os modelos de entrada/saída para operações com usuários.
 """
-from typing import Optional
+from typing import Literal, Optional
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class UserBase(BaseModel):
@@ -78,6 +78,9 @@ class UserResponse(UserBase):
     """
     Schema de resposta de usuário (sem senha).
     """
+    # Saída não revalida o que já está gravado: os cadastros novos aceitam nome de
+    # 1+ caractere ("Zé"), e o min_length=3 herdado dava 500 depois de salvar.
+    name: str = Field(..., max_length=255, description="Nome completo")
     id: int = Field(..., description="ID do usuário")
     role_id: int = Field(..., description="ID do role")
     is_active: bool = Field(..., description="Status ativo/inativo")
@@ -89,6 +92,10 @@ class UserResponse(UserBase):
     role: Optional[str] = Field(None, description="Role do usuário (admin/manager/salesperson)")
     role_name: Optional[str] = Field(None, description="Nome do role")
     email_signature: Optional[str] = Field(None, description="Assinatura HTML do e-mail")
+    must_change_password: bool = Field(False, description="Precisa trocar a senha no próximo acesso")
+    partner_id: Optional[int] = Field(None, description="ID do parceiro (perfis de parceiro)")
+    status_acesso: Optional[str] = Field(None, description="ativo | convite_pendente | convite_expirado | desativado")
+    convite_expira_em: Optional[datetime] = Field(None, description="Validade do último convite (só com convite pendente/expirado)")
 
     model_config = {
         "from_attributes": True,  # Permite criar a partir de modelos SQLAlchemy
@@ -114,6 +121,36 @@ class UserResponse(UserBase):
     }
 
 
+class UserCreateComModo(BaseModel):
+    """Novo usuário pela tela de Usuários: convite por e-mail (padrão) ou senha inicial."""
+    email: EmailStr
+    name: str = Field(..., min_length=1, max_length=255)
+    username: Optional[str] = Field(None, min_length=3, max_length=50)
+    phone: Optional[str] = Field(None, max_length=20)
+    role_id: int
+    modo: Literal["convite", "senha"] = "convite"
+    password: Optional[str] = Field(None, min_length=8, max_length=128)
+
+
+class UsuarioCriadoResponse(UserResponse):
+    email_enviado: bool = False
+
+
+class UserMeUpdate(BaseModel):
+    """O próprio usuário edita o perfil (nunca perfil, e-mail ou status)."""
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    phone: Optional[str] = Field(None, max_length=20)
+    avatar_url: Optional[str] = Field(None, max_length=500)
+    email_signature: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def _nome_nao_nulo(cls, v):
+        if v is None or not v.strip():
+            raise ValueError("Nome não pode ficar vazio")
+        return v.strip()
+
+
 class UserListResponse(BaseModel):
     """
     Schema para listagem paginada de usuários.
@@ -130,4 +167,4 @@ class ChangePasswordRequest(BaseModel):
     Schema para mudança de senha (usuário autenticado).
     """
     current_password: str = Field(..., description="Senha atual")
-    new_password: str = Field(..., min_length=6, description="Nova senha")
+    new_password: str = Field(..., min_length=8, description="Nova senha")

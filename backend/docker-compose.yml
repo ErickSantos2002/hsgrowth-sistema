@@ -89,6 +89,10 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-HSGrowth CRM}
+      # Provedor dos e-mails de acesso (convite / redefinir senha): smtp | resend | vazio
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: "${EMAIL_FROM:-HSGrowth CRM <nao-responda@crm.healthsafetytech.com>}"
 
       # Frontend
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
@@ -181,6 +185,10 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-HSGrowth CRM}
+      # Provedor dos e-mails de acesso (convite / redefinir senha): smtp | resend | vazio
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: "${EMAIL_FROM:-HSGrowth CRM <nao-responda@crm.healthsafetytech.com>}"
 
       # Logs
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

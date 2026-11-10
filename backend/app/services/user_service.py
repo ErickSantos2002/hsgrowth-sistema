@@ -10,6 +10,7 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserUpdate, UserResponse, UserListResponse
 from app.core.security import hash_password
 from app.models.user import User
+from app.services import tokens_de_acesso
 
 
 class UserService:
@@ -279,6 +280,8 @@ class UserService:
         # Atualiza senha
         user.password_hash = password_hash
         user.password_changed_at = datetime.utcnow()
+        user.must_change_password = False
+        tokens_de_acesso.invalidar_pendentes(self.db, user)
 
         self.db.commit()
         self.db.refresh(user)

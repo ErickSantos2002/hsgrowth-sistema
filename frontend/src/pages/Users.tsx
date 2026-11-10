@@ -5,6 +5,8 @@ import { User } from "../types";
 import { useAuth, usePagination, useFilter, filterHelpers } from "../hooks";
 import UserModal from "../components/users/UserModal";
 import AdminPasswordResetModal from "../components/users/AdminPasswordResetModal";
+import StatusDoAcesso from "../components/acessos/StatusDoAcesso";
+import AcoesDoConvite from "../components/acessos/AcoesDoConvite";
 import { showSuccess, showError, showWarning } from "../utils/toast";
 import { useConfirm } from "../contexts/ConfirmContext";
 import { SearchInput, Pagination, UserAvatar } from "../components/common";
@@ -217,6 +219,7 @@ const Users: React.FC = () => {
       case "finance":
         return "bg-cyan-500/20 text-slate-900 dark:text-cyan-400";
       case "partner":
+      case "partner_member":
         return "bg-orange-500/20 text-slate-900 dark:text-orange-400";
       default:
         return "bg-slate-500/20 text-slate-900 dark:text-slate-400";
@@ -306,6 +309,7 @@ const Users: React.FC = () => {
               { value: "service", label: "Serviço" },
               { value: "finance", label: "Financeiro" },
               { value: "partner", label: "Parceiro" },
+              { value: "partner_member", label: "Vendedor do parceiro" },
             ]}
             onChange={(value) => setCustomFilter("role", value)}
           />
@@ -444,6 +448,12 @@ const Users: React.FC = () => {
                       >
                         {user.is_active ? "Ativo" : "Inativo"}
                       </span>
+                      {user.status_acesso && user.status_acesso !== "ativo" && user.status_acesso !== "desativado" && (
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <StatusDoAcesso status={user.status_acesso} expiraEm={user.convite_expira_em} />
+                          <AcoesDoConvite url={`/api/v1/users/${user.id}/convite`} status={user.status_acesso} onFeito={loadUsers} />
+                        </div>
+                      )}
                     </td>
 
                     {/* Último Login */}

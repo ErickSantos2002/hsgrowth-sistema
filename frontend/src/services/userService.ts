@@ -5,7 +5,6 @@ import {
   UserFilters,
   CreateUserRequest,
   UpdateUserRequest,
-  ChangePasswordRequest,
   OnlineUsersResponse,
   NotificationSettings,
   NotificationSettingsUpdate,
@@ -46,8 +45,8 @@ class UserService {
   /**
    * Cria um novo usuário
    */
-  async create(data: CreateUserRequest): Promise<User> {
-    const response = await api.post<User>("/api/v1/users", data);
+  async create(data: CreateUserRequest): Promise<User & { email_enviado?: boolean }> {
+    const response = await api.post<User & { email_enviado?: boolean }>("/api/v1/users", data);
     return response.data;
   }
 
@@ -67,13 +66,15 @@ class UserService {
   }
 
   /**
-   * Troca a senha de um usuário
+   * Atualiza o próprio perfil (nome, telefone, avatar, assinatura)
    */
-  async changePassword(id: number, data: ChangePasswordRequest): Promise<{ message: string }> {
-    const response = await api.post<{ message: string }>(
-      `/api/v1/users/${id}/change-password`,
-      data
-    );
+  async updateMe(data: {
+    name?: string;
+    phone?: string | null;
+    avatar_url?: string | null;
+    email_signature?: string | null;
+  }): Promise<User> {
+    const response = await api.put<User>("/api/v1/users/me", data);
     return response.data;
   }
 

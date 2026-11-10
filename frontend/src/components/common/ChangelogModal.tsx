@@ -25,6 +25,48 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.17",
+    date: "09/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Parcerias: novo perfil de vendedor do parceiro, que vê só as próprias oportunidades, e o dono do parceiro cadastra os logins da equipe.",
+      },
+      {
+        type: "feature",
+        text: "Novos logins por convite por e-mail (com link para copiar) ou com senha inicial, que deve ser trocada no primeiro acesso.",
+      },
+      {
+        type: "feature",
+        text: "Login: \"Esqueci minha senha\" envia um e-mail com o link para definir uma nova senha.",
+      },
+      {
+        type: "fix",
+        text: "Configurações: trocar a senha funciona para todos os perfis, e parceiros e Financeiro conseguem salvar o perfil.",
+      },
+      {
+        type: "fix",
+        text: "Login: o e-mail não diferencia maiúsculas de minúsculas e os erros do login Microsoft aparecem na tela.",
+      },
+      {
+        type: "improvement",
+        text: "Segurança: trocar ou redefinir a senha encerra as sessões antigas.",
+      },
+      {
+        type: "improvement",
+        text: "Segurança: a redefinição de senha pelo admin obriga a troca no próximo acesso, a senha mínima passa a 8 caracteres e login de parceiro não aceita e-mail da Health & Safety.",
+      },
+      {
+        type: "improvement",
+        text: "Acessos: o convite pendente mostra a data em que expira.",
+      },
+      {
+        type: "fix",
+        text: "Login com nome de 1 ou 2 letras não quebra mais a tela.",
+      },
+    ],
+  },
+  {
     version: "1.11.16",
     date: "09/11/2026",
     entries: [

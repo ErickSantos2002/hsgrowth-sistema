@@ -34,7 +34,7 @@ def test_vendedor_acompanha_o_parceiro_mas_nao_cadastra_nem_cria_acesso(client, 
     assert client.post(f"{URL}/parceiros/{p.id}/equipe", json={"name": "Ana"}, headers=h).status_code == 201
     assert client.post(f"{URL}/parceiros", json={"name": "Novo"}, headers=h).status_code == 403
     assert client.get(f"{URL}/parceiros/{p.id}/acessos", headers=h).status_code == 403
-    novo_acesso = {"name": "X", "email": "x@dmap.com", "password": "Senha@12345"}
+    novo_acesso = {"name": "X", "email": "x@dmap.com", "password": "Senha@12345", "modo": "senha"}
     assert client.post(f"{URL}/parceiros/{p.id}/acessos", json=novo_acesso, headers=h).status_code == 403
 
 
@@ -165,7 +165,7 @@ def test_equipe_do_proprio_parceiro(client, db):
 def test_admin_cria_e_desativa_acesso(client, db, admin_headers):
     role(db, "partner")  # em produção vem da migration
     p = parceiro(db)
-    dados = {"name": "Contato Dmap", "email": "Contato@Dmap.com", "password": "Senha@12345"}
+    dados = {"name": "Contato Dmap", "email": "Contato@Dmap.com", "password": "Senha@12345", "modo": "senha"}
 
     criado = client.post(f"{URL}/parceiros/{p.id}/acessos", json=dados, headers=admin_headers)
     assert criado.status_code == 201
@@ -183,7 +183,7 @@ def test_admin_cria_e_desativa_acesso(client, db, admin_headers):
 def test_parceiro_nao_cria_acesso(client, db):
     p = parceiro(db)
     h = headers(usuario(db, "partner", "a@dmap.com", p))
-    dados = {"name": "X", "email": "x@dmap.com", "password": "Senha@12345"}
+    dados = {"name": "X", "email": "x@dmap.com", "password": "Senha@12345", "modo": "senha"}
 
     assert client.post(f"{URL}/parceiros/{p.id}/acessos", json=dados, headers=h).status_code == 403
 

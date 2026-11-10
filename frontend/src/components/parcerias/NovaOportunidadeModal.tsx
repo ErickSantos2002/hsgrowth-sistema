@@ -32,6 +32,7 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
   const [equipe, setEquipe] = useState<Membro[]>([]);
   const [salvando, setSalvando] = useState(false);
   const { user } = useAuth();
+  const ehVendedor = user?.role === "partner_member";
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
   const [consulta, setConsulta] = useState<ConsultaCnpj | null>(null);
   const [consultando, setConsultando] = useState(false);
@@ -46,12 +47,13 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen || !partnerId) {
+    // O vendedor do parceiro não lê a equipe (404): o backend o define como responsável.
+    if (!isOpen || !partnerId || ehVendedor) {
       setEquipe([]);
       return;
     }
     parceriasService.listarEquipe(partnerId).then((m) => setEquipe(m.filter((x) => x.is_active))).catch(() => setEquipe([]));
-  }, [isOpen, partnerId]);
+  }, [isOpen, partnerId, ehVendedor]);
 
   const texto = (nome: keyof OportunidadeForm & string) => propsDeTexto(form, setForm, nome);
   const erros = errosDoForm(form);
@@ -138,6 +140,9 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
           </FormField>
         )}
         <FormField label="Vendedor responsável">
+          {ehVendedor ? (
+            <Input value={user?.name ?? ""} disabled readOnly />
+          ) : (
           <SelectMenu
             value={form.seller_member_id ? String(form.seller_member_id) : ""}
             placeholder={equipe.length ? "Escolha" : "Cadastre a equipe no card do parceiro"}
@@ -145,6 +150,7 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
             options={equipe.map((m) => ({ value: String(m.id), label: m.name }))}
             onChange={(v) => setForm({ ...form, seller_member_id: Number(v) })}
           />
+          )}
         </FormField>
         <FormField label="Título do card" required className="sm:col-span-2"><Input {...texto("title")} /></FormField>
         <FormField label="Tipo de negócio" required>

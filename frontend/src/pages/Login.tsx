@@ -1,16 +1,23 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import logo from "../assets/logo.png";
 import { LoadingSpinner } from "../components/common";
 
+const ERROS_MICROSOFT: Record<string, string> = {
+    user_not_found: "Seu e-mail Microsoft não está cadastrado no CRM.",
+    user_inactive: "Seu usuário está inativo. Fale com o administrador.",
+    microsoft_auth_failed: "Não foi possível entrar com a Microsoft. Tente de novo.",
+};
+
 export default function Login() {
+    const [searchParams] = useSearchParams();
+    const erroMicrosoft = ERROS_MICROSOFT[searchParams.get("error") || ""] || "";
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const { login } = useAuth();
-    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -24,9 +31,9 @@ export default function Login() {
         setIsLoading(true);
 
         try {
-            await login(email, senha);
+            const usuario = await login(email, senha);
             // Força reload completo da página para limpar todo o estado anterior
-            window.location.href = "/";
+            window.location.href = usuario.must_change_password ? "/trocar-senha" : "/";
         } catch (error: any) {
             // A mensagem do servidor ("Email ou senha incorretos"), não a do
             // axios ("Request failed with status code 401").
@@ -69,9 +76,9 @@ export default function Login() {
 
                     {/* Formulário */}
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        {error && (
+                        {(error || erroMicrosoft) && (
                             <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                                {error}
+                                {error || erroMicrosoft}
                             </div>
                         )}
 
@@ -128,6 +135,12 @@ export default function Login() {
                                 "Entrar"
                             )}
                         </button>
+
+                        <div className="text-center">
+                            <Link to="/esqueci-senha" className="text-sm text-blue-500 hover:underline">
+                                Esqueci minha senha
+                            </Link>
+                        </div>
 
                         {/* Divisor */}
                         <div className="flex items-center gap-3">

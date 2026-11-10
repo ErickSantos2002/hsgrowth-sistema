@@ -99,6 +99,9 @@ def criar(db: Session, user: User, dados: OportunidadeCreate) -> PartnerOpportun
     acesso.exigir_escrita(user)
     if acesso.eh_parceiro(user):
         partner_id = acesso.parceiro_do_login(user)
+        if acesso.eh_vendedor_do_parceiro(user):
+            # Oportunidade do vendedor do parceiro nasce com ele como vendedor.
+            dados = dados.model_copy(update={"seller_member_id": acesso.membro_do_login(db, user).id})
     else:
         if not dados.partner_id:
             raise _422("Escolha o parceiro da oportunidade.")
@@ -150,6 +153,9 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
     for campo, nome in OBRIGATORIOS.items():
         if campo in campos and campos[campo] is None:
             raise _422(f"{nome} é obrigatório.")
+    if "seller_member_id" in campos and acesso.eh_vendedor_do_parceiro(user) \
+            and campos["seller_member_id"] != op.seller_member_id:
+        raise _422("Só o dono do parceiro ou a H&S trocam o vendedor da oportunidade.")
     if "seller_member_id" in campos:
         _conferir_vendedor(db, op.partner_id, campos["seller_member_id"])
     novo_cnpj = campos.get("cnpj")

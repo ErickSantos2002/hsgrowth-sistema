@@ -33,6 +33,8 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     # é lead que chegou sozinho, e ele nunca recebe aviso.
     is_integracao = Column(Boolean, default=False, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
+    # Senha definida por outra pessoa (admin, gerente, dono do parceiro): troca no 1º login.
+    must_change_password = Column(Boolean, default=False, nullable=False)
 
     # Datas importantes
     last_login_at = Column(DateTime, nullable=True)

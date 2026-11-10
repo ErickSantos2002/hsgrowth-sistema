@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 import time
+from datetime import datetime
 from loguru import logger
 
 from app.api.deps import get_db, get_current_active_user, require_role
@@ -32,6 +33,7 @@ from app.models.notification import Notification
 from app.models.audit_log import AuditLog
 from app.repositories.user_repository import UserRepository
 from app.services.user_service import UserService
+from app.services import tokens_de_acesso
 from app.core.security import hash_password
 
 router = APIRouter()
@@ -198,6 +200,8 @@ async def admin_create_user(
 
     **Requer:** Role de admin
     """
+    from app.api.v1.endpoints.users import _recusar_login_de_parceiro
+    _recusar_login_de_parceiro(db, data.role_id)
     service = UserService(db)
     return service.create_user(data)
 
@@ -283,6 +287,9 @@ async def admin_reset_user_password(
 
     # Atualiza senha
     user.password_hash = hash_password(temp_password)
+    user.must_change_password = True
+    user.password_changed_at = datetime.utcnow()
+    tokens_de_acesso.invalidar_pendentes(db, user)  # link antigo não pode sobrescrever a senha do admin
     db.commit()
 
     logger.info(f"Admin {current_user.id} resetou senha do usuário {user_id}")

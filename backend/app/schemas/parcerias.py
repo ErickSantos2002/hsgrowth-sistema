@@ -8,6 +8,7 @@ import re
 from email_validator import EmailNotValidError, validate_email
 from pydantic import AfterValidator, BaseModel, Field, field_validator
 
+from app.schemas.acessos import ModoDeAcesso
 from app.services.parcerias.cnpj import cnpj_valido, normalizar_cnpj, so_digitos
 
 # Maior valor que cabe nas colunas Numeric(12, 2); acima disso o Postgres recusa.
@@ -226,20 +227,26 @@ class MembroResponse(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     is_active: bool
+    user_id: Optional[int] = None
+    status_acesso: Optional[str] = None  # None = sem login
+    convite_expira_em: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
 
-class AcessoCreate(BaseModel):
+class AcessoMembroCreate(ModoDeAcesso):
+    """Login do vendedor da equipe: usa o nome e o e-mail cadastrados no membro."""
+
+
+class AcessoCreate(ModoDeAcesso):
     name: str = Field(..., min_length=1, max_length=255)
     email: str = Field(..., min_length=3, max_length=255)
-    password: str = Field(..., min_length=8, max_length=128)
 
     @field_validator("email")
     @classmethod
     def _validar_email(cls, valor: str) -> str:
-        valor = valor.strip().lower()
-        if "@" not in valor or "." not in valor.split("@")[-1]:
+        valor = (valor or "").strip().lower()
+        if not email_aceito(valor):
             raise ValueError("E-mail inválido")
         return valor
 
@@ -254,8 +261,14 @@ class AcessoResponse(BaseModel):
     email: str
     is_active: bool
     last_login_at: Optional[datetime] = None
+    status_acesso: str = "ativo"
+    convite_expira_em: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+class AcessoCriadoResponse(AcessoResponse):
+    email_enviado: bool = False
 
 
 # ─── Board 2: oportunidade ───────────────────────────────────────────────────

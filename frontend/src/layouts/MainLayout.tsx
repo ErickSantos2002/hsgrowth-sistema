@@ -124,6 +124,8 @@ export default function MainLayout() {
         window.location.href = "/login";
     };
 
+    if (user?.must_change_password) return <Navigate to="/trocar-senha" replace />;
+
     if (trancado && !location.pathname.startsWith("/parcerias") && location.pathname !== "/settings") {
         return <Navigate to="/parcerias" replace />;
     }
@@ -313,7 +315,7 @@ export default function MainLayout() {
                                     className="text-xs font-medium text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                                     title="Ver o que há de novo nessa versão"
                                 >
-                                    HSGrowth CRM v1.11.16
+                                    HSGrowth CRM v1.11.17
                                 </button>
                                 <p className="text-[10px] text-slate-300 dark:text-slate-600">
                                     © 2026 Health & Safety Tech
@@ -368,6 +370,8 @@ export default function MainLayout() {
                                             ? "Visualizador"
                                             : user?.role === "partner"
                                             ? "Parceiro"
+                                            : user?.role === "partner_member"
+                                            ? "Vendedor do parceiro"
                                             : user?.role === "finance"
                                             ? "Financeiro"
                                             : "Usuário"}

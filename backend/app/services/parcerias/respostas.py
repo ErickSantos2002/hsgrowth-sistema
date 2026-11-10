@@ -5,13 +5,16 @@ from typing import Dict, Iterable, List, Optional, Tuple
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models.partner import Partner
+from app.models.partner import Partner, PartnerTeamMember
 from app.models.partner_activity import PartnerActivity
 from app.models.partner_opportunity import PartnerOpportunity, PartnerOpportunityProduct
 from app.models.user import User
+from app.services import tokens_de_acesso
 from app.services.parcerias import acesso
 from app.schemas.parcerias import (
+    AcessoCriadoResponse,
     AtividadeResponse,
+    MembroResponse,
     OportunidadeResponse,
     ParceiroResponse,
     ProdutoItemResponse,
@@ -155,3 +158,18 @@ def atividade_out(a: PartnerActivity, user: Optional[User] = None) -> AtividadeR
         # A justificativa é da gestão; o parceiro vê só que houve a liberação.
         extras["description"] = texto.split(" Justificativa:")[0]
     return AtividadeResponse.model_validate(a).model_copy(update=extras)
+
+
+def acesso_out(db: Session, login: User, email_enviado: bool = False) -> AcessoCriadoResponse:
+    return AcessoCriadoResponse.model_validate(login).model_copy(update={
+        **tokens_de_acesso.campos_do_acesso(db, login), "email_enviado": email_enviado,
+    })
+
+
+def membro_out(db: Session, m: PartnerTeamMember) -> MembroResponse:
+    campos = {"status_acesso": None, "convite_expira_em": None}
+    if m.user_id:
+        login = db.query(User).filter(User.id == m.user_id).first()
+        if login:
+            campos = tokens_de_acesso.campos_do_acesso(db, login)
+    return MembroResponse.model_validate(m).model_copy(update=campos)

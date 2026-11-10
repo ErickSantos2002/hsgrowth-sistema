@@ -2,6 +2,7 @@
 Dependencies do FastAPI.
 Funções reutilizáveis como dependencies em rotas.
 """
+import calendar
 from datetime import datetime, timezone
 from typing import Generator, Optional
 from fastapi import Depends, Header, HTTPException, Request, status
@@ -21,7 +22,20 @@ security = HTTPBearer(auto_error=False)
 
 # Perfis presos ao Programa de Parceiros. Para eles o CRM é negado por padrão:
 # só os caminhos abaixo respondem. Rota nova fica trancada sozinha.
-PERFIS_TRANCADOS = ("partner", "finance")
+PERFIS_TRANCADOS = ("partner", "partner_member", "finance")
+# Com a troca de senha pendente só respondem estes caminhos (comparação exata) e o link de senha.
+CAMINHOS_COM_SENHA_PENDENTE = (
+    "/api/v1/users/me",
+    "/api/v1/users/me/change-password",
+    "/api/v1/auth/login",
+    "/api/v1/auth/logout",
+    "/api/v1/auth/refresh",
+    "/api/v1/auth/definir-senha",
+    "/api/v1/auth/forgot-password",
+    "/api/v1/auth/reset-password",
+)
+PREFIXOS_COM_SENHA_PENDENTE = ("/api/v1/auth/token/",)
+
 CAMINHOS_DOS_TRANCADOS = (
     "/api/v1/auth/",
     "/api/v1/users/me",
@@ -47,6 +61,15 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+def token_anterior_a_senha(payload: dict, user: User) -> bool:
+    """True se o token foi emitido antes da última troca/definição de senha (sessão antiga)."""
+    trocada_em = getattr(user, "password_changed_at", None)
+    iat = payload.get("iat")
+    if not trocada_em or iat is None:
+        return False
+    return int(iat) < calendar.timegm(trocada_em.utctimetuple())
 
 
 async def get_current_user(
@@ -174,6 +197,13 @@ async def get_current_user(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        if token_anterior_a_senha(payload, user):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Sessão expirada. Entre novamente.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         return user
 
 
@@ -201,6 +231,15 @@ async def get_current_active_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Usuário inativo"
         )
+
+    # Senha definida por outra pessoa: até trocar, só login/logout, /users/me e a troca.
+    if getattr(current_user, "must_change_password", False):
+        caminho = request.url.path
+        if not (caminho in CAMINHOS_COM_SENHA_PENDENTE or caminho.startswith(PREFIXOS_COM_SENHA_PENDENTE)):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Troque a sua senha para continuar.",
+            )
 
     papel = current_user.role.name if current_user.role else None
     if papel in PERFIS_TRANCADOS and not caminho_liberado_para_trancado(request.url.path):
@@ -292,14 +331,15 @@ def require_service_access():
 
 def require_parcerias_access():
     """
-    Dependency do Programa de Parceiros: admin, gerente, Financeiro, parceiro e
-    vendedor (este só vê os parceiros dos quais é o Responsável H&S).
+    Dependency do Programa de Parceiros: admin, gerente, Financeiro, parceiro (dono
+    e vendedor da equipe dele) e vendedor da H&S (este só vê os parceiros dos quais
+    é o Responsável H&S).
     SDR, serviço e visualizador não acessam (403).
     """
     async def checker(
         current_user: User = Depends(get_current_active_user)
     ) -> User:
-        allowed_roles = ("admin", "manager", "finance", "partner", "salesperson")
+        allowed_roles = ("admin", "manager", "finance", "partner", "partner_member", "salesperson")
         if not current_user.role or current_user.role.name not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -312,13 +352,13 @@ def require_parcerias_access():
 
 def require_consulta_cnpj():
     """
-    Consulta de CNPJ (Parcerias, Entrega 2): parceiro, vendedor, SDR, admin e
-    gerente. O Financeiro, o serviço e o visualizador não consultam (403).
+    Consulta de CNPJ (Parcerias, Entrega 2): parceiro (dono e vendedor da equipe),
+    vendedor, SDR, admin e gerente. O Financeiro, o serviço e o visualizador não consultam (403).
     """
     async def checker(
         current_user: User = Depends(get_current_active_user)
     ) -> User:
-        allowed_roles = ("admin", "manager", "salesperson", "sdr", "partner")
+        allowed_roles = ("admin", "manager", "salesperson", "sdr", "partner", "partner_member")
         if not current_user.role or current_user.role.name not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

@@ -16,6 +16,8 @@ from app.api.deps import get_current_active_user, get_db
 from app.models.user import User
 from app.schemas.parcerias import (
     AcessoCreate,
+    AcessoCriadoResponse,
+    AcessoMembroCreate,
     AcessoResponse,
     AcessoUpdate,
     AtividadeCreate,
@@ -41,6 +43,8 @@ from app.schemas.parcerias import (
     ProdutoItemResponse,
     ProdutoItemUpdate,
 )
+from app.schemas.acessos import ConviteRequest, ConviteResponse
+from app.services import tokens_de_acesso
 from app.services.parcerias import acesso, atividades, oportunidades, parceiros, respostas
 from app.services.parcerias.etapas import ETAPAS_AQUISICAO, ETAPAS_OPORTUNIDADE
 
@@ -95,37 +99,63 @@ def mover_parceiro(partner_id: int, req: MoverRequest, db: Session = Depends(get
 @router.get("/parceiros/{partner_id}/equipe", response_model=List[MembroResponse])
 def listar_equipe(partner_id: int, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_active_user)):
-    return parceiros.listar_equipe(db, current_user, partner_id)
+    return [respostas.membro_out(db, m) for m in parceiros.listar_equipe(db, current_user, partner_id)]
 
 
 @router.post("/parceiros/{partner_id}/equipe", response_model=MembroResponse, status_code=201)
 def criar_membro(partner_id: int, dados: MembroCreate, db: Session = Depends(get_db),
                  current_user: User = Depends(get_current_active_user)):
-    return parceiros.criar_membro(db, current_user, partner_id, dados)
+    return respostas.membro_out(db, parceiros.criar_membro(db, current_user, partner_id, dados))
 
 
 @router.put("/parceiros/{partner_id}/equipe/{membro_id}", response_model=MembroResponse)
 def atualizar_membro(partner_id: int, membro_id: int, dados: MembroUpdate, db: Session = Depends(get_db),
                      current_user: User = Depends(get_current_active_user)):
-    return parceiros.atualizar_membro(db, current_user, partner_id, membro_id, dados)
+    return respostas.membro_out(db, parceiros.atualizar_membro(db, current_user, partner_id, membro_id, dados))
+
+
+@router.post("/parceiros/{partner_id}/equipe/{membro_id}/acesso", response_model=ConviteResponse, status_code=201)
+def dar_acesso_ao_membro(partner_id: int, membro_id: int, dados: AcessoMembroCreate,
+                         db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    r = parceiros.dar_acesso_ao_membro(db, current_user, partner_id, membro_id, dados)
+    return ConviteResponse(**tokens_de_acesso.campos_do_acesso(db, r.user),
+                           link=r.link, email_enviado=r.email_enviado)
+
+
+@router.post("/parceiros/{partner_id}/equipe/{membro_id}/acesso/convite", response_model=ConviteResponse)
+def convidar_membro(partner_id: int, membro_id: int, dados: ConviteRequest,
+                    db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    r = parceiros.convidar_membro(db, current_user, partner_id, membro_id, dados.enviar)
+    return ConviteResponse(**tokens_de_acesso.campos_do_acesso(db, r.user),
+                           link=r.link, email_enviado=r.email_enviado)
 
 
 @router.get("/parceiros/{partner_id}/acessos", response_model=List[AcessoResponse])
 def listar_acessos(partner_id: int, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_active_user)):
-    return parceiros.listar_acessos(db, current_user, partner_id)
+    return [respostas.acesso_out(db, u) for u in parceiros.listar_acessos(db, current_user, partner_id)]
 
 
-@router.post("/parceiros/{partner_id}/acessos", response_model=AcessoResponse, status_code=201)
+@router.post("/parceiros/{partner_id}/acessos", response_model=AcessoCriadoResponse, status_code=201)
 def criar_acesso(partner_id: int, dados: AcessoCreate, db: Session = Depends(get_db),
                  current_user: User = Depends(get_current_active_user)):
-    return parceiros.criar_acesso(db, current_user, partner_id, dados)
+    r = parceiros.criar_acesso(db, current_user, partner_id, dados)
+    return respostas.acesso_out(db, r.user, r.email_enviado)
+
+
+@router.post("/parceiros/{partner_id}/acessos/{user_id}/convite", response_model=ConviteResponse)
+def convidar_acesso(partner_id: int, user_id: int, dados: ConviteRequest, db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_active_user)):
+    r = parceiros.convidar_acesso(db, current_user, partner_id, user_id, dados.enviar)
+    return ConviteResponse(**tokens_de_acesso.campos_do_acesso(db, r.user),
+                           link=r.link, email_enviado=r.email_enviado)
 
 
 @router.put("/parceiros/{partner_id}/acessos/{user_id}", response_model=AcessoResponse)
 def alterar_acesso(partner_id: int, user_id: int, dados: AcessoUpdate, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_active_user)):
-    return parceiros.alterar_acesso(db, current_user, partner_id, user_id, dados.is_active)
+    login = parceiros.alterar_acesso(db, current_user, partner_id, user_id, dados.is_active)
+    return respostas.acesso_out(db, login)
 
 
 # ─── Board 2: Pipeline de Parceiros ──────────────────────────────────────────

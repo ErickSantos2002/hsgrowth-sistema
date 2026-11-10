@@ -114,6 +114,7 @@ class TestCreateUser:
                 "name": "New User",
                 "email": "newuser@test.com",
                 "password": "newpass123",
+                "modo": "senha",
                 "role_id": test_roles["salesperson"].id
             }
         )

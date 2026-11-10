@@ -5,6 +5,8 @@ import { FormField, Input, Button } from "../common";
 import userService from "../../services/userService";
 import avatarService from "../../services/avatarService";
 import { User, CreateUserRequest, UpdateUserRequest } from "../../types";
+import FormularioDeAcesso from "../acessos/FormularioDeAcesso";
+import type { ModoAcesso } from "../../services/acessosService";
 import { showSuccess, showError, showWarning } from "../../utils/toast";
 
 interface UserModalProps {
@@ -19,8 +21,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
+  const [modo, setModo] = useState<ModoAcesso>("convite");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [roleId, setRoleId] = useState(3);
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,8 +54,6 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
       setName(user.name);
       setUsername(user.username || "");
       setPhone(user.phone || "");
-      setPassword("");
-      setConfirmPassword("");
       setRoleId(user.role_id);
       setIsActive(user.is_active);
     } else {
@@ -66,8 +66,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
     setName("");
     setUsername("");
     setPhone("");
+    setModo("convite");
     setPassword("");
-    setConfirmPassword("");
     setRoleId(3);
     setIsActive(true);
     setAvatarFile(null);
@@ -145,16 +145,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
       next.name = "Nome é obrigatório";
     }
 
-    if (!isEditing) {
-      if (!password.trim()) {
-        next.password = "Senha é obrigatória ao criar usuário";
-      } else if (password.length < 6) {
-        next.password = "Senha deve ter pelo menos 6 caracteres";
-      }
-
-      if (password && password !== confirmPassword) {
-        next.confirmPassword = "As senhas não coincidem";
-      }
+    if (!isEditing && modo === "senha") {
+      if (password.length < 8) next.password = "Senha deve ter pelo menos 8 caracteres";
     }
 
     setErrors(next);
@@ -186,7 +178,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
       } else {
         const data: CreateUserRequest = {
           email: email.trim(),
-          password: password,
+          modo,
+          password: modo === "senha" ? password : undefined,
           name: name.trim(),
           username: username.trim() || undefined,
           phone: phone.trim() || undefined,
@@ -194,8 +187,12 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
           is_active: isActive,
         };
 
-        await userService.create(data);
-        showSuccess("Usuário criado com sucesso!");
+        const criado = await userService.create(data);
+        if (modo === "convite" && criado.email_enviado === false) {
+          showWarning("Usuário criado, mas não conseguimos enviar o e-mail. Use Copiar link na lista.");
+        } else {
+          showSuccess(modo === "convite" ? "Usuário criado. Convite enviado por e-mail." : "Usuário criado com sucesso!");
+        }
       }
 
       resetForm();
@@ -339,46 +336,15 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
             </FormField>
 
             {!isEditing && (
-              <>
-                <FormField
-                  label={
-                    <span>
-                      Senha <span className="text-red-400">*</span>
-                    </span>
-                  }
-                  error={errors.password}
-                >
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setErrors((p) => { const n = {...p}; delete n.password; return n; }); }}
-                    placeholder="Mínimo 6 caracteres"
-                    required
-                    minLength={6}
-                    disabled={saving}
-                    error={!!errors.password}
-                  />
-                </FormField>
-
-                <FormField
-                  label={
-                    <span>
-                      Confirmar Senha <span className="text-red-400">*</span>
-                    </span>
-                  }
-                  error={errors.confirmPassword}
-                >
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => { setConfirmPassword(e.target.value); setErrors((p) => { const n = {...p}; delete n.confirmPassword; return n; }); }}
-                    placeholder="Digite a senha novamente"
-                    required
-                    disabled={saving}
-                    error={!!errors.confirmPassword}
-                  />
-                </FormField>
-              </>
+              <div className="md:col-span-2">
+                <FormularioDeAcesso
+                  pedirNomeEmail={false}
+                  semBotao
+                  onEnviar={() => undefined}
+                  onMudar={(d) => { setModo(d.modo); setPassword(d.password); setErrors((p) => { const n = { ...p }; delete n.password; return n; }); }}
+                />
+                {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
+              </div>
             )}
           </div>
         </div>
