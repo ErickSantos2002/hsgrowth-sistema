@@ -67,6 +67,9 @@ class Partner(Base, TimestampMixin, SoftDeleteMixin):
     terms_accepted_at = Column(DateTime, nullable=True)
     # Logins que estavam ativos ao bloquear: só eles voltam no desbloqueio.
     blocked_login_ids = Column(JSON, nullable=True)
+    # Âncora do prazo de indicação: a primeira venda confirmada (sem FK, como activation_opportunity_id).
+    first_sale_at = Column(DateTime, nullable=True)
+    first_sale_opportunity_id = Column(Integer, nullable=True)
 
     hs_owner = relationship("User", foreign_keys=[hs_owner_id])
     indicated_by = relationship("Partner", remote_side=[id], foreign_keys=[indicated_by_partner_id])

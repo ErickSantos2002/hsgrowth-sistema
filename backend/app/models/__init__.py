@@ -103,6 +103,7 @@ from app.models.partner import Partner, PartnerTeamMember  # noqa
 from app.models.partner_opportunity import PartnerOpportunity, PartnerOpportunityProduct  # noqa
 from app.models.partner_activity import PartnerActivity  # noqa
 from app.models.partner_terms import PartnerTerms, PartnerTermsAcceptance  # noqa
+from app.models.partner_commission import PartnerCommission, PartnerCommissionConfig, PartnerCalibration  # noqa
 from app.models.cnpj_consulta import CnpjConsulta  # noqa
 from app.models.user_access_token import UserAccessToken  # noqa
 

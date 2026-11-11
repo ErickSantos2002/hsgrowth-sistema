@@ -114,3 +114,36 @@ def card_de_vendas(db, lista, documento: str = CNPJ_A, **campos):
     db.commit()
     db.refresh(c)
     return c
+
+
+def config_comissoes(db, y=10, x=5, bonus=100, meses=24, z=8):
+    """Cria (ou atualiza) a linha única de configuração das comissões."""
+    from app.models.partner_commission import PartnerCommissionConfig
+
+    cfg = db.query(PartnerCommissionConfig).first() or PartnerCommissionConfig()
+    cfg.own_sale_pct, cfg.indication_pct, cfg.first_sale_bonus = y, x, bonus
+    cfg.indication_months, cfg.calibration_pct = meses, z
+    db.add(cfg)
+    db.commit()
+    db.refresh(cfg)
+    return cfg
+
+
+def oportunidade_ganha(db, p: Partner, valor_produtos, **campos) -> PartnerOpportunity:
+    """Oportunidade em `ganho` com um item de produto que soma `valor_produtos`."""
+    from app.models.partner_opportunity import PartnerOpportunityProduct
+    from app.models.product import Product
+
+    campos.setdefault("stage", "ganho")
+    campos.setdefault("won_at", datetime.utcnow())
+    op = oportunidade(db, p, **campos)
+    produto = db.query(Product).filter(Product.partner_enabled.is_(True)).first()
+    if produto is None:
+        produto = Product(name="Phoebus", unit_price=1000, partner_enabled=True)
+        db.add(produto)
+        db.commit()
+    db.add(PartnerOpportunityProduct(opportunity_id=op.id, product_id=produto.id,
+                                     quantity=1, unit_price=valor_produtos))
+    db.commit()
+    db.refresh(op)
+    return op
