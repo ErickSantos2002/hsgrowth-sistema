@@ -75,16 +75,6 @@ def test_alteracao_e_do_sistema(client, db, admin_headers):
                       headers=admin_headers).status_code == 422
 
 
-def test_mudanca_de_etapa_vira_alteracao(client, db, admin_headers):
-    p = parceiro(db, stage="potencial", main_contact_name="Carlos", main_contact_phone="11999990000",
-                 hs_owner_id=usuario(db, "manager", "g@hs.com").id)
-
-    client.put(f"{URL}/parceiros/{p.id}/mover", json={"stage": "qualificacao"}, headers=admin_headers)
-
-    tipos = [a["activity_type"] for a in client.get(f"{URL}/parceiros/{p.id}/atividades", headers=admin_headers).json()]
-    assert "stage_change" in tipos
-
-
 def test_arquivo_anexar_baixar_excluir(client, db, tmp_path, monkeypatch):
     from app.services.parcerias import atividades as modulo
     monkeypatch.setattr(modulo, "UPLOAD_DIR", tmp_path)

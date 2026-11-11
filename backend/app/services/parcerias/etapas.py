@@ -1,8 +1,11 @@
 """
-Etapas fixas dos dois boards de Parcerias e as travas para avançar.
+Etapas fixas dos dois boards de Parcerias e as travas das oportunidades.
 
 As etapas ficam no código, não em listas editáveis: as travas dependem delas,
 e renomear ou reordenar uma lista pela tela quebraria a regra.
+
+A Aquisição tem só 4 situações (potencial, convidado, ativado, bloqueado) e o
+card não anda na mão: elas mudam com o convite, o aceite dos termos e o Bloquear.
 
 A trava é acumulada: para estar numa etapa, o card cumpre as exigências de
 todas as etapas anteriores. Assim pular etapa não fura a trava.
@@ -18,14 +21,10 @@ class Etapa:
 
 
 ETAPAS_AQUISICAO = (
-    Etapa("potencial", "Potencial Parceiro"),
-    Etapa("qualificacao", "Qualificação"),
-    Etapa("proposta", "Proposta"),
-    Etapa("formalizacao", "Formalização"),
-    Etapa("onboarding", "Onboarding"),
-    Etapa("ativacao", "Ativação"),
+    Etapa("potencial", "Potencial"),
+    Etapa("convidado", "Convidado"),
     Etapa("ativado", "Ativado"),
-    Etapa("perdido", "Perdido"),
+    Etapa("bloqueado", "Bloqueado"),
 )
 
 ETAPAS_OPORTUNIDADE = (
@@ -67,28 +66,6 @@ def _checar(etapas: Sequence[Etapa], exigencias: Dict[str, Optional[str]], desti
             raise TravaError(falta)
 
 
-def _exigencias_do_parceiro(p) -> Dict[str, Optional[str]]:
-    """Etapa → o que falta para sair dela (None = nada)."""
-    tem_contato = bool((p.main_contact_name or "").strip()) and bool(
-        (p.main_contact_phone or "").strip() or (p.main_contact_email or "").strip()
-    )
-    return {
-        # O Responsável H&S é opcional: tem parceiro que não precisa de treinamento.
-        "potencial": None if tem_contato else (
-            "Preencha o contato principal (nome e telefone ou e-mail) antes de ir para Qualificação."
-        ),
-        "qualificacao": None if p.qualification_status in ("aderente", "parcialmente_aderente") else (
-            "O parceiro precisa estar Aderente ou Parcialmente aderente para seguir além da Qualificação."
-        ),
-        "formalizacao": None if p.contract_date and p.contract_activity_id is not None else (
-            "Anexe o contrato e preencha a data do contrato antes de ir para Onboarding."
-        ),
-        "onboarding": None if p.onboarding_date else (
-            "Preencha a data de onboarding antes de ir para Ativação."
-        ),
-    }
-
-
 def _exigencias_da_oportunidade(o) -> Dict[str, Optional[str]]:
     # A elegibilidade não trava: a H&S valida quando quiser, até depois do Ganho.
     return {
@@ -99,28 +76,6 @@ def _exigencias_da_oportunidade(o) -> Dict[str, Optional[str]]:
             "Informe se é venda ou locação antes de marcar como Ganho."
         ),
     }
-
-
-def validar_mudanca_parceiro(parceiro, destino: str, perfil: str, automatico: bool = False) -> None:
-    _conferir_destino(ETAPAS_AQUISICAO, destino)
-    origem = parceiro.stage
-    if destino == origem:
-        return
-    if origem in ("ativado", "perdido") and perfil not in GESTAO and not automatico:
-        raise TravaError("Só admin ou gerente tiram o parceiro de Ativado ou de Perdido.")
-    if destino == "perdido":
-        if perfil not in GESTAO:
-            raise TravaError("Só admin ou gerente marcam o parceiro como Perdido.")
-        if not (parceiro.loss_reason or "").strip():
-            raise TravaError("Informe o motivo da perda.")
-        return
-    if destino == "ativado" and not automatico:
-        raise TravaError(
-            "O parceiro vai para Ativado sozinho, quando uma oportunidade dele for validada, "
-            "chegar em Proposta ou for ganha."
-        )
-    progressao = [e for e in ETAPAS_AQUISICAO if e.codigo != "perdido"]
-    _checar(progressao, _exigencias_do_parceiro(parceiro), destino)
 
 
 def validar_mudanca_oportunidade(oportunidade, destino: str, perfil: str) -> None:

@@ -1,7 +1,7 @@
-"""Contrato do parceiro (trava de Formalização) e confirmação do ganho pela H&S (v1.11.11)."""
+"""Contrato do parceiro e confirmação do ganho pela H&S (v1.11.11)."""
 from datetime import date
 
-from tests.unit.apoio_parcerias import headers, oportunidade, parceiro, parceiro_pronto, usuario
+from tests.unit.apoio_parcerias import headers, oportunidade, parceiro, usuario
 
 URL = "/api/v1/parcerias"
 
@@ -12,29 +12,6 @@ def _anexar(client, p, h, nome="contrato.pdf"):
 
 
 # ─── Contrato ────────────────────────────────────────────────────────────────
-
-def test_onboarding_pede_contrato_e_data(client, db, tmp_path, monkeypatch, admin_headers):
-    monkeypatch.setattr("app.services.parcerias.atividades.UPLOAD_DIR", tmp_path)
-    p = parceiro_pronto(db, stage="formalizacao")
-    p.contract_date = p.contract_activity_id = None
-    db.commit()
-    h = headers(usuario(db, "partner", "a@dmap.com", p))
-
-    def mover():
-        return client.put(f"{URL}/parceiros/{p.id}/mover", json={"stage": "onboarding"}, headers=h)
-
-    barrado = mover()
-    assert barrado.status_code == 422 and "contrato" in barrado.json()["detail"]
-
-    anexado = _anexar(client, p, h)
-    assert anexado.status_code == 200
-    assert anexado.json()["contract_file_name"] == "contrato.pdf"
-    assert mover().status_code == 422  # ainda falta a data
-
-    datado = client.put(f"{URL}/parceiros/{p.id}", json={"contract_date": "2026-11-01"}, headers=h)
-    assert datado.json()["contract_date"] == "2026-11-01"
-    assert mover().status_code == 200
-
 
 def test_contrato_aparece_no_historico_e_troca(client, db, tmp_path, monkeypatch, admin_headers):
     monkeypatch.setattr("app.services.parcerias.atividades.UPLOAD_DIR", tmp_path)

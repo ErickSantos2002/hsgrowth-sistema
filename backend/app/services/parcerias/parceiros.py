@@ -1,5 +1,4 @@
 """Board 1 — Aquisição de Parceiros: o card do parceiro, a Equipe e os Acessos."""
-from datetime import datetime
 from typing import List
 
 from fastapi import HTTPException, UploadFile, status
@@ -19,8 +18,9 @@ from app.schemas.parcerias import (
     ParceiroUpdate,
 )
 from app.services import criacao_de_login
-from app.services.parcerias import acesso, ativacao, atividades
-from app.services.parcerias.etapas import ETAPAS_AQUISICAO, TravaError, nome_da_etapa, validar_mudanca_parceiro
+from app.services.parcerias import acesso, atividades
+
+MENSAGEM_SITUACAO_FIXA = "As situações mudam sozinhas (convite e aceite) ou pelo botão Bloquear."
 
 
 def listar(db: Session, user: User) -> List[Partner]:
@@ -58,39 +58,10 @@ def atualizar(db: Session, user: User, partner_id: int, dados: ParceiroUpdate) -
 
 
 def mover(db: Session, user: User, partner_id: int, req: MoverRequest) -> Partner:
+    """As situações da Aquisição não se movem na mão (convite, aceite e Bloquear mudam sozinhas)."""
     acesso.exigir_escrita(user)
-    p = acesso.buscar_parceiro(db, user, partner_id)
-    origem = p.stage
-    # Reordenar dentro de Perdido não apaga o motivo já gravado.
-    if req.stage == "perdido" and origem != "perdido":
-        p.loss_reason = (req.loss_reason or "").strip() or None
-        p.loss_detail = req.loss_detail
-    try:
-        validar_mudanca_parceiro(p, req.stage, acesso.perfil(user))
-    except TravaError as erro:
-        db.rollback()
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(erro))
-
-    if origem != req.stage:
-        p.stage = req.stage
-        if req.stage == "perdido":
-            p.lost_at = datetime.utcnow()
-        elif origem == "perdido":
-            p.lost_at = p.loss_reason = p.loss_detail = None
-        atividades.registrar_evento(
-            db, user,
-            f"Etapa: {nome_da_etapa(ETAPAS_AQUISICAO, origem)} → {nome_da_etapa(ETAPAS_AQUISICAO, req.stage)}",
-            partner_id=p.id,
-            tipo="card_lost" if req.stage == "perdido" else "stage_change",
-        )
-    if req.position is not None:
-        p.position = req.position
-    # Quem chega a Ativação vindo de Ativado ou Perdido foi posto ali pela gestão de propósito.
-    if p.stage == "ativacao" and origem not in ("ativado", "perdido"):
-        ativacao.promover_se_ativo(db, p, user)
-    db.commit()
-    db.refresh(p)
-    return p
+    acesso.buscar_parceiro(db, user, partner_id)
+    raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MENSAGEM_SITUACAO_FIXA)
 
 
 async def anexar_contrato(db: Session, user: User, partner_id: int, arquivo: UploadFile) -> Partner:

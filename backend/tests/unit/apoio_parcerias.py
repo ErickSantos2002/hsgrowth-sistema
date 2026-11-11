@@ -1,5 +1,5 @@
 """Apoio dos testes de Parcerias: perfis, logins, parceiros e oportunidades."""
-from datetime import date, datetime
+from datetime import datetime
 
 from app.core.security import create_access_token, hash_password
 from app.models.partner import Partner
@@ -56,18 +56,6 @@ def hunter(db, nome: str = "Hunter", email: str = "h@hunter.com"):
     """Hunter (pessoa física que indica) e o login dele."""
     p = parceiro(db, nome, kind="hunter")
     return p, usuario(db, "hunter", email, partner=p)
-
-
-def parceiro_pronto(db, nome: str = "Dmap", stage: str = "ativacao") -> Partner:
-    """Parceiro com todos os dados que as travas do board 1 pedem."""
-    dono = usuario(db, "manager", f"dono-{nome.lower()}@hs.com")
-    return parceiro(
-        db, nome, stage=stage,
-        main_contact_name="Carlos", main_contact_phone="11999990000",
-        hs_owner_id=dono.id, qualification_status="aderente",
-        onboarding_date=date(2026, 10, 1),
-        contract_date=date(2026, 9, 20), contract_activity_id=0,
-    )
 
 
 def oportunidade(db, p: Partner, **campos) -> PartnerOpportunity:

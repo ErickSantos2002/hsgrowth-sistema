@@ -8,7 +8,6 @@ from tests.unit.apoio_parcerias import (
     headers,
     oportunidade,
     parceiro,
-    parceiro_pronto,
     usuario,
 )
 
@@ -172,31 +171,6 @@ def test_produtos_e_valor(client, db):
 
     assert client.delete(f"{URL}/{op.id}/produtos/{item.json()['id']}", headers=h).status_code == 200
     assert client.get(f"{URL}/{op.id}/produtos", headers=h).json() == []
-
-
-def test_validar_ativa_o_parceiro(client, db):
-    p = parceiro_pronto(db, stage="ativacao")
-    op = oportunidade(db, p)
-    financeiro = headers(usuario(db, "finance", "fin@hs.com"))
-
-    client.put(f"{URL}/{op.id}/elegibilidade", json={"status": "validada"}, headers=financeiro)
-
-    parceiro_depois = client.get(f"/api/v1/parcerias/parceiros/{p.id}", headers=financeiro).json()
-    assert parceiro_depois["stage"] == "ativado"
-    assert parceiro_depois["activation_evidence"] == "oportunidade_validada"
-
-
-def test_proposta_conta_como_evidencia(client, db):
-    p = parceiro_pronto(db, stage="ativacao")
-    op = oportunidade(db, p, stage="oportunidade", eligibility_status="validada")
-    p.activation_evidence = None
-    db.commit()
-
-    client.put(f"{URL}/{op.id}/mover", json={"stage": "proposta"}, headers=_login_parceiro(db, p))
-
-    db.refresh(p)
-    assert p.activation_evidence == "proposta_enviada"
-    assert p.stage == "ativado"
 
 
 def test_apagar_campo_obrigatorio_responde_422(client, db):

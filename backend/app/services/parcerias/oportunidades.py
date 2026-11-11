@@ -19,7 +19,7 @@ from app.schemas.parcerias import (
     ProdutoItemCreate,
     ProdutoItemUpdate,
 )
-from app.services.parcerias import acesso, ativacao, atividades, clientes, semaforo
+from app.services.parcerias import acesso, atividades, clientes, semaforo
 from app.services.parcerias.etapas import (
     ETAPAS_OPORTUNIDADE,
     TravaError,
@@ -34,8 +34,6 @@ OBRIGATORIOS = {
     "relationship_type": "Tipo de relacionamento", "context": "Contexto da indicação",
     "cnpj": "CNPJ", "company_name": "Razão social / nome",
 }
-# Etapas que contam como "proposta enviada" para a ativação do parceiro.
-ETAPAS_COM_PROPOSTA = ("proposta", "negociacao", "aguardando_pedido")
 # Campos do valor do negócio (fora os produtos), travados depois de encerrada.
 CAMPOS_DE_VALOR = ("global_discount", "global_discount_type", "shipping")
 
@@ -107,8 +105,8 @@ def criar(db: Session, user: User, dados: OportunidadeCreate) -> PartnerOpportun
             raise _422("Escolha o parceiro da oportunidade.")
         partner_id = acesso.buscar_parceiro(db, user, dados.partner_id).id
     dono = db.query(Partner).filter(Partner.id == partner_id).first()
-    if not dono or dono.is_deleted or dono.stage == "perdido":
-        raise _422("Parceiro em Perdido não registra oportunidade. Reabra o parceiro antes.")
+    if not dono or dono.is_deleted or dono.stage == "bloqueado":
+        raise _422("Parceiro bloqueado não registra oportunidade.")
     _conferir_vendedor(db, partner_id, dados.seller_member_id)
     # Semáforo de novo no servidor (não conta no limite nem entra no histórico).
     s = semaforo.situacao(db, dados.cnpj)
@@ -209,10 +207,6 @@ def mover(db: Session, user: User, opportunity_id: int, req: MoverRequest) -> Pa
             tipo={"ganho": "card_won", "perdido": "card_lost"}.get(req.stage, "stage_change"),
         )
         atividades.tocar(op)
-        if req.stage == "ganho":
-            ativacao.registrar_evidencia(db, op, "primeira_venda", user)
-        elif req.stage in ETAPAS_COM_PROPOSTA:
-            ativacao.registrar_evidencia(db, op, "proposta_enviada", user)
     if req.position is not None:
         op.position = req.position
     db.commit()
@@ -238,8 +232,6 @@ def definir_elegibilidade(db: Session, user: User, opportunity_id: int,
     if nota:
         descricao += f" — {nota}"
     atividades.registrar_evento(db, user, descricao, opportunity_id=op.id)
-    if req.status == "validada":
-        ativacao.registrar_evidencia(db, op, "oportunidade_validada", user)
     db.commit()
     db.refresh(op)
     return op

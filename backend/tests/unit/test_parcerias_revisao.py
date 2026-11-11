@@ -8,7 +8,7 @@ from app.services.parcerias.cnpj import cnpj_valido, normalizar_cnpj
 from app.services.product_service import ProductService
 
 from tests.unit.apoio_parcerias import (
-    card_de_vendas, cliente, headers, oportunidade, parceiro, parceiro_pronto, usuario, vendas,
+    card_de_vendas, cliente, headers, oportunidade, parceiro, usuario, vendas,
 )
 
 URL = "/api/v1/parcerias"
@@ -63,26 +63,14 @@ def test_parceiro_nao_le_a_justificativa_no_historico(client, db, admin_headers)
 
 # ─── Mover ───────────────────────────────────────────────────────────────────
 
-def test_gestao_volta_ativado_para_ativacao(client, db, admin_headers):
-    p = parceiro_pronto(db, stage="ativado")
-    p.activation_evidence = "primeira_venda"
-    db.commit()
-
-    r = client.put(f"{URL}/parceiros/{p.id}/mover", json={"stage": "ativacao"}, headers=admin_headers)
-
-    assert r.status_code == 200 and r.json()["stage"] == "ativacao"
-
-
-def test_mover_perdido_para_perdido_mantem_o_motivo(client, db, admin_headers):
-    p = parceiro(db, stage="perdido", loss_reason="Sem interesse", lost_at=datetime.utcnow())
+def test_mover_oportunidade_perdida_para_perdido_mantem_o_motivo(client, db, admin_headers):
+    p = parceiro(db)
     op = oportunidade(db, p, stage="perdido", loss_reason="Preço", lost_at=datetime.utcnow())
 
-    client.put(f"{URL}/parceiros/{p.id}/mover", json={"stage": "perdido", "position": 2}, headers=admin_headers)
     client.put(f"{URL}/oportunidades/{op.id}/mover", json={"stage": "perdido", "position": 2}, headers=admin_headers)
 
-    db.refresh(p)
     db.refresh(op)
-    assert (p.loss_reason, op.loss_reason) == ("Sem interesse", "Preço")
+    assert op.loss_reason == "Preço"
 
 
 # ─── Valores ─────────────────────────────────────────────────────────────────
@@ -152,10 +140,10 @@ def test_parceiro_nao_mexe_na_atividade_da_hs(client, db):
                         headers=headers(gerente)).status_code == 200
 
 
-# ─── Parceiro perdido ────────────────────────────────────────────────────────
+# ─── Parceiro bloqueado ────────────────────────────────────────────────────────
 
-def test_parceiro_perdido_nao_cria_oportunidade(client, db, admin_headers):
-    p = parceiro(db, stage="perdido", loss_reason="Sem interesse")
+def test_parceiro_bloqueado_nao_cria_oportunidade(client, db, admin_headers):
+    p = parceiro(db, stage="bloqueado")
 
     assert client.post(f"{URL}/oportunidades", json=NOVA, headers=_login_parceiro(db, p)).status_code == 422
     assert client.post(f"{URL}/oportunidades", json={**NOVA, "partner_id": p.id},

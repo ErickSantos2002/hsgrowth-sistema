@@ -8,24 +8,6 @@ from app.services.parcerias.cnpj import cnpj_valido, so_digitos
 from app.services.parcerias.etapas import (
     TravaError,
     validar_mudanca_oportunidade,
-    validar_mudanca_parceiro,
-)
-
-
-def _parceiro(**campos):
-    base = dict(
-        stage="potencial", main_contact_name=None, main_contact_phone=None,
-        main_contact_email=None, hs_owner_id=None, qualification_status=None,
-        onboarding_date=None, loss_reason=None, contract_date=None, contract_activity_id=None,
-    )
-    base.update(campos)
-    return SimpleNamespace(**base)
-
-
-PRONTO = dict(
-    main_contact_name="Carlos", main_contact_phone="11999990000", hs_owner_id=1,
-    qualification_status="aderente", onboarding_date=date(2026, 10, 1),
-    contract_date=date(2026, 9, 20), contract_activity_id=1,
 )
 
 
@@ -46,67 +28,6 @@ def test_cnpj():
     assert not cnpj_valido("11222333000182")
     assert not cnpj_valido("11111111111111")
     assert not cnpj_valido("123")
-
-
-# ── Board 1 ──────────────────────────────────────────────────────────────────
-
-def test_sair_de_potencial_pede_contato_mas_nao_o_responsavel():
-    with pytest.raises(TravaError, match="contato principal"):
-        validar_mudanca_parceiro(_parceiro(), "qualificacao", "partner")
-
-    validar_mudanca_parceiro(_parceiro(**{**PRONTO, "hs_owner_id": None}), "qualificacao", "partner")
-
-
-def test_pular_etapa_nao_fura_a_trava_da_qualificacao():
-    p = _parceiro(**{**PRONTO, "qualification_status": "nao_aderente"})
-    with pytest.raises(TravaError, match="Aderente"):
-        validar_mudanca_parceiro(p, "proposta", "admin")
-
-
-def test_onboarding_pede_contrato_anexado_e_data():
-    for falta in ({"contract_date": None}, {"contract_activity_id": None}):
-        p = _parceiro(**{**PRONTO, "stage": "formalizacao", **falta})
-        with pytest.raises(TravaError, match="contrato"):
-            validar_mudanca_parceiro(p, "onboarding", "partner")
-    # Pular a etapa também barra.
-    with pytest.raises(TravaError, match="contrato"):
-        validar_mudanca_parceiro(_parceiro(**{**PRONTO, "contract_date": None}), "ativacao", "admin")
-
-    validar_mudanca_parceiro(_parceiro(**{**PRONTO, "stage": "formalizacao"}), "onboarding", "partner")
-
-
-def test_ativacao_pede_data_de_onboarding():
-    p = _parceiro(**{**PRONTO, "stage": "onboarding", "onboarding_date": None})
-    with pytest.raises(TravaError, match="onboarding"):
-        validar_mudanca_parceiro(p, "ativacao", "partner")
-
-
-def test_ativado_so_automatico():
-    p = _parceiro(**{**PRONTO, "stage": "ativacao"})
-    with pytest.raises(TravaError, match="sozinho"):
-        validar_mudanca_parceiro(p, "ativado", "admin")
-
-    validar_mudanca_parceiro(p, "ativado", "sistema", automatico=True)
-
-
-def test_perdido_do_parceiro_so_gestao_e_com_motivo():
-    with pytest.raises(TravaError, match="Só admin ou gerente"):
-        validar_mudanca_parceiro(_parceiro(loss_reason="Sem interesse"), "perdido", "partner")
-    with pytest.raises(TravaError, match="motivo"):
-        validar_mudanca_parceiro(_parceiro(), "perdido", "admin")
-
-    validar_mudanca_parceiro(_parceiro(loss_reason="Sem interesse"), "perdido", "manager")
-
-
-def test_parceiro_nao_sai_de_perdido_nem_de_ativado():
-    for origem in ("perdido", "ativado"):
-        with pytest.raises(TravaError, match="tiram o parceiro"):
-            validar_mudanca_parceiro(_parceiro(**{**PRONTO, "stage": origem}), "onboarding", "partner")
-
-
-def test_etapa_desconhecida():
-    with pytest.raises(TravaError, match="desconhecida"):
-        validar_mudanca_parceiro(_parceiro(), "xyz", "admin")
 
 
 # ── Board 2 ──────────────────────────────────────────────────────────────────
