@@ -46,6 +46,7 @@ from app.schemas.parcerias import (
     ProdutoItemCreate,
     ProdutoItemResponse,
     ProdutoItemUpdate,
+    TermosAceiteResponse,
     TermosCreate,
     TermosPendenteResponse,
     TermosResponse,
@@ -74,11 +75,11 @@ def termos_pendentes(db: Session = Depends(get_db), current_user: User = Depends
     return TermosPendenteResponse(pendente=bool(t), version=t.version if t else None, text=t.text if t else None)
 
 
-@router.post("/termos/aceitar", response_model=ParceiroResponse)
+@router.post("/termos/aceitar", response_model=TermosAceiteResponse)
 def aceitar_termos(request: Request, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_active_user)):
     p = termos.aceitar(db, current_user, ip_do_cliente(request))
-    return respostas.parceiro_out(db, acesso.buscar_parceiro(db, current_user, p.id), current_user)
+    return TermosAceiteResponse(stage=p.stage, terms_accepted_at=p.terms_accepted_at)
 
 
 @router.get("/termos", response_model=List[TermosResponse])

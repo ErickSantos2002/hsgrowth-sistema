@@ -3,6 +3,7 @@ Dependencies do FastAPI.
 Funções reutilizáveis como dependencies em rotas.
 """
 import calendar
+import ipaddress
 from datetime import datetime, timezone
 from typing import Generator, Optional
 from fastapi import Depends, Header, HTTPException, Request, status
@@ -40,13 +41,28 @@ PREFIXOS_COM_SENHA_PENDENTE = ("/api/v1/auth/token/",)
 PREFIXOS_COM_TERMOS_PENDENTES = ("/api/v1/auth/", "/api/v1/users/me", "/api/v1/parcerias/termos")
 
 
-def ip_do_cliente(request: Request) -> str:
-    """IP real do cliente: o proxy reverso (Traefik/Nginx) o põe em X-Forwarded-For."""
-    return (
-        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-        or request.headers.get("X-Real-IP", "")
-        or (request.client.host if request.client else "unknown")
+def _caminho_liberado_com_termos_pendentes(caminho: str) -> bool:
+    return any(
+        caminho == p or caminho.startswith(p if p.endswith("/") else p + "/")
+        for p in PREFIXOS_COM_TERMOS_PENDENTES
     )
+
+
+def ip_do_cliente(request: Request) -> str:
+    """IP do cliente. Há um proxy confiável (Traefik) que acrescenta o IP real À DIREITA de
+    X-Forwarded-For; o que vem à esquerda o cliente pode forjar, então vale o último valor."""
+    candidatos = [c.strip() for c in reversed(request.headers.get("X-Forwarded-For", "").split(","))]
+    candidatos.append(request.headers.get("X-Real-IP", "").strip())
+    candidatos.append(request.client.host if request.client else "")
+    for candidato in candidatos:
+        if not candidato:
+            continue
+        try:
+            ipaddress.ip_address(candidato)
+        except ValueError:
+            continue
+        return candidato[:64]
+    return "unknown"
 
 CAMINHOS_DOS_TRANCADOS = (
     "/api/v1/auth/",
@@ -262,7 +278,7 @@ async def get_current_active_user(
         )
 
     # Dono/hunter sem o aceite da versão vigente dos termos: só auth, /users/me e os termos.
-    if papel in ("partner", "hunter") and not request.url.path.startswith(PREFIXOS_COM_TERMOS_PENDENTES):
+    if papel in ("partner", "hunter") and not _caminho_liberado_com_termos_pendentes(request.url.path):
         from app.services.parcerias import termos  # import tardio: evita ciclo
 
         if termos.pendente(db, current_user):

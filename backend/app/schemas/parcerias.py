@@ -733,3 +733,9 @@ class TermosPendenteResponse(BaseModel):
     pendente: bool
     version: Optional[int] = None
     text: Optional[str] = None
+
+
+class TermosAceiteResponse(BaseModel):
+    ok: bool = True
+    stage: str
+    terms_accepted_at: Optional[datetime] = None

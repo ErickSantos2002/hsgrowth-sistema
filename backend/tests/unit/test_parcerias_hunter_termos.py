@@ -50,7 +50,7 @@ def test_aceite_ativa_e_notifica(client, db, manager_headers):
     ind = parceiro(db, "Indicadora")
     p, dono = _dono(db, indicated_by_partner_id=ind.id)
     h = headers(dono)
-    r = client.post(f"{URL}/termos/aceitar", headers={**h, "X-Forwarded-For": "203.0.113.9"})
+    r = client.post(f"{URL}/termos/aceitar", headers={**h, "X-Forwarded-For": "1.2.3.4, 203.0.113.9"})
     assert r.status_code == 200, r.text
     db.expire_all()
     p = db.query(Partner).get(p.id)
@@ -122,3 +122,75 @@ def test_so_gestao_publica(client, db, manager_headers):
                        json={"audience": "hunter", "text": "curto"}).status_code == 422
     lista = client.get(f"{URL}/termos?audience=empresa", headers=manager_headers).json()
     assert [t["version"] for t in lista] == [2, 1]
+
+
+def test_hunter_aceita_e_deixa_de_ser_barrado(client, db, manager_headers):
+    _termos(db, "hunter")
+    p, h_user = hunter(db)
+    p.terms_accepted_at, p.stage = None, "convidado"
+    db.commit()
+    h = headers(h_user)
+    r = client.post(f"{URL}/termos/aceitar", headers=h)
+    assert r.status_code == 200, r.text
+    assert r.json()["ok"] is True and r.json()["stage"] == "ativado"
+    assert client.get(f"{URL}/termos/pendente", headers=h).json() == {"pendente": False}
+
+
+def test_put_me_informa_termos_pendentes(client, db):
+    _termos(db)
+    _, dono = _dono(db)
+    r = client.put("/api/v1/users/me", headers=headers(dono), json={"phone": "11999999999"})
+    assert r.status_code == 200, r.text
+    assert r.json()["termos_pendentes"] is True
+
+
+def test_caminhos_liberados_sao_por_segmento():
+    from app.api.deps import _caminho_liberado_com_termos_pendentes as ok
+    assert ok("/api/v1/users/me") and ok("/api/v1/users/me/algo") and ok("/api/v1/parcerias/termos/pendente")
+    assert ok("/api/v1/parcerias/termos") and ok("/api/v1/auth/login")
+    assert not ok("/api/v1/users/media") and not ok("/api/v1/parcerias/termosx")
+    assert not ok("/api/v1/users/me2")
+
+
+def test_falha_na_notificacao_nao_quebra_o_aceite(client, db, manager_headers, monkeypatch):
+    from app.services import notification_service
+
+    def quebra(self, data):
+        raise RuntimeError("falhou")
+    monkeypatch.setattr(notification_service.NotificationService, "create_notification", quebra)
+    _termos(db)
+    p, dono = _dono(db)
+    r = client.post(f"{URL}/termos/aceitar", headers=headers(dono))
+    assert r.status_code == 200, r.text
+    db.expire_all()
+    assert db.query(Partner).get(p.id).stage == "ativado"
+    assert db.query(PartnerTermsAcceptance).count() == 1
+
+
+def test_ativado_aceitando_versao_nova_nao_notifica_de_novo(client, db, manager_headers):
+    _termos(db)
+    _, dono = _dono(db)
+    h = headers(dono)
+    client.post(f"{URL}/termos/aceitar", headers=h)
+    antes = db.query(Notification).filter(Notification.notification_type == "parceria_ativada").count()
+    assert antes >= 1
+    _termos(db, version=2)
+    assert client.post(f"{URL}/termos/aceitar", headers=h).status_code == 200
+    depois = db.query(Notification).filter(Notification.notification_type == "parceria_ativada").count()
+    assert depois == antes
+
+
+def _req(headers, host="10.0.0.1"):
+    from types import SimpleNamespace
+    from starlette.datastructures import Headers
+    return SimpleNamespace(headers=Headers(headers=headers), client=SimpleNamespace(host=host))
+
+
+def test_ip_do_cliente_confia_so_no_ultimo_xff():
+    from app.api.deps import ip_do_cliente
+    assert ip_do_cliente(_req({"X-Forwarded-For": "1.2.3.4, 9.9.9.9"})) == "9.9.9.9"
+    assert ip_do_cliente(_req({"X-Forwarded-For": "lixo, , 9.9.9.9 "})) == "9.9.9.9"
+    assert ip_do_cliente(_req({"X-Forwarded-For": "lixo", "X-Real-IP": "8.8.8.8"})) == "8.8.8.8"
+    assert ip_do_cliente(_req({"X-Forwarded-For": "lixo", "X-Real-IP": "x"})) == "10.0.0.1"
+    assert ip_do_cliente(_req({"X-Forwarded-For": "lixo"}, host="nao-ip")) == "unknown"
+    assert ip_do_cliente(_req({"X-Forwarded-For": "2001:db8::1"})) == "2001:db8::1"

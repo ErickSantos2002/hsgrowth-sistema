@@ -51,6 +51,13 @@ def _user_response(user: User) -> UserResponse:
     )
 
 
+def _resposta_do_proprio_usuario(db: Session, user: User) -> UserResponse:
+    from app.services.parcerias import termos  # import tardio: evita ciclo
+    resposta = _user_response(user)
+    resposta.termos_pendentes = termos.pendente(db, user) is not None
+    return resposta
+
+
 @router.get(
     "",
     response_model=UserListResponse,
@@ -188,10 +195,7 @@ async def get_current_user_data(
     Endpoint de dados do usuário autenticado.
     """
     # Converte para response schema
-    resposta = _user_response(current_user)
-    from app.services.parcerias import termos  # import tardio: evita ciclo
-    resposta.termos_pendentes = termos.pendente(db, current_user) is not None
-    return resposta
+    return _resposta_do_proprio_usuario(db, current_user)
 
 
 @router.get(
@@ -640,7 +644,7 @@ async def update_me(
         setattr(current_user, campo, valor)
     db.commit()
     db.refresh(current_user)
-    return _user_response(current_user)
+    return _resposta_do_proprio_usuario(db, current_user)
 
 
 @router.post("/{user_id}/convite", response_model=ConviteResponse, summary="Reenviar convite ou copiar o link")

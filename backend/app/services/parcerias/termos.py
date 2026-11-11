@@ -66,10 +66,14 @@ def pendente(db: Session, user: User) -> Optional[PartnerTerms]:
 
 
 def aceitar(db: Session, user: User, ip: Optional[str]) -> Partner:
+    if not pendente(db, user):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Não há termos pendentes.")
+    # Trava a linha do parceiro e confere de novo: clique duplo não aceita nem ativa duas vezes.
+    p = db.query(Partner).filter(Partner.id == user.partner_id).with_for_update().one()
     termos = pendente(db, user)
     if not termos:
+        db.rollback()
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Não há termos pendentes.")
-    p = db.query(Partner).filter(Partner.id == user.partner_id).one()
     agora = datetime.utcnow()
     db.add(PartnerTermsAcceptance(
         partner_id=p.id, user_id=user.id, terms_id=termos.id, accepted_at=agora, ip_address=ip,
