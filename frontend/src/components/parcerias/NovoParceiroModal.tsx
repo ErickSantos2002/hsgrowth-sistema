@@ -72,7 +72,7 @@ export default function NovoParceiroModal({ isOpen, onClose, onCriado }: Props) 
         <FormField label="Segmento"><Input {...campo("segment")} /></FormField>
         <FormField label="Região"><Input {...campo("region")} /></FormField>
         <FormField label="Chave PIX"><Input {...campo("pix_key")} maxLength={255} /></FormField>
-        <FormField label="Indicado por" hint="Opcional. Só hunters ativos.">
+        <FormField label="Indicado por" hint="Opcional. Hunters não bloqueados.">
           <SelectMenu
             value={form.indicated_by_partner_id ? String(form.indicated_by_partner_id) : ""}
             placeholder="Ninguém"

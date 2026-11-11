@@ -237,3 +237,15 @@ def test_indicador_bloqueado_nao_indica_nem_lista(client, db, emails):
     assert r.status_code == 403 and r.json()["detail"] == "Seu cadastro de parceiro está bloqueado."
     assert client.get(f"{URL}/indicacoes", headers=headers(login)).status_code == 403
     assert db.query(Partner).filter(Partner.cnpj == CNPJ_A).count() == 0
+
+
+def test_financeiro_ve_pix_e_cpf_e_dono_de_outra_empresa_nao(client, db):
+    p = parceiro(db, "Dmap", pix_key="k", cpf="12345678909")
+    fin = usuario(db, "finance", "fin@hs.com")
+    r = client.get(f"{URL}/parceiros/{p.id}", headers=headers(fin))
+    assert r.status_code == 200, r.text
+    assert r.json()["pix_key"] == "k" and r.json()["cpf"] == "12345678909"
+    outra = parceiro(db, "Outra")
+    dono_outra = usuario(db, "partner", "dono@outra.com", outra)
+    r2 = client.get(f"{URL}/parceiros/{p.id}", headers=headers(dono_outra))
+    assert r2.status_code == 404 or (r2.json()["pix_key"] is None and r2.json()["cpf"] is None)

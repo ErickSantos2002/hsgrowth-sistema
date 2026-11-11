@@ -34,12 +34,12 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
   const { user } = useAuth();
   const ehVendedor = user?.role === "partner_member";
   // O hunter não tem equipe: não há vendedor responsável a escolher.
-  const ehHunter = user?.role === "hunter" || parceiros.find((p) => p.id === (escolheParceiro ? form.partner_id : parceiros[0]?.id))?.kind === "hunter";
+  const partnerId = escolheParceiro ? form.partner_id : user?.partner_id;
+  const ehHunter = user?.role === "hunter" || parceiros.find((p) => p.id === partnerId)?.kind === "hunter";
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
   const [consulta, setConsulta] = useState<ConsultaCnpj | null>(null);
   const [consultando, setConsultando] = useState(false);
 
-  const partnerId = escolheParceiro ? form.partner_id : parceiros[0]?.id;
 
   useEffect(() => {
     if (isOpen) {

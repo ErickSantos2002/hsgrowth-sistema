@@ -19,7 +19,7 @@ import { maskCPF } from "../../utils/formatters";
 import userService from "../../services/userService";
 import { EVIDENCIA_LABEL, PERFIS_DO_PARCEIRO, PERFIS_GESTAO, PERFIS_QUE_EDITAM, PERFIS_RESPONSAVEL_HS, QUALIFICACAO_OPCOES } from "../../constants/parcerias";
 import parceriasService, {
-  Acesso, Etapa, Membro, Parceiro, ParceiroForm, mensagemDeErro,
+  Acesso, Etapa, Hunter, Membro, Parceiro, ParceiroForm, mensagemDeErro,
 } from "../../services/parceriasService";
 
 const CAMPOS_TEXTO: { nome: keyof ParceiroForm; label: string }[] = [
@@ -40,7 +40,7 @@ const formDoParceiro = (p: Parceiro): ParceiroForm => ({
   main_contact_phone: paraTela("main_contact_phone", p.main_contact_phone), main_contact_email: p.main_contact_email ?? "",
   partner_type: p.partner_type ?? "", origin: p.origin ?? "", segment: p.segment ?? "", region: p.region ?? "",
   hs_owner_id: p.hs_owner_id ?? null, qualification_status: p.qualification_status ?? null,
-  onboarding_date: p.onboarding_date ?? "",
+  onboarding_date: p.onboarding_date ?? "", pix_key: p.pix_key ?? "", indicated_by_partner_id: p.indicated_by_partner_id ?? null,
 });
 
 export default function ParceiroDetalhe() {
@@ -66,6 +66,7 @@ export default function ParceiroDetalhe() {
   const [etapasOp, setEtapasOp] = useState<Etapa[]>([]);
   const [equipe, setEquipe] = useState<Membro[]>([]);
   const [acessos, setAcessos] = useState<Acesso[]>([]);
+  const [hunters, setHunters] = useState<Hunter[]>([]);
   const [usuariosHs, setUsuariosHs] = useState<{ value: string; label: string }[]>([]);
   const [novoMembro, setNovoMembro] = useState({ name: "", email: "", phone: "" });
   const [darAcessoA, setDarAcessoA] = useState<number | null>(null);
@@ -84,6 +85,7 @@ export default function ParceiroDetalhe() {
       // Hunter não tem equipe; a empresa indicadora recebe 404 em /equipe e /acessos da unidade.
       if (podeLerEquipe && p.kind !== "hunter") setEquipe(await parceriasService.listarEquipe(id));
       if (gestao && p.kind !== "hunter") {
+        setHunters(await parceriasService.listarHunters());
         setAcessos(await parceriasService.listarAcessos(id));
         const usuarios = await userService.listActive();
         // Sem responsável: o parceiro que não precisa de treinamento fica só com a gestão.
@@ -112,7 +114,7 @@ export default function ParceiroDetalhe() {
   // Equipe e Acessos só existem para empresa, vistos pelo dono ou pela gestão.
   const mostraEquipe = podeLerEquipe && !ehHunterCard;
   // A chave PIX é da gestão e do dono; os outros nem a veem.
-  const veChavePix = gestao || meuCard;
+  const veChavePix = gestao || meuCard || user?.role === "finance";
 
   const salvar = async () => {
     // Manda só o que mudou: um dado antigo fora da regra (ex.: telefone curto,
@@ -283,8 +285,29 @@ export default function ParceiroDetalhe() {
               <FormField label={parceiro.cpf ? "CPF" : "CNPJ"}>
                 <Input value={parceiro.cpf ? maskCPF(parceiro.cpf) : paraTela("cnpj", parceiro.cnpj)} disabled readOnly />
               </FormField>
-              {veChavePix && <FormField label="Chave PIX"><Input value={parceiro.pix_key ?? ""} placeholder="Não informada" disabled readOnly /></FormField>}
-              <FormField label="Indicado por"><Input value={parceiro.indicated_by_name ?? "Ninguém"} disabled readOnly /></FormField>
+              {veChavePix && (
+                <FormField label="Chave PIX">
+                  <Input {...propsDeTexto(form, setForm, "pix_key", !podeEditar || user?.role === "finance")} maxLength={255} placeholder="Não informada" />
+                </FormField>
+              )}
+              <FormField label="Indicado por">
+                {gestao && !ehHunterCard ? (
+                  <SelectMenu
+                    value={form.indicated_by_partner_id ? String(form.indicated_by_partner_id) : ""}
+                    placeholder="Ninguém"
+                    options={[
+                      { value: "", label: "Ninguém" },
+                      ...hunters
+                        .filter((h) => h.stage !== "bloqueado" || h.id === parceiro.indicated_by_partner_id)
+                        .map((h) => ({ value: String(h.id), label: h.name })),
+                    ]}
+                    onChange={(v) => setForm({ ...form, indicated_by_partner_id: v ? Number(v) : null })}
+                  />
+                ) : (
+                  <Input value={parceiro.indicated_by_name ?? "Ninguém"} disabled readOnly />
+                )}
+              </FormField>
+              {podeEditar && (gestao || meuCard) && <Button onClick={salvar} fullWidth>Salvar</Button>}
               <FormField label="Termos aceitos em">
                 <Input
                   value={parceiro.terms_accepted_at ? new Date(parceiro.terms_accepted_at).toLocaleDateString("pt-BR") : "Pendente"}
@@ -436,6 +459,7 @@ export default function ParceiroDetalhe() {
         </div>
 
         <AbasDoCard
+          key={id}
           alvo={{ tipo: "parceiro", id }}
           versao={parceiro.updated_at}
           somenteExtras={externoAlheio}
