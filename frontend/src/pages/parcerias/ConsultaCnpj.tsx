@@ -184,8 +184,12 @@ export default function ConsultaCnpj() {
                     options={[{ value: "", label: "Todos os parceiros" }, ...parceiros.map((p) => ({ value: String(p.id), label: p.name }))]}
                     onChange={(v) => mudarFiltro({ partner_id: v ? Number(v) : undefined })}
                   />
-                  <Input type="date" value={filtro.desde ?? ""} title="Desde" onChange={(e) => mudarFiltro({ desde: e.target.value || undefined })} />
-                  <Input type="date" value={filtro.ate ?? ""} title="Até" onChange={(e) => mudarFiltro({ ate: e.target.value || undefined })} />
+                  {/* Campo de data do navegador é mais alto que o SelectMenu (50px); fixa a mesma altura */}
+                  <div className="flex items-center gap-2 sm:col-span-2">
+                    <Input type="date" value={filtro.desde ?? ""} title="Desde" className="h-[50px] min-w-0 flex-1 !py-0" onChange={(e) => mudarFiltro({ desde: e.target.value || undefined })} />
+                    <span className="text-sm text-slate-500 dark:text-slate-400">até</span>
+                    <Input type="date" value={filtro.ate ?? ""} title="Até" className="h-[50px] min-w-0 flex-1 !py-0" onChange={(e) => mudarFiltro({ ate: e.target.value || undefined })} />
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
