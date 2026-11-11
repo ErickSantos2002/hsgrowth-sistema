@@ -13,10 +13,15 @@ from app.services.parcerias import acesso, atividades
 MENSAGEM_CNPJ_REPETIDO = "Este CNPJ já está no Programa de Parceiros."
 
 
-def _exigir_indicador(user: User) -> None:
+def _exigir_indicador(db: Session, user: User) -> Partner:
     if not acesso.eh_indicador(user):
         raise HTTPException(status.HTTP_403_FORBIDDEN,
                             "Só o dono do parceiro ou o hunter indicam empresas.")
+    indicador = db.query(Partner).filter(Partner.id == acesso.parceiro_do_login(user),
+                                         Partner.is_deleted.is_(False)).first()
+    if not indicador or indicador.stage == "bloqueado":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Seu cadastro de parceiro está bloqueado.")
+    return indicador
 
 
 def conferir_cnpj_livre(db: Session, cnpj: str) -> None:
@@ -30,10 +35,9 @@ def conferir_cnpj_livre(db: Session, cnpj: str) -> None:
 
 
 def indicar(db: Session, user: User, dados: IndicacaoCreate) -> criacao_de_login.Resultado:
-    _exigir_indicador(user)
-    indicador_id = acesso.parceiro_do_login(user)
+    indicador = _exigir_indicador(db, user)
+    indicador_id = indicador.id
     conferir_cnpj_livre(db, dados.cnpj)
-    indicador = db.query(Partner).filter(Partner.id == indicador_id).first()
     p = Partner(
         name=dados.name, cnpj=dados.cnpj, kind="empresa", stage="convidado", position=0,
         main_contact_name=dados.main_contact_name, main_contact_email=dados.main_contact_email,
@@ -50,12 +54,12 @@ def indicar(db: Session, user: User, dados: IndicacaoCreate) -> criacao_de_login
     except Exception:
         db.rollback()
         raise
-    atividades.registrar_evento(db, user, f"Indicado por {indicador.name if indicador else user.name}",
+    atividades.registrar_evento(db, user, f"Indicado por {indicador.name}",
                                 partner_id=p.id, tipo="card_created")
     db.commit()
     return resultado
 
 
 def listar(db: Session, user: User) -> List[Partner]:
-    _exigir_indicador(user)
+    _exigir_indicador(db, user)
     return acesso.parceiros_visiveis(db, user).order_by(Partner.created_at.desc(), Partner.id.desc()).all()

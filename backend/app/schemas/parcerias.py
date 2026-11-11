@@ -6,7 +6,7 @@ from typing import Annotated, Any, Dict, List, Literal, Optional
 import re
 
 from email_validator import EmailNotValidError, validate_email
-from pydantic import AfterValidator, BaseModel, Field, field_validator
+from pydantic import AfterValidator, BaseModel, Field, field_validator, model_validator
 
 from app.schemas.acessos import ModoDeAcesso
 from app.services.parcerias.cnpj import cnpj_valido, normalizar_cnpj, so_digitos
@@ -41,6 +41,18 @@ def _cnpj_opcional(valor: Optional[str]) -> Optional[str]:
     if not cnpj_valido(valor):
         raise ValueError("CNPJ inválido")
     return normalizar_cnpj(valor)
+
+
+def cpf_valido(valor: str) -> bool:
+    """CPF com 11 dígitos, dígitos verificadores corretos e não todos iguais."""
+    d = re.sub(r"\D", "", valor or "")
+    if len(d) != 11 or len(set(d)) == 1:
+        return False
+    for i in (9, 10):
+        soma = sum(int(d[j]) * (i + 1 - j) for j in range(i))
+        if (soma * 10 % 11) % 10 != int(d[i]):
+            return False
+    return True
 
 
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -224,6 +236,65 @@ class IndicacaoCreate(BaseModel):
         if not email:
             raise ValueError("Informe o e-mail")
         return email
+
+
+class HunterCreate(BaseModel):
+    """Hunter cadastrado pela H&S: pessoa (CPF) ou empresa (CNPJ), sempre por convite."""
+    name: str = Field(..., min_length=1, max_length=255)
+    cpf: Optional[str] = None
+    cnpj: Optional[str] = None
+    email: str = Field(..., max_length=255)
+    phone: Optional[str] = Field(None, max_length=30)
+    pix_key: Optional[str] = Field(None, max_length=140)
+
+    @field_validator("cpf")
+    @classmethod
+    def _validar_cpf(cls, valor):
+        if valor in (None, ""):
+            return None
+        if not cpf_valido(valor):
+            raise ValueError("CPF inválido")
+        return re.sub(r"\D", "", valor)
+
+    @field_validator("cnpj")
+    @classmethod
+    def _validar_cnpj(cls, valor):
+        return _cnpj_opcional(valor)
+
+    @field_validator("phone")
+    @classmethod
+    def _validar_telefone(cls, valor):
+        return _telefone_opcional(valor)
+
+    @field_validator("email")
+    @classmethod
+    def _validar_email(cls, valor):
+        email = _email_opcional(valor)
+        if not email:
+            raise ValueError("Informe o e-mail")
+        return email
+
+    @model_validator(mode="after")
+    def _um_documento(self):
+        if bool(self.cpf) == bool(self.cnpj):
+            raise ValueError("Informe o CPF ou o CNPJ do hunter (só um dos dois).")
+        return self
+
+
+class HunterResponse(BaseModel):
+    id: int
+    name: str
+    cpf: Optional[str] = None
+    cnpj: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    pix_key: Optional[str] = None
+    stage: str
+    terms_accepted_at: Optional[datetime] = None
+    created_at: datetime
+    empresas_indicadas: int = 0
+    status_acesso: Optional[str] = None
+    convite_expira_em: Optional[datetime] = None
 
 
 class IndicacaoResponse(BaseModel):

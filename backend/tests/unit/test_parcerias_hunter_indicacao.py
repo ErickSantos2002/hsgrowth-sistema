@@ -92,6 +92,20 @@ def test_gestao_nao_indica_nem_lista(client, db, manager_headers, emails):
     assert client.get(f"{URL}/indicacoes", headers=manager_headers).status_code == 403
 
 
+def test_email_interno_recusado_com_mensagem_exata_e_sem_rastro(client, db, emails, monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "DAILY_INTERNAL_EMAIL_DOMAIN", "healthsafetytech.com")
+    role(db, "partner")
+    _, login = hunter(db)
+    antes = db.query(User).count()
+    r = client.post(f"{URL}/indicacoes", headers=headers(login),
+                    json=_dados(main_contact_email="alguem@healthsafetytech.com"))
+    assert r.status_code == 422
+    assert r.json()["detail"] == "E-mail da Health & Safety não pode ser usado em login de parceiro."
+    assert db.query(User).count() == antes
+    assert db.query(Partner).filter(Partner.cnpj == CNPJ_A).count() == 0
+
+
 @pytest.mark.parametrize("email", ["dup@indicada.com", "alguem@healthsafetytech.com"])
 def test_email_recusado_nao_deixa_parceiro_orfao(client, db, emails, monkeypatch, email):
     from app.core.config import settings
@@ -152,3 +166,74 @@ def test_gestao_ve_pix_e_cpf(client, db, manager_headers):
     p = parceiro(db, "Dmap", pix_key="k", cpf="12345678909")
     r = client.get(f"{URL}/parceiros/{p.id}", headers=manager_headers).json()
     assert r["pix_key"] == "k" and r["cpf"] == "12345678909"
+
+
+# ─── PUT /parceiros: indicador e chave PIX ───────────────────────────────────
+
+def test_externo_nao_muda_indicador(client, db):
+    h, _ = hunter(db)
+    dona = parceiro(db, "Dmap", indicated_by_partner_id=h.id)
+    login = usuario(db, "partner", "dono@dmap.com", dona)
+    outro, _ = hunter(db, "Outro", "o@hunter.com")
+    r = client.put(f"{URL}/parceiros/{dona.id}", headers=headers(login),
+                   json={"indicated_by_partner_id": outro.id})
+    assert r.status_code == 200 and r.json()["indicated_by_partner_id"] == h.id
+
+
+def test_gestao_troca_limpa_e_registra_indicador(client, db, manager_headers):
+    h, _ = hunter(db)
+    h2, _ = hunter(db, "Segundo", "s@hunter.com")
+    p = parceiro(db, "Dmap", indicated_by_partner_id=h.id)
+    r = client.put(f"{URL}/parceiros/{p.id}", headers=manager_headers, json={"indicated_by_partner_id": h2.id})
+    assert r.status_code == 200 and r.json()["indicated_by_partner_id"] == h2.id
+    r = client.put(f"{URL}/parceiros/{p.id}", headers=manager_headers, json={"indicated_by_partner_id": None})
+    assert r.status_code == 200 and r.json()["indicated_by_partner_id"] is None
+    textos = [a.description for a in db.query(PartnerActivity).filter(PartnerActivity.partner_id == p.id)]
+    assert "Indicador alterado: Hunter → Segundo" in textos
+    assert "Indicador alterado: Segundo → nenhum" in textos
+
+
+def test_indicador_invalido_422(client, db, manager_headers):
+    h, _ = hunter(db)
+    outra = parceiro(db, "Outra")
+    p = parceiro(db, "Dmap")
+    r = client.put(f"{URL}/parceiros/{p.id}", headers=manager_headers, json={"indicated_by_partner_id": outra.id})
+    assert r.status_code == 422
+    r = client.put(f"{URL}/parceiros/{h.id}", headers=manager_headers, json={"indicated_by_partner_id": h.id})
+    assert r.status_code == 422 and r.json()["detail"] == "Um parceiro não pode indicar a si mesmo."
+    h2, _ = hunter(db, "Segundo", "s@hunter.com")
+    r = client.put(f"{URL}/parceiros/{h.id}", headers=manager_headers, json={"indicated_by_partner_id": h2.id})
+    assert r.status_code == 422
+
+
+def test_pix_so_gestao_ou_dono_do_proprio_card(client, db, manager_headers):
+    p = parceiro(db, "Dmap", pix_key="antiga")
+    dono = usuario(db, "partner", "dono@dmap.com", p)
+    vend = usuario(db, "partner_member", "v@dmap.com", p)
+    outra = parceiro(db, "Outra", pix_key="x")
+    dono_outra = usuario(db, "partner", "dono@outra.com", outra)
+    vendedor_hs = usuario(db, "salesperson", "vendedor@hs.com")
+    for quem in (vend, vendedor_hs):
+        r = client.put(f"{URL}/parceiros/{p.id}", headers=headers(quem), json={"pix_key": "golpe"})
+        assert r.json().get("pix_key", "antiga") == "antiga"
+    assert client.put(f"{URL}/parceiros/{p.id}", headers=headers(dono_outra), json={"pix_key": "golpe"}).status_code == 404
+    db.refresh(p)
+    assert p.pix_key == "antiga"
+    assert db.query(PartnerActivity).filter(PartnerActivity.description == "Chave PIX alterada").count() == 0
+    r = client.put(f"{URL}/parceiros/{p.id}", headers=headers(dono), json={"pix_key": "nova"})
+    assert r.status_code == 200 and r.json()["pix_key"] == "nova"
+    r = client.put(f"{URL}/parceiros/{p.id}", headers=manager_headers, json={"pix_key": "gestao"})
+    assert r.json()["pix_key"] == "gestao"
+    evs = db.query(PartnerActivity).filter(PartnerActivity.description == "Chave PIX alterada").all()
+    assert len(evs) == 2
+
+
+def test_indicador_bloqueado_nao_indica_nem_lista(client, db, emails):
+    role(db, "partner")
+    h, login = hunter(db)
+    h.stage = "bloqueado"
+    db.commit()
+    r = client.post(f"{URL}/indicacoes", headers=headers(login), json=_dados())
+    assert r.status_code == 403 and r.json()["detail"] == "Seu cadastro de parceiro está bloqueado."
+    assert client.get(f"{URL}/indicacoes", headers=headers(login)).status_code == 403
+    assert db.query(Partner).filter(Partner.cnpj == CNPJ_A).count() == 0

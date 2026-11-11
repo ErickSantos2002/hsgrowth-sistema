@@ -27,10 +27,12 @@ def listar(db: Session, user: User) -> List[Partner]:
     return acesso.parceiros_visiveis(db, user).order_by(Partner.position, Partner.id).all()
 
 
-def _conferir_indicador(db: Session, partner_id) -> None:
+def _conferir_indicador(db: Session, partner_id, parceiro_id=None) -> None:
     """Quem indica pela H&S tem que ser um hunter (empresa indicando passa pelo fluxo de indicação)."""
     if partner_id is None:
         return
+    if parceiro_id is not None and partner_id == parceiro_id:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Um parceiro não pode indicar a si mesmo.")
     h = db.query(Partner).filter(Partner.id == partner_id, Partner.is_deleted.is_(False),
                                  Partner.kind == "hunter").first()
     if not h:
@@ -60,12 +62,32 @@ def atualizar(db: Session, user: User, partner_id: int, dados: ParceiroUpdate) -
         # O responsável H&S é escolha da H&S.
         campos.pop("hs_owner_id", None)
         campos.pop("indicated_by_partner_id", None)
+    if not (acesso.eh_gestao(user)
+            or ((acesso.eh_dono_do_parceiro(user) or acesso.eh_hunter(user)) and p.id == acesso.parceiro_do_login(user))):
+        # Dado de pagamento: só a gestão ou o dono do próprio card.
+        campos.pop("pix_key", None)
+    mudou_pix = "pix_key" in campos and campos["pix_key"] != p.pix_key
     if "hs_owner_id" in campos:
         acesso.conferir_responsavel(db, campos["hs_owner_id"])
+    mudou_indicador = False
     if "indicated_by_partner_id" in campos:
-        _conferir_indicador(db, campos["indicated_by_partner_id"])
+        novo = campos["indicated_by_partner_id"]
+        if novo is not None and novo == p.id:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Um parceiro não pode indicar a si mesmo.")
+        if novo is not None and p.kind == "hunter":
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Hunter não recebe indicador.")
+        _conferir_indicador(db, novo, p.id)
+        mudou_indicador = novo != p.indicated_by_partner_id
+        antes = p.indicated_by.name if p.indicated_by else "nenhum"
     for campo, valor in campos.items():
         setattr(p, campo, valor)
+    if mudou_pix:
+        atividades.registrar_evento(db, user, "Chave PIX alterada", partner_id=p.id)
+    if mudou_indicador:
+        db.flush()
+        db.refresh(p)
+        depois = p.indicated_by.name if p.indicated_by else "nenhum"
+        atividades.registrar_evento(db, user, f"Indicador alterado: {antes} → {depois}", partner_id=p.id)
     db.commit()
     db.refresh(p)
     return p

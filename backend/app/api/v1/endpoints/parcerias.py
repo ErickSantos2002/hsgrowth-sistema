@@ -38,6 +38,8 @@ from app.schemas.parcerias import (
     ParceiroCreate,
     ParceiroResponse,
     ParceiroUpdate,
+    HunterCreate,
+    HunterResponse,
     IndicacaoCreate,
     IndicacaoResponse,
     ProdutoCatalogo,
@@ -47,7 +49,7 @@ from app.schemas.parcerias import (
 )
 from app.schemas.acessos import ConviteRequest, ConviteResponse
 from app.services import tokens_de_acesso
-from app.services.parcerias import acesso, atividades, indicacoes, oportunidades, parceiros, respostas
+from app.services.parcerias import acesso, atividades, bloqueio, hunters, indicacoes, oportunidades, parceiros, respostas
 from app.services.parcerias.etapas import ETAPAS_AQUISICAO, ETAPAS_OPORTUNIDADE
 
 router = APIRouter()
@@ -74,6 +76,39 @@ def indicar_empresa(dados: IndicacaoCreate, db: Session = Depends(get_db),
 @router.get("/indicacoes", response_model=List[ParceiroResponse])
 def listar_indicacoes(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     return respostas.parceiros_out(db, indicacoes.listar(db, current_user), current_user)
+
+
+@router.post("/hunters", response_model=ConviteResponse, status_code=201)
+def cadastrar_hunter(dados: HunterCreate, db: Session = Depends(get_db),
+                     current_user: User = Depends(get_current_active_user)):
+    r = hunters.criar(db, current_user, dados)
+    return ConviteResponse(**tokens_de_acesso.campos_do_acesso(db, r.user),
+                           link=r.link, email_enviado=r.email_enviado)
+
+
+@router.get("/hunters", response_model=List[HunterResponse])
+def listar_hunters(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    return hunters.listar(db, current_user)
+
+
+@router.post("/hunters/{partner_id}/convite", response_model=ConviteResponse)
+def convidar_hunter(partner_id: int, dados: ConviteRequest, db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_active_user)):
+    r = hunters.convidar(db, current_user, partner_id, dados.enviar)
+    return ConviteResponse(**tokens_de_acesso.campos_do_acesso(db, r.user),
+                           link=r.link, email_enviado=r.email_enviado)
+
+
+@router.post("/parceiros/{partner_id}/bloquear", response_model=ParceiroResponse)
+def bloquear_parceiro(partner_id: int, db: Session = Depends(get_db),
+                      current_user: User = Depends(get_current_active_user)):
+    return respostas.parceiro_out(db, bloqueio.bloquear(db, current_user, partner_id), current_user)
+
+
+@router.post("/parceiros/{partner_id}/desbloquear", response_model=ParceiroResponse)
+def desbloquear_parceiro(partner_id: int, db: Session = Depends(get_db),
+                         current_user: User = Depends(get_current_active_user)):
+    return respostas.parceiro_out(db, bloqueio.desbloquear(db, current_user, partner_id), current_user)
 
 
 @router.get("/parceiros", response_model=List[ParceiroResponse])
