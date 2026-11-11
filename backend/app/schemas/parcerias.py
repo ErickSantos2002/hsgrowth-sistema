@@ -745,11 +745,12 @@ class TermosAceiteResponse(BaseModel):
 # ─── Comissões ───────────────────────────────────────────────────────────────
 
 class ComissaoConfigUpdate(BaseModel):
-    own_sale_pct: Decimal = Field(..., ge=0, le=100)
-    indication_pct: Decimal = Field(..., ge=0, le=100)
-    first_sale_bonus: Decimal = Field(..., ge=0)
+    # No máximo 2 casas: é o que as colunas Numeric(5, 2) / (12, 2) guardam.
+    own_sale_pct: Decimal = Field(..., ge=0, le=100, decimal_places=2)
+    indication_pct: Decimal = Field(..., ge=0, le=100, decimal_places=2)
+    first_sale_bonus: Decimal = Field(..., ge=0, decimal_places=2)
     indication_months: int = Field(..., ge=1, le=120)
-    calibration_pct: Decimal = Field(..., ge=0, le=100)
+    calibration_pct: Decimal = Field(..., ge=0, le=100, decimal_places=2)
 
     @field_validator("first_sale_bonus")
     @classmethod

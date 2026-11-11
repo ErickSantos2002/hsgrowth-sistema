@@ -6,11 +6,10 @@ Board 2 — Pipeline de Parceiros: /oportunidades
 O router inteiro passa por require_parcerias_access (admin, gerente, Financeiro,
 parceiro e vendedor); quem vê o quê fica em app/services/parcerias/acesso.py.
 """
+from datetime import date
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
-from datetime import date
-
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 

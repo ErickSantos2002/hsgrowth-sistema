@@ -180,7 +180,8 @@ def test_percentual_zero_nao_gera_lancamento(client, db, admin_headers):
     _confirmar(client, op, admin_headers)
     assert _lancamentos(db, op) == []
     db.refresh(a)
-    assert a.first_sale_opportunity_id == op.id
+    # Programa de indicação zerado: a âncora não é gravada (revisão final, item 3a).
+    assert a.first_sale_opportunity_id is None
 
 
 def test_unidade_indicada_por_empresa(client, db, admin_headers):

@@ -12,24 +12,31 @@ Regras (spec 2026-11-11, §4.1-4.2 e §8):
 - Um lançamento ativo (pendente/paga) por (oportunidade, tipo), seja qual for o
   beneficiário — o índice único parcial garante isso também numa corrida. O
   cancelado só é reaproveitado quando o beneficiário é o mesmo.
+- A âncora (primeira venda) só é gravada com o programa de indicação ativo
+  (X% ou bônus > 0): vendas de antes disso não queimam o bônus nem o prazo.
 """
-from datetime import datetime
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal
-from typing import List, Optional
+from typing import List, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 from dateutil.relativedelta import relativedelta
-from sqlalchemy import or_
+from fastapi import HTTPException, status
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.partner import Partner
-from app.models.partner_commission import PartnerCommission, PartnerCommissionConfig
+from app.models.partner_commission import PartnerCalibration, PartnerCommission, PartnerCommissionConfig
 from app.models.partner_opportunity import PartnerOpportunity
-from app.services.parcerias import respostas
+from app.models.user import User
+from app.services.parcerias import acesso, respostas
 
 CENTAVO = Decimal("0.01")
 ZERO = Decimal("0.00")
 ATIVOS = ("pendente", "paga")
+FUSO = ZoneInfo("America/Sao_Paulo")
+MESES_PADRAO = 24
 
 
 def _dinheiro(valor) -> Decimal:
@@ -42,11 +49,24 @@ def base_sem_frete(db: Session, op: PartnerOpportunity) -> Decimal:
     return max(ZERO, respostas.produtos_menos_desconto(total, op))
 
 
+def _padrao() -> PartnerCommissionConfig:
+    """Configuração enquanto a H&S não salvou nenhuma: tudo zero, prazo de 24 meses (não gravada)."""
+    return PartnerCommissionConfig(own_sale_pct=0, indication_pct=0, first_sale_bonus=0,
+                                   indication_months=MESES_PADRAO, calibration_pct=0)
+
+
 def _config(db: Session) -> PartnerCommissionConfig:
-    """A linha única; sem ela, tudo zero (nada é gerado, mas a âncora é gravada)."""
-    return db.query(PartnerCommissionConfig).first() or PartnerCommissionConfig(
-        own_sale_pct=0, indication_pct=0, first_sale_bonus=0, indication_months=0, calibration_pct=0,
-    )
+    """A linha única; sem ela, o padrão (tudo zero: nada é gerado e a âncora não é gravada)."""
+    return db.query(PartnerCommissionConfig).first() or _padrao()
+
+
+def _programa_ativo(cfg: PartnerCommissionConfig) -> bool:
+    """O programa de indicação só começa a contar depois que a H&S preenche X% ou o bônus."""
+    return Decimal(str(cfg.indication_pct or 0)) > 0 or Decimal(str(cfg.first_sale_bonus or 0)) > 0
+
+
+def _pode_receber(ind: Optional[Partner], vendedor: Partner) -> bool:
+    return ind is not None and ind.id != vendedor.id and not ind.is_deleted and ind.stage != "bloqueado"
 
 
 def _indicador(db: Session, vendedor: Partner) -> Optional[Partner]:
@@ -55,9 +75,22 @@ def _indicador(db: Session, vendedor: Partner) -> Optional[Partner]:
     if vendedor.indicated_by_partner_id is None:
         return None
     ind = db.get(Partner, vendedor.indicated_by_partner_id)
-    if ind is None or ind.id == vendedor.id or ind.is_deleted or ind.stage == "bloqueado":
+    return ind if _pode_receber(ind, vendedor) else None
+
+
+def _consulta_do_vendedor(db: Session, partner_id: int):
+    return db.query(Partner).filter(Partner.id == partner_id).populate_existing().with_for_update()
+
+
+def _travar_vendedor(db: Session, partner_id: Optional[int]) -> Optional[Partner]:
+    """
+    Relê e trava a linha de quem vendeu: duas primeiras vendas confirmadas ao mesmo
+    tempo não ganham as duas o bônus — a segunda espera e já vê a âncora gravada.
+    """
+    if partner_id is None:
         return None
-    return ind
+    db.flush()  # o populate_existing não pode apagar alteração ainda não gravada
+    return _consulta_do_vendedor(db, partner_id).first()
 
 
 def _ja_lancado(db: Session, op_id: int, kind: str) -> bool:
@@ -107,10 +140,14 @@ def gerar(db: Session, op: PartnerOpportunity, agora: datetime) -> List[PartnerC
     """Lançamentos da confirmação do ganho. Não faz commit (vai na transação da confirmação)."""
     if op.modality == "locacao":
         return []
-    vendedor = op.partner
+    vendedor = _travar_vendedor(db, op.partner_id)
     cfg = _config(db)
     base = base_sem_frete(db, op)
     gerados = [_lancar(db, op, "venda_propria", vendedor.id, base, agora, rate=cfg.own_sale_pct)]
+    if not _programa_ativo(cfg):
+        # Sem X% nem bônus, nada de indicação e a âncora não é gravada.
+        db.flush()
+        return [c for c in gerados if c is not None]
 
     # A âncora é a primeira venda confirmada de quem vendeu, com ou sem indicador.
     primeira = vendedor.first_sale_at is None or vendedor.first_sale_opportunity_id == op.id
@@ -123,7 +160,7 @@ def gerar(db: Session, op: PartnerOpportunity, agora: datetime) -> List[PartnerC
         if primeira:
             gerados.append(_lancar(db, op, "bonus_primeira_venda", indicador.id, base, agora,
                                    fixed_value=cfg.first_sale_bonus))
-        prazo = vendedor.first_sale_at + relativedelta(months=int(cfg.indication_months or 0))
+        prazo = vendedor.first_sale_at + relativedelta(months=int(cfg.indication_months or MESES_PADRAO))
         if agora <= prazo:
             gerados.append(_lancar(db, op, "indicacao", indicador.id, base, agora, rate=cfg.indication_pct))
     db.flush()
@@ -133,16 +170,25 @@ def gerar(db: Session, op: PartnerOpportunity, agora: datetime) -> List[PartnerC
 def _reancorar(db: Session, vendedor: Partner, desfeita: PartnerOpportunity, agora: datetime) -> None:
     """
     A primeira venda foi desfeita sem nada pago: a próxima venda confirmada vira a
-    âncora e o indicador dela (o do X% já lançado) recebe o bônus. Sem outra venda
-    confirmada, a âncora fica vazia e a próxima confirmação vira a primeira.
+    âncora e recebe o bônus — para o indicador do X% já lançado nela ou, sem X%, o
+    indicador atual de quem vendeu; bloqueado ou excluído não recebe. Só conta venda
+    com algum lançamento (as confirmadas antes da 1.11.19 não são âncora). Sem outra
+    venda assim, a âncora fica vazia e a próxima confirmação vira a primeira.
     """
-    outra = db.query(PartnerOpportunity).filter(
-        PartnerOpportunity.partner_id == vendedor.id,
-        PartnerOpportunity.id != desfeita.id,
-        PartnerOpportunity.won_confirmed_at.isnot(None),
-        or_(PartnerOpportunity.modality.is_(None), PartnerOpportunity.modality != "locacao"),
-        PartnerOpportunity.is_deleted.is_(False),
-    ).order_by(PartnerOpportunity.won_confirmed_at, PartnerOpportunity.id).first()
+    cfg = _config(db)
+    tem_lancamento = db.query(PartnerCommission.id).filter(
+        PartnerCommission.opportunity_id == PartnerOpportunity.id,
+    ).exists()
+    outra = None
+    if _programa_ativo(cfg):
+        outra = db.query(PartnerOpportunity).filter(
+            PartnerOpportunity.partner_id == vendedor.id,
+            PartnerOpportunity.id != desfeita.id,
+            PartnerOpportunity.won_confirmed_at.isnot(None),
+            or_(PartnerOpportunity.modality.is_(None), PartnerOpportunity.modality != "locacao"),
+            PartnerOpportunity.is_deleted.is_(False),
+            tem_lancamento,
+        ).order_by(PartnerOpportunity.won_confirmed_at, PartnerOpportunity.id).first()
     if outra is None:
         vendedor.first_sale_at = vendedor.first_sale_opportunity_id = None
         return
@@ -154,17 +200,28 @@ def _reancorar(db: Session, vendedor: Partner, desfeita: PartnerOpportunity, ago
         PartnerCommission.status.in_(ATIVOS),
     ).first()
     if indicacao is not None:
-        _lancar(db, outra, "bonus_primeira_venda", indicacao.beneficiary_partner_id,
-                _dinheiro(indicacao.base_value), agora, fixed_value=_config(db).first_sale_bonus)
+        beneficiario = db.get(Partner, indicacao.beneficiary_partner_id)
+        if not _pode_receber(beneficiario, vendedor):
+            return
+        base = _dinheiro(indicacao.base_value)
+    else:
+        beneficiario = _indicador(db, vendedor)
+        if beneficiario is None:
+            return
+        base = base_sem_frete(db, outra)
+    _lancar(db, outra, "bonus_primeira_venda", beneficiario.id, base, agora, fixed_value=cfg.first_sale_bonus)
 
 
 def cancelar_da_oportunidade(db: Session, op: PartnerOpportunity, motivo: str) -> None:
-    """Ganho negado ou desfeito: cancela os pendentes (o pago fica) e refaz a âncora se cabe."""
+    """
+    Ganho negado ou desfeito: cancela os pendentes da oportunidade, calibração
+    inclusive (o pago fica), e refaz a âncora se cabe.
+    """
     agora = datetime.utcnow()
+    vendedor = _travar_vendedor(db, op.partner_id)
     pendentes = db.query(PartnerCommission).filter(
         PartnerCommission.opportunity_id == op.id,
         PartnerCommission.status == "pendente",
-        PartnerCommission.kind != "calibracao",
     ).with_for_update().all()
     for c in pendentes:
         c.status = "cancelada"
@@ -172,7 +229,6 @@ def cancelar_da_oportunidade(db: Session, op: PartnerOpportunity, motivo: str) -
         c.cancel_reason = (motivo or "")[:255] or None
     db.flush()
 
-    vendedor = op.partner
     if vendedor is not None and vendedor.first_sale_opportunity_id == op.id:
         algo_pago = db.query(PartnerCommission.id).filter(
             PartnerCommission.opportunity_id == op.id,
@@ -185,18 +241,10 @@ def cancelar_da_oportunidade(db: Session, op: PartnerOpportunity, motivo: str) -
 
 # ─── Consulta, pagamento e calibração ────────────────────────────────────────
 
-from datetime import date, time  # noqa: E402
-
-from fastapi import HTTPException, status  # noqa: E402
-from sqlalchemy import func  # noqa: E402
-
-from app.models.partner_commission import PartnerCalibration  # noqa: E402
-from app.models.user import User  # noqa: E402
-from app.services.parcerias import acesso  # noqa: E402
-
 MSG_SO_FINANCEIRO = "Só o Financeiro, admin ou gerente marcam pagamento."
 MSG_LIMITE_CALIBRACAO = "Este aparelho já tem 2 calibrações com comissão."
 MSG_CALIBRACAO_SEM_GANHO = "Só oportunidade com ganho confirmado recebe calibração."
+MSG_CALIBRACAO_BLOQUEADO = "Parceiro bloqueado: desbloqueie antes de lançar calibração."
 LIMITE_CALIBRACOES = 2
 VEEM_TUDO = ("admin", "manager", "finance")
 FINANCEIRO = ("admin", "manager", "finance")
@@ -213,19 +261,16 @@ def exigir_pagador(user: User) -> None:
 
 
 def ler_config(db: Session) -> PartnerCommissionConfig:
-    cfg = db.query(PartnerCommissionConfig).first()
-    if cfg is None:
-        cfg = PartnerCommissionConfig(own_sale_pct=0, indication_pct=0, first_sale_bonus=0,
-                                      indication_months=24, calibration_pct=0)
-        db.add(cfg)
-        db.commit()
-        db.refresh(cfg)
-    return cfg
+    """Sem linha gravada, devolve o padrão sem gravar (a linha nasce no primeiro PUT)."""
+    return _config(db)
 
 
 def salvar_config(db: Session, user: User, dados) -> PartnerCommissionConfig:
     acesso.exigir_gestao(user)
-    cfg = ler_config(db)
+    cfg = db.query(PartnerCommissionConfig).with_for_update().first()
+    if cfg is None:
+        cfg = PartnerCommissionConfig()
+        db.add(cfg)
     cfg.own_sale_pct = dados.own_sale_pct
     cfg.indication_pct = dados.indication_pct
     cfg.first_sale_bonus = dados.first_sale_bonus
@@ -238,15 +283,23 @@ def salvar_config(db: Session, user: User, dados) -> PartnerCommissionConfig:
     return cfg
 
 
-def _fim_do_dia(d: date) -> datetime:
-    return datetime.combine(d, time.max)
+def _meia_noite_utc(d: date) -> datetime:
+    """Meia-noite do dia `d` em São Paulo, em UTC sem fuso (como o banco grava)."""
+    return datetime.combine(d, time.min, tzinfo=FUSO).astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def _limites_utc(de: Optional[date], ate: Optional[date]) -> Tuple[Optional[datetime], Optional[datetime]]:
+    """Dias de calendário de São Paulo, inclusivos: [00:00 de `de`, 00:00 do dia seguinte a `ate`)."""
+    return (_meia_noite_utc(de) if de is not None else None,
+            _meia_noite_utc(ate + timedelta(days=1)) if ate is not None else None)
 
 
 def _filtrar(q, de: Optional[date], ate: Optional[date]):
-    if de is not None:
-        q = q.filter(PartnerCommission.created_at >= datetime.combine(de, time.min))
-    if ate is not None:
-        q = q.filter(PartnerCommission.created_at <= _fim_do_dia(ate))
+    inicio, fim = _limites_utc(de, ate)
+    if inicio is not None:
+        q = q.filter(PartnerCommission.created_at >= inicio)
+    if fim is not None:
+        q = q.filter(PartnerCommission.created_at < fim)
     return q
 
 
@@ -333,7 +386,7 @@ def _virgula(valor: Decimal) -> str:
 
 def _celula(texto) -> str:
     """Neutraliza fórmula (=, +, -, @) e o separador no CSV aberto em planilha."""
-    # Documentos (CNPJ/CPF) devem ser importados como texto no Excel, para não perder zeros à esquerda.
+    # CNPJ/CPF vão como estão: abra no Excel importando como texto para manter zeros à esquerda.
     t = "" if texto is None else str(texto).replace("\r", " ").replace("\n", " ")
     telefone = t[:1] == "+" and t[1:].isdigit()  # chave PIX de telefone não é fórmula
     if t[:1] in ("=", "+", "-", "@", "\t") and not telefone:
@@ -361,11 +414,8 @@ def pagar(db: Session, user: User, dados) -> dict:
         q = q.filter(PartnerCommission.id.in_(pedidos))
     else:
         pedidos = None
-        q = q.filter(PartnerCommission.beneficiary_partner_id == dados.beneficiary_partner_id)
-        if dados.de is not None:
-            q = q.filter(PartnerCommission.created_at >= datetime.combine(dados.de, time.min))
-        if dados.ate is not None:
-            q = q.filter(PartnerCommission.created_at <= _fim_do_dia(dados.ate))
+        q = _filtrar(q.filter(PartnerCommission.beneficiary_partner_id == dados.beneficiary_partner_id),
+                     dados.de, dados.ate)
     pendentes = q.with_for_update().all()
     agora = datetime.utcnow()
     for c in pendentes:
@@ -410,6 +460,8 @@ def lancar_calibracao(db: Session, user: User, opportunity_id: int, dados) -> di
         .populate_existing().with_for_update().one()
     if op.won_confirmed_at is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MSG_CALIBRACAO_SEM_GANHO)
+    if op.partner is None or op.partner.is_deleted or op.partner.stage == "bloqueado":
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MSG_CALIBRACAO_BLOQUEADO)
     # Só conta a calibração que gerou comissão: a mensagem do limite fala disso.
     existentes = db.query(func.count(PartnerCalibration.id)).join(
         PartnerCommission, PartnerCommission.calibration_id == PartnerCalibration.id,

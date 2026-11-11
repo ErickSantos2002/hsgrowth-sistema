@@ -295,7 +295,7 @@ def confirmar_ganho(db: Session, user: User, opportunity_id: int, req: GanhoRequ
     if req.acao == "confirmar":
         if op.won_confirmed_at is not None:
             raise _422("Ganho já confirmado.")
-        if op.partner is None or op.partner.stage == "bloqueado":
+        if op.partner is None or op.partner.is_deleted or op.partner.stage == "bloqueado":
             raise _422("Parceiro bloqueado: desbloqueie antes de confirmar o ganho.")
         agora = datetime.utcnow()
         op.won_confirmed_at = agora
