@@ -1,5 +1,5 @@
 """Indicar uma empresa nova: o hunter ou a empresa indicadora cadastra e o convite sai na hora."""
-from typing import List
+from typing import List, Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -24,12 +24,18 @@ def _exigir_indicador(db: Session, user: User) -> Partner:
     return indicador
 
 
-def conferir_cnpj_livre(db: Session, cnpj: str) -> None:
-    """CNPJ já no Programa (empresa não excluída e não bloqueada) não entra de novo."""
-    existe = db.query(Partner.id).filter(
+def conferir_cnpj_livre(db: Session, cnpj: Optional[str], ignorar_id: Optional[int] = None) -> None:
+    """CNPJ já no Programa (empresa não excluída e não bloqueada) não entra de novo.
+    `ignorar_id` é o próprio card, na edição."""
+    if not cnpj:
+        return
+    q = db.query(Partner.id).filter(
         Partner.cnpj == cnpj, Partner.kind == "empresa",
         Partner.is_deleted.is_(False), Partner.stage != "bloqueado",
-    ).first()
+    )
+    if ignorar_id is not None:
+        q = q.filter(Partner.id != ignorar_id)
+    existe = q.first()
     if existe:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MENSAGEM_CNPJ_REPETIDO)
 
@@ -54,7 +60,7 @@ def indicar(db: Session, user: User, dados: IndicacaoCreate) -> criacao_de_login
     except Exception:
         db.rollback()
         raise
-    atividades.registrar_evento(db, user, f"Indicado por {indicador.name}",
+    atividades.registrar_evento(db, user, "Cadastrado por indicação",
                                 partner_id=p.id, tipo="card_created")
     db.commit()
     return resultado

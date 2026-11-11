@@ -42,7 +42,7 @@ def test_hunter_indica_empresa_e_convite_sai(client, db, emails):
     dono = db.query(User).filter(User.email == "maria@indicada.com").one()
     assert dono.partner_id == p.id and dono.role.name == "partner"
     evento = db.query(PartnerActivity).filter(PartnerActivity.partner_id == p.id).one()
-    assert evento.description == "Indicado por Hunter"
+    assert evento.description == "Cadastrado por indicação"
     lista = client.get(f"{URL}/indicacoes", headers=headers(login)).json()
     assert [i["id"] for i in lista] == [p.id]
     assert {"stage", "activated_at", "terms_accepted_at"} <= set(lista[0])
@@ -177,7 +177,9 @@ def test_externo_nao_muda_indicador(client, db):
     outro, _ = hunter(db, "Outro", "o@hunter.com")
     r = client.put(f"{URL}/parceiros/{dona.id}", headers=headers(login),
                    json={"indicated_by_partner_id": outro.id})
-    assert r.status_code == 200 and r.json()["indicated_by_partner_id"] == h.id
+    assert r.status_code == 200
+    db.refresh(dona)
+    assert dona.indicated_by_partner_id == h.id
 
 
 def test_gestao_troca_limpa_e_registra_indicador(client, db, manager_headers):

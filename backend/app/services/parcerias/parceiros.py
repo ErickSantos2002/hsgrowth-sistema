@@ -18,9 +18,16 @@ from app.schemas.parcerias import (
     ParceiroUpdate,
 )
 from app.services import criacao_de_login
-from app.services.parcerias import acesso, atividades
+from app.services.parcerias import acesso, atividades, indicacoes
 
 MENSAGEM_SITUACAO_FIXA = "As situações mudam sozinhas (convite e aceite) ou pelo botão Bloquear."
+MENSAGEM_BLOQUEADO = "Desbloqueie o parceiro antes."
+
+
+def _exigir_nao_bloqueado(p: Partner) -> None:
+    """Parceiro bloqueado não ganha login, convite nem reativação."""
+    if p.stage == "bloqueado":
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MENSAGEM_BLOQUEADO)
 
 
 def listar(db: Session, user: User) -> List[Partner]:
@@ -43,6 +50,7 @@ def criar(db: Session, user: User, dados: ParceiroCreate) -> Partner:
     acesso.exigir_gestao(user)
     acesso.conferir_responsavel(db, dados.hs_owner_id)
     _conferir_indicador(db, dados.indicated_by_partner_id)
+    indicacoes.conferir_cnpj_livre(db, dados.cnpj)
     p = Partner(**dados.model_dump(), stage="potencial", position=0, created_by_id=user.id)
     db.add(p)
     db.flush()
@@ -62,6 +70,10 @@ def atualizar(db: Session, user: User, partner_id: int, dados: ParceiroUpdate) -
         # O responsável H&S é escolha da H&S.
         campos.pop("hs_owner_id", None)
         campos.pop("indicated_by_partner_id", None)
+        # O CNPJ identifica o parceiro no Programa: só a gestão troca.
+        campos.pop("cnpj", None)
+    if campos.get("cnpj") and campos["cnpj"] != p.cnpj and p.kind == "empresa":
+        indicacoes.conferir_cnpj_livre(db, campos["cnpj"], ignorar_id=p.id)
     if not (acesso.eh_gestao(user)
             or (acesso.eh_dono_do_parceiro(user) and p.id == acesso.parceiro_do_login(user))):
         # Dado de pagamento: só a gestão ou o dono do próprio card.
@@ -138,6 +150,8 @@ def atualizar_membro(db: Session, user: User, partner_id: int, membro_id: int,
     if membro.user_id and "is_active" in mudancas:
         # Ligar e desligar o login do vendedor é como dar acesso: só o dono ou a gestão.
         _exigir_dono_ou_gestao(user)
+    if mudancas.get("is_active") and not membro.is_active:
+        _exigir_nao_bloqueado(p)
     if membro.user_id and "email" in mudancas \
             and (mudancas["email"] or "").strip().lower() != (membro.email or "").strip().lower():
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -173,6 +187,7 @@ def dar_acesso_ao_membro(db: Session, user: User, partner_id: int, membro_id: in
     acesso.exigir_escrita(user)
     p = acesso.buscar_parceiro_proprio(db, user, partner_id)  # vendedor do parceiro recebe 404
     _exigir_dono_ou_gestao(user)
+    _exigir_nao_bloqueado(p)
     membro = _membro(db, p, membro_id)
     if membro.user_id:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Este vendedor já tem acesso.")
@@ -195,6 +210,7 @@ def convidar_membro(db: Session, user: User, partner_id: int, membro_id: int,
     acesso.exigir_escrita(user)
     p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     _exigir_dono_ou_gestao(user)
+    _exigir_nao_bloqueado(p)
     membro = _membro(db, p, membro_id)
     if not membro.user_id:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Este vendedor ainda não tem acesso.")
@@ -228,6 +244,7 @@ def criar_acesso(db: Session, user: User, partner_id: int, dados: AcessoCreate) 
     # Card primeiro: a indicada responde 404, como se não existisse.
     p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     acesso.exigir_gestao(user)
+    _exigir_nao_bloqueado(p)
     resultado = criacao_de_login.criar_login(
         db, user, nome=dados.name, email=dados.email, papel="partner",
         modo=dados.modo, senha=dados.password, partner_id=p.id,
@@ -245,6 +262,7 @@ def convidar_acesso(db: Session, user: User, partner_id: int, user_id: int,
     # Card primeiro: a indicada responde 404, como se não existisse.
     p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     acesso.exigir_gestao(user)
+    _exigir_nao_bloqueado(p)
     login = (
         db.query(User).join(Role, User.role_id == Role.id)
         .filter(User.id == user_id, User.partner_id == p.id, User.is_deleted.is_(False), Role.name == "partner")
@@ -259,6 +277,8 @@ def alterar_acesso(db: Session, user: User, partner_id: int, user_id: int, ativo
     # Card primeiro: a indicada responde 404, como se não existisse.
     p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     acesso.exigir_gestao(user)
+    if ativo:
+        _exigir_nao_bloqueado(p)
     # Só os logins do dono; o do vendedor liga e desliga pela Equipe.
     login = (
         db.query(User).join(Role, User.role_id == Role.id)

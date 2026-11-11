@@ -190,8 +190,10 @@ def test_ip_do_cliente_confia_so_no_ultimo_xff():
     from app.api.deps import ip_do_cliente
     assert ip_do_cliente(_req({"X-Forwarded-For": "1.2.3.4, 9.9.9.9"})) == "9.9.9.9"
     assert ip_do_cliente(_req({"X-Forwarded-For": "lixo, , 9.9.9.9 "})) == "9.9.9.9"
-    assert ip_do_cliente(_req({"X-Forwarded-For": "lixo", "X-Real-IP": "8.8.8.8"})) == "8.8.8.8"
-    assert ip_do_cliente(_req({"X-Forwarded-For": "lixo", "X-Real-IP": "x"})) == "10.0.0.1"
+    # X-Real-IP não conta e entrada anterior do XFF (forjável) não serve de reserva.
+    assert ip_do_cliente(_req({"X-Forwarded-For": "lixo", "X-Real-IP": "8.8.8.8"})) == "10.0.0.1"
+    assert ip_do_cliente(_req({"X-Forwarded-For": "9.9.9.9, lixo"})) == "10.0.0.1"
+    assert ip_do_cliente(_req({"X-Real-IP": "8.8.8.8"})) == "10.0.0.1"
     assert ip_do_cliente(_req({"X-Forwarded-For": "lixo"}, host="nao-ip")) == "unknown"
     assert ip_do_cliente(_req({"X-Forwarded-For": "2001:db8::1"})) == "2001:db8::1"
 

@@ -79,7 +79,8 @@ def test_empresa_ve_unidade_e_vendas_dela(client, db):
     assert client.get(f"{URL}/parceiros/{r.b.id}", headers=h).status_code == 200
     assert client.get(f"{URL}/oportunidades/{r.op_b.id}", headers=h).status_code == 200
     assert client.get(f"{URL}/oportunidades/{r.op_b.id}/produtos", headers=h).status_code == 200
-    assert client.get(f"{URL}/oportunidades/{r.op_b.id}/atividades", headers=h).status_code == 200
+    # As atividades e os arquivos da oportunidade ficam com a empresa indicada.
+    assert client.get(f"{URL}/oportunidades/{r.op_b.id}/atividades", headers=h).status_code == 404
     # Não vê quem a indicou nem as vendas do hunter dela.
     assert client.get(f"{URL}/parceiros/{r.ph.id}", headers=h).status_code == 404
     assert client.get(f"{URL}/oportunidades/{r.op_h.id}", headers=h).status_code == 404
@@ -124,7 +125,7 @@ def test_indicador_so_le(client, db, tmp_path, monkeypatch, quem, qual):
 
     assert client.get(f"{URL}/oportunidades/{op.id}", headers=h).status_code == 200
     assert client.get(f"{URL}/oportunidades/{op.id}/produtos", headers=h).status_code == 200
-    assert client.get(f"{URL}/oportunidades/{op.id}/atividades", headers=h).status_code == 200
+    assert client.get(f"{URL}/oportunidades/{op.id}/atividades", headers=h).status_code == 404
 
     escritas = [
         client.put(f"{URL}/oportunidades/{op.id}", headers=h, json={"title": "Outro"}),

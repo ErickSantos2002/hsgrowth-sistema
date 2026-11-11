@@ -346,7 +346,7 @@ async def anexar_no_parceiro(partner_id: int, file: UploadFile = File(...), db: 
 @router.get("/oportunidades/{opportunity_id}/atividades", response_model=List[AtividadeResponse])
 def atividades_da_oportunidade(opportunity_id: int, db: Session = Depends(get_db),
                                current_user: User = Depends(get_current_active_user)):
-    op = acesso.buscar_oportunidade(db, current_user, opportunity_id)
+    op = atividades.buscar_oportunidade_das_atividades(db, current_user, opportunity_id)
     return [respostas.atividade_out(a, current_user) for a in atividades.listar(db, opportunity_id=op.id)]
 
 

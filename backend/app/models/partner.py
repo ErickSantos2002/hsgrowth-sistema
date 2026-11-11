@@ -55,7 +55,7 @@ class Partner(Base, TimestampMixin, SoftDeleteMixin):
 
     created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    # empresa | hunter. O hunter é pessoa física (CPF + chave Pix) que só indica.
+    # empresa | hunter. O hunter é pessoa ou empresa (CPF ou CNPJ + chave Pix) que indica e vende sozinho.
     kind = Column(String(10), nullable=False, default="empresa", server_default="empresa")
     cpf = Column(String(11), nullable=True, index=True)
     pix_key = Column(String(140), nullable=True)

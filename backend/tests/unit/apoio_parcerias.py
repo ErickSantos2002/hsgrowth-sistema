@@ -53,7 +53,7 @@ def parceiro(db, nome: str = "Dmap", **campos) -> Partner:
 
 
 def hunter(db, nome: str = "Hunter", email: str = "h@hunter.com"):
-    """Hunter (pessoa física que indica) e o login dele."""
+    """Hunter (pessoa ou empresa que indica) e o login dele."""
     p = parceiro(db, nome, kind="hunter")
     return p, usuario(db, "hunter", email, partner=p)
 

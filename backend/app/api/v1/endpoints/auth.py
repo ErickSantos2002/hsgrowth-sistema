@@ -41,6 +41,12 @@ from app.services import tokens_de_acesso as tokens
 router = APIRouter()
 
 
+def _termos_pendentes(db: Session, user: User) -> bool:
+    """Mesmo critério do /users/me: dono ou hunter com termos do Programa a aceitar."""
+    from app.services.parcerias import termos  # import tardio: evita ciclo
+    return termos.pendente(db, user) is not None
+
+
 @router.post(
     "/login",
     response_model=TokenResponse,
@@ -190,6 +196,7 @@ async def login(
         "is_active": user.is_active,
         "avatar_url": user.avatar_url,
         "must_change_password": bool(user.must_change_password),
+        "termos_pendentes": _termos_pendentes(db, user),
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
 

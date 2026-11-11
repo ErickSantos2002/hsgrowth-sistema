@@ -83,6 +83,19 @@ def criar(db: Session, user: User, dados: AtividadeCreate, partner_id: Optional[
     return atividade
 
 
+def exigir_atividades_visiveis(user: User, oportunidade: PartnerOpportunity) -> None:
+    """Atividades e arquivos da oportunidade de uma empresa indicada ficam com ela:
+    o indicador acompanha a oportunidade, mas não o histórico (404)."""
+    if acesso.eh_externo(user) and oportunidade.partner_id != acesso.parceiro_do_login(user):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Atividade não encontrada.")
+
+
+def buscar_oportunidade_das_atividades(db: Session, user: User, opportunity_id: int) -> PartnerOpportunity:
+    op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    exigir_atividades_visiveis(user, op)
+    return op
+
+
 def _buscar_visivel(db: Session, user: User, atividade_id: int) -> Tuple[PartnerActivity, Optional[PartnerOpportunity]]:
     """Atividade de um card que o usuário enxerga; senão, 404 (não revela a de outro parceiro)."""
     atividade = db.query(PartnerActivity).filter(PartnerActivity.id == atividade_id).first()
@@ -197,7 +210,9 @@ async def anexar(db: Session, user: User, arquivo: UploadFile, partner_id: Optio
 
 
 def arquivo_para_baixar(db: Session, user: User, atividade_id: int) -> Tuple[Path, str, str]:
-    atividade, _ = _buscar_visivel(db, user, atividade_id)
+    atividade, oportunidade = _buscar_visivel(db, user, atividade_id)
+    if oportunidade is not None:
+        exigir_atividades_visiveis(user, oportunidade)
     caminho = UPLOAD_DIR / (atividade.file_path or "")
     if atividade.category != "arquivo" or not atividade.file_path or not caminho.exists():
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Arquivo não encontrado.")

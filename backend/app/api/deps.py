@@ -50,11 +50,10 @@ def _caminho_liberado_com_termos_pendentes(caminho: str) -> bool:
 
 def ip_do_cliente(request: Request) -> str:
     """IP do cliente. Há um proxy confiável (Traefik) que acrescenta o IP real À DIREITA de
-    X-Forwarded-For; o que vem à esquerda o cliente pode forjar, então vale o último valor."""
-    candidatos = [c.strip() for c in reversed(request.headers.get("X-Forwarded-For", "").split(","))]
-    candidatos.append(request.headers.get("X-Real-IP", "").strip())
-    candidatos.append(request.client.host if request.client else "")
-    for candidato in candidatos:
+    X-Forwarded-For; o que vem à esquerda o cliente pode forjar, então só vale o ÚLTIMO
+    valor (e só se for um IP). Sem ele, o IP da conexão; X-Real-IP não conta."""
+    ultimo = request.headers.get("X-Forwarded-For", "").split(",")[-1].strip()
+    for candidato in (ultimo, request.client.host if request.client else ""):
         if not candidato:
             continue
         try:

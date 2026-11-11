@@ -60,7 +60,7 @@ def upgrade():
     op.execute("""
         INSERT INTO roles (name, display_name, description, permissions, is_system_role, created_at, updated_at)
         VALUES ('hunter', 'Hunter de parceiros',
-                'Pessoa física que indica empresas ao Programa de Parceiros e acompanha as indicações',
+                'Pessoa ou empresa que indica empresas ao Programa de Parceiros e acompanha as indicações',
                 '[]', true, now(), now())
         ON CONFLICT (name) DO NOTHING;
     """)
