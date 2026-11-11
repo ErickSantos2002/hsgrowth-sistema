@@ -33,10 +33,10 @@ export default function OportunidadeDetalhe() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
-  const podeEditar = PERFIS_QUE_EDITAM.includes(user?.role ?? "");
   const ehDoParceiro = PERFIS_DO_PARCEIRO.includes(user?.role ?? "");
   // O vendedor do parceiro não vê a equipe (o backend nega) e só enxerga a si mesmo como responsável.
   const ehVendedor = user?.role === "partner_member";
+  const ehHunter = user?.role === "hunter";
   const validaElegibilidade = gestao || user?.role === "finance";
 
   const [op, setOp] = useState<Oportunidade | null>(null);
@@ -68,12 +68,16 @@ export default function OportunidadeDetalhe() {
       const [o, e] = await Promise.all([parceriasService.buscarOportunidade(id), parceriasService.etapas()]);
       preencher(o);
       setEtapas(e.oportunidades);
-      if (user?.role !== "partner_member") setEquipe(await parceriasService.listarEquipe(o.partner_id));
+      // A equipe só existe e só se lê no próprio canal (o vendedor, o hunter e o indicador recebem 404).
+      const proprio = !ehDoParceiro || o.partner_id === user?.partner_id;
+      if (user?.role !== "partner_member" && user?.role !== "hunter" && proprio) {
+        setEquipe(await parceriasService.listarEquipe(o.partner_id));
+      }
     } catch (err) {
       showError(mensagemDeErro(err, "Erro ao carregar a oportunidade."));
       navigate("/parcerias/oportunidades");
     }
-  }, [id, navigate, user?.role]);
+  }, [id, navigate, user?.role, user?.partner_id, ehDoParceiro]);
 
   useEffect(() => {
     carregar();
@@ -81,6 +85,9 @@ export default function OportunidadeDetalhe() {
 
   if (!op) return <LoadingSpinner />;
 
+  // Externo só mexe na oportunidade do próprio canal; a de empresa indicada ele só acompanha.
+  const somenteLeitura = ehDoParceiro && op.partner_id !== user?.partner_id;
+  const podeEditar = PERFIS_QUE_EDITAM.includes(user?.role ?? "") && !somenteLeitura;
   const ganho = op.stage === "ganho";
   const perdido = op.stage === "perdido";
   // Oportunidade ganha ou perdida só a gestão reabre e só ela corrige produtos e valores.
@@ -94,7 +101,7 @@ export default function OportunidadeDetalhe() {
         Object.entries(form).map(([k, v]) => [k, typeof v === "string" && v.trim() === "" ? null : v])
       ) as OportunidadeForm;
       // O vendedor do parceiro não troca o responsável (o backend recusa).
-      if (ehVendedor) delete dados.seller_member_id;
+      if (ehVendedor || ehHunter) delete dados.seller_member_id;
       preencher(await parceriasService.atualizarOportunidade(id, dados));
       showSuccess("Oportunidade salva.");
     } catch (err) {
@@ -216,6 +223,12 @@ export default function OportunidadeDetalhe() {
         </div>
       </div>
 
+      {somenteLeitura && (
+        <div className="flex-shrink-0 border-b border-blue-500/30 bg-blue-500/10 px-6 py-2 text-sm text-blue-600 dark:text-blue-300">
+          Você acompanha as oportunidades desta empresa.
+        </div>
+      )}
+
       {/* Conteúdo: 30/70 */}
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="w-full flex-shrink-0 space-y-3 overflow-y-auto border-b border-gray-200 p-4 dark:border-slate-700/50 lg:w-[30%] lg:border-b-0 lg:border-r">
@@ -311,7 +324,7 @@ export default function OportunidadeDetalhe() {
               <FormField label="Tipo de relacionamento" required>
                 <SelectMenu value={form.relationship_type ?? ""} disabled={!podeEditar} options={opcoes(RELATIONSHIP_TYPES)} onChange={(v) => setForm({ ...form, relationship_type: v })} />
               </FormField>
-              <FormField label="Vendedor responsável">
+              {!ehHunter && <FormField label="Vendedor responsável">
                 <SelectMenu
                   value={form.seller_member_id ? String(form.seller_member_id) : ""}
                   placeholder="Sem vendedor"
@@ -321,18 +334,22 @@ export default function OportunidadeDetalhe() {
                     : equipe.filter((m) => m.is_active || m.id === op.seller_member_id).map((m) => ({ value: String(m.id), label: m.name }))}
                   onChange={(v) => setForm({ ...form, seller_member_id: Number(v) })}
                 />
-              </FormField>
+              </FormField>}
               <FormField label="Data esperada de fechamento">
                 <Input type="date" {...texto("expected_close_date")} />
               </FormField>
               <FormField label="É venda ou locação?">
-                <SelectMenu
-                  value={form.modality ?? ""}
-                  placeholder="Escolha"
-                  disabled={!podeEditar}
-                  options={[{ value: "venda", label: "Venda" }, { value: "locacao", label: "Locação" }]}
-                  onChange={(v) => setForm({ ...form, modality: v as "venda" | "locacao" })}
-                />
+                {ehDoParceiro ? (
+                  <Input value="Venda" disabled readOnly />
+                ) : (
+                  <SelectMenu
+                    value={form.modality ?? ""}
+                    placeholder="Escolha"
+                    disabled={!podeEditar}
+                    options={[{ value: "venda", label: "Venda" }, { value: "locacao", label: "Locação" }]}
+                    onChange={(v) => setForm({ ...form, modality: v as "venda" | "locacao" })}
+                  />
+                )}
               </FormField>
               <FormField label="Contexto da indicação" required hint={`${(form.context ?? "").length}/2000`}>
                 <Textarea {...texto("context")} rows={3} />
@@ -389,10 +406,13 @@ export default function OportunidadeDetalhe() {
           />
         )}
 
-        <AbasDoCard
-          alvo={{ tipo: "oportunidade", id }}
-          versao={op.updated_at}
-        />
+        {somenteLeitura ? (
+          <div className="flex min-w-0 flex-1 items-center justify-center p-6 text-sm text-slate-500 dark:text-slate-400">
+            Atividades e anexos desta oportunidade ficam com a empresa indicada.
+          </div>
+        ) : (
+          <AbasDoCard alvo={{ tipo: "oportunidade", id }} versao={op.updated_at} />
+        )}
       </div>
 
       <ModalTrava
@@ -400,6 +420,7 @@ export default function OportunidadeDetalhe() {
         destinoNome={etapas.find((e) => e.codigo === destinoPendente)?.nome ?? ""}
         faltas={destinoPendente ? faltasParaMover(destinoPendente, op) : { motivo: false, data: false, modalidade: false }}
         motivos={LOSS_REASONS_ACQUISITION}
+        externo={ehDoParceiro}
         onClose={() => setDestinoPendente(null)}
         onConfirmar={(extras) => {
           const destino = destinoPendente;

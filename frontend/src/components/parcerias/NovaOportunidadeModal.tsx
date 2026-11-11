@@ -33,6 +33,8 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
   const [salvando, setSalvando] = useState(false);
   const { user } = useAuth();
   const ehVendedor = user?.role === "partner_member";
+  // O hunter não tem equipe: não há vendedor responsável a escolher.
+  const ehHunter = user?.role === "hunter" || parceiros.find((p) => p.id === (escolheParceiro ? form.partner_id : parceiros[0]?.id))?.kind === "hunter";
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
   const [consulta, setConsulta] = useState<ConsultaCnpj | null>(null);
   const [consultando, setConsultando] = useState(false);
@@ -48,12 +50,12 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
 
   useEffect(() => {
     // O vendedor do parceiro não lê a equipe (404): o backend o define como responsável.
-    if (!isOpen || !partnerId || ehVendedor) {
+    if (!isOpen || !partnerId || ehVendedor || ehHunter) {
       setEquipe([]);
       return;
     }
     parceriasService.listarEquipe(partnerId).then((m) => setEquipe(m.filter((x) => x.is_active))).catch(() => setEquipe([]));
-  }, [isOpen, partnerId, ehVendedor]);
+  }, [isOpen, partnerId, ehVendedor, ehHunter]);
 
   const texto = (nome: keyof OportunidadeForm & string) => propsDeTexto(form, setForm, nome);
   const erros = errosDoForm(form);
@@ -139,7 +141,7 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
             />
           </FormField>
         )}
-        <FormField label="Vendedor responsável">
+        {!ehHunter && <FormField label="Vendedor responsável">
           {ehVendedor ? (
             <Input value={user?.name ?? ""} disabled readOnly />
           ) : (
@@ -151,7 +153,7 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
             onChange={(v) => setForm({ ...form, seller_member_id: Number(v) })}
           />
           )}
-        </FormField>
+        </FormField>}
         <FormField label="Título do card" required className="sm:col-span-2"><Input {...texto("title")} /></FormField>
         <FormField label="Tipo de negócio" required>
           <SelectMenu value={form.deal_type ?? ""} placeholder="Escolha" options={opcoes(DEAL_TYPES)} onChange={(v) => setForm({ ...form, deal_type: v })} />

@@ -17,28 +17,31 @@ interface Props {
   /** Muda quando o card muda (etapa, elegibilidade...) para o histórico recarregar. */
   versao?: string;
   extras?: AbaExtra[];
+  /** Sem Atividade/Anotações/Arquivos (card que a pessoa só acompanha): mostra só as abas extras. */
+  somenteExtras?: boolean;
 }
 
 /**
  * Coluna da direita do detalhe, igual à do card de Serviço: abas Atividade
  * (Adicionar, Foco e Histórico), Anotações e Arquivos, com os mesmos componentes.
  */
-export default function AbasDoCard({ alvo, versao, extras = [] }: Props) {
-  const [aba, setAba] = useState("atividade");
+export default function AbasDoCard({ alvo, versao, extras = [], somenteExtras = false }: Props) {
+  const [aba, setAba] = useState(somenteExtras ? (extras[0]?.chave ?? "") : "atividade");
   const [atividades, setAtividades] = useState<Atividade[]>([]);
   const api = useMemo(() => apiDeAtividades(alvo), [alvo.tipo, alvo.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const recarregar = useCallback(async () => {
+    if (somenteExtras) return;
     try {
       setAtividades(await parceriasService.listarAtividades(alvo));
     } catch { /* silencioso, como no card de Serviço */ }
-  }, [alvo.tipo, alvo.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [alvo.tipo, alvo.id, somenteExtras]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     recarregar();
   }, [recarregar, versao]);
 
-  const abas = [
+  const abas = somenteExtras ? extras : [
     { chave: "atividade", rotulo: "Atividade", icone: <Activity size={16} />,
       badge: atividades.filter((a) => a.category === "atividade" && !a.is_completed).length },
     { chave: "anotacoes", rotulo: "Anotações", icone: <StickyNote size={16} />,
@@ -69,9 +72,9 @@ export default function AbasDoCard({ alvo, versao, extras = [] }: Props) {
       </div>
 
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-6">
-        {aba === "atividade" && <ServiceActivityTab api={api} activities={atividades} reload={recarregar} />}
-        {aba === "anotacoes" && <ServiceNotesSection api={api} activities={atividades} reload={recarregar} />}
-        {aba === "arquivos" && <ServiceFilesTab api={api} activities={atividades} reload={recarregar} />}
+        {!somenteExtras && aba === "atividade" && <ServiceActivityTab api={api} activities={atividades} reload={recarregar} />}
+        {!somenteExtras && aba === "anotacoes" && <ServiceNotesSection api={api} activities={atividades} reload={recarregar} />}
+        {!somenteExtras && aba === "arquivos" && <ServiceFilesTab api={api} activities={atividades} reload={recarregar} />}
         {extras.find((e) => e.chave === aba)?.conteudo}
       </div>
     </div>

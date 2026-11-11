@@ -11,7 +11,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
 import { LOSS_REASONS_ACQUISITION } from "../../constants/blueprintOptions";
 import {
-  BOARDS_PARCERIAS, ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, PERFIS_DO_PARCEIRO, PERFIS_QUE_EDITAM, formatarMoeda,
+  BOARDS_PARCERIAS, ELEGIBILIDADE_COR, ELEGIBILIDADE_LABEL, PERFIS_DO_PARCEIRO, PERFIS_QUE_EDITAM, PERFIS_QUE_INDICAM, formatarMoeda,
 } from "../../constants/parcerias";
 import parceriasService, {
   Etapa, MoverPayload, Oportunidade, Parceiro, mensagemDeErro,
@@ -37,6 +37,9 @@ export default function OportunidadesKanban() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const ehParceiro = PERFIS_DO_PARCEIRO.includes(user?.role ?? "");
+  const indicadora = PERFIS_QUE_INDICAM.includes(user?.role ?? "");
+  // Externo só mexe nas oportunidades do próprio canal; as das empresas indicadas ele só acompanha.
+  const ehMinha = (o: Oportunidade) => !ehParceiro || o.partner_id === user?.partner_id;
   const podeMover = PERFIS_QUE_EDITAM.includes(user?.role ?? "");
 
   const [etapas, setEtapas] = useState<Etapa[]>([]);
@@ -44,6 +47,7 @@ export default function OportunidadesKanban() {
   const [parceiros, setParceiros] = useState<Parceiro[]>([]);
   const [filtro, setFiltro] = useState("");
   const [busca, setBusca] = useState("");
+  const [origem, setOrigem] = useState<"todas" | "minhas" | "indicadas">("todas");
   const [carregando, setCarregando] = useState(true);
   const [nova, setNova] = useState(false);
   const [pendente, setPendente] = useState<{ op: Oportunidade; destino: string } | null>(null);
@@ -89,14 +93,29 @@ export default function OportunidadesKanban() {
   const documento = limparCnpj(termo);
   const visiveis = ops.filter(
     (o) =>
-      !termo ||
+      (origem === "todas" || (origem === "minhas") === ehMinha(o)) &&
+      (!termo ||
       [o.title, o.company_name, o.partner_name, o.seller_name].some((v) => v?.toLowerCase().includes(termo)) ||
-      (documento.length >= 3 && o.cnpj?.includes(documento))
+      (documento.length >= 3 && o.cnpj?.includes(documento)))
   );
 
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <CabecalhoBoard board={BOARD} busca={busca} onBusca={setBusca} placeholderBusca="Buscar por título, empresa ou CNPJ...">
+        {indicadora && (
+          <div className="w-48">
+            <SelectMenu
+              size="sm"
+              value={origem}
+              options={[
+                { value: "todas", label: "Todas" },
+                { value: "minhas", label: "Minhas" },
+                { value: "indicadas", label: "Das indicadas" },
+              ]}
+              onChange={(v) => setOrigem(v as typeof origem)}
+            />
+          </div>
+        )}
         {!ehParceiro && (
           <div className="w-56">
             <SelectMenu
@@ -117,6 +136,7 @@ export default function OportunidadesKanban() {
         etapaDe={(o) => o.stage}
         onAbrir={(o) => navigate(`/parcerias/oportunidades/${o.id}`)}
         onMover={podeMover ? aoMover : undefined}
+        podeArrastar={ehMinha}
         onAdicionar={podeMover ? () => setNova(true) : undefined}
         rodapeColuna={(daColuna) => <ValorDaColuna ops={daColuna} />}
         renderCard={(o) => {
@@ -127,7 +147,7 @@ export default function OportunidadesKanban() {
           return (
             <CardPadrao
               titulo={o.title}
-              linhas={[o.company_name, ehParceiro ? mascarar("cnpj", o.cnpj) : o.partner_name]}
+              linhas={[o.company_name, ehParceiro && ehMinha(o) ? mascarar("cnpj", o.cnpj) : o.partner_name]}
               pendencia={o.pending_status}
               quantidade={o.pending_count}
               badges={
@@ -171,6 +191,7 @@ export default function OportunidadesKanban() {
         destinoNome={etapas.find((e) => e.codigo === pendente?.destino)?.nome ?? ""}
         faltas={pendente ? faltasParaMover(pendente.destino, pendente.op) : { motivo: false, data: false, modalidade: false }}
         motivos={LOSS_REASONS_ACQUISITION}
+        externo={ehParceiro}
         onClose={() => setPendente(null)}
         onConfirmar={(extras) => {
           if (pendente) mover(pendente.op, pendente.destino, extras);

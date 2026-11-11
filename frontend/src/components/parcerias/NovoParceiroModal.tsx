@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { BaseModal, Button, FormField, Input } from "../common";
+import { BaseModal, Button, FormField, Input, SelectMenu } from "../common";
 import { showError } from "../../utils/toast";
-import parceriasService, { Parceiro, ParceiroForm, mensagemDeErro } from "../../services/parceriasService";
+import parceriasService, { Hunter, Parceiro, ParceiroForm, mensagemDeErro } from "../../services/parceriasService";
 import { errosDoForm, propsDeTexto } from "./campos";
 
 interface Props {
@@ -12,15 +12,18 @@ interface Props {
 
 const VAZIO: ParceiroForm = {
   name: "", cnpj: "", main_contact_name: "", main_contact_phone: "", main_contact_email: "",
-  partner_type: "", origin: "", segment: "", region: "",
+  partner_type: "", origin: "", segment: "", region: "", pix_key: "", indicated_by_partner_id: null,
 };
 
 export default function NovoParceiroModal({ isOpen, onClose, onCriado }: Props) {
   const [form, setForm] = useState<ParceiroForm>(VAZIO);
   const [salvando, setSalvando] = useState(false);
+  const [hunters, setHunters] = useState<Hunter[]>([]);
 
   useEffect(() => {
-    if (isOpen) setForm(VAZIO);
+    if (!isOpen) return;
+    setForm(VAZIO);
+    parceriasService.listarHunters().then(setHunters).catch(() => setHunters([]));
   }, [isOpen]);
 
   const campo = (nome: keyof ParceiroForm & string) => propsDeTexto(form, setForm, nome);
@@ -68,6 +71,18 @@ export default function NovoParceiroModal({ isOpen, onClose, onCriado }: Props) 
         <FormField label="Origem do parceiro"><Input {...campo("origin")} /></FormField>
         <FormField label="Segmento"><Input {...campo("segment")} /></FormField>
         <FormField label="Região"><Input {...campo("region")} /></FormField>
+        <FormField label="Chave PIX"><Input {...campo("pix_key")} maxLength={255} /></FormField>
+        <FormField label="Indicado por" hint="Opcional. Só hunters ativos.">
+          <SelectMenu
+            value={form.indicated_by_partner_id ? String(form.indicated_by_partner_id) : ""}
+            placeholder="Ninguém"
+            options={[
+              { value: "", label: "Ninguém" },
+              ...hunters.filter((h) => h.stage !== "bloqueado").map((h) => ({ value: String(h.id), label: h.name })),
+            ]}
+            onChange={(v) => setForm({ ...form, indicated_by_partner_id: v ? Number(v) : null })}
+          />
+        </FormField>
       </div>
     </BaseModal>
   );

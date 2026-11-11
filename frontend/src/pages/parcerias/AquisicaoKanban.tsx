@@ -4,12 +4,11 @@ import { CheckCircle2, ClipboardCheck, Trello } from "lucide-react";
 import { LoadingSpinner } from "../../components/common";
 import CabecalhoBoard, { BotaoNovo } from "../../components/parcerias/CabecalhoBoard";
 import KanbanParcerias, { CardBadge, CardPadrao } from "../../components/parcerias/KanbanParcerias";
-import ModalTrava from "../../components/parcerias/ModalTrava";
 import NovoParceiroModal from "../../components/parcerias/NovoParceiroModal";
 import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
-import { BOARDS_PARCERIAS, EVIDENCIA_LABEL, PERFIS_GESTAO, PERFIS_QUE_EDITAM, QUALIFICACAO_OPCOES } from "../../constants/parcerias";
-import parceriasService, { Etapa, MoverPayload, Parceiro, mensagemDeErro } from "../../services/parceriasService";
+import { BOARDS_PARCERIAS, EVIDENCIA_LABEL, PERFIS_GESTAO, QUALIFICACAO_OPCOES } from "../../constants/parcerias";
+import parceriasService, { Etapa, Parceiro, mensagemDeErro } from "../../services/parceriasService";
 
 const BOARD = BOARDS_PARCERIAS.find((b) => b.chave === "aquisicao")!;
 
@@ -17,14 +16,12 @@ export default function AquisicaoKanban() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
-  const podeMover = PERFIS_QUE_EDITAM.includes(user?.role ?? "");
 
   const [etapas, setEtapas] = useState<Etapa[]>([]);
   const [parceiros, setParceiros] = useState<Parceiro[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState("");
   const [novo, setNovo] = useState(false);
-  const [perdendo, setPerdendo] = useState<Parceiro | null>(null);
 
   const carregar = useCallback(async () => {
     try {
@@ -41,24 +38,6 @@ export default function AquisicaoKanban() {
   useEffect(() => {
     carregar();
   }, [carregar]);
-
-  const mover = async (parceiro: Parceiro, destino: string, extras: Partial<MoverPayload> = {}) => {
-    try {
-      await parceriasService.moverParceiro(parceiro.id, { stage: destino, ...extras });
-    } catch (err) {
-      showError(mensagemDeErro(err, "Não foi possível mover o parceiro."));
-    }
-    await carregar();
-  };
-
-  const aoMover = (parceiro: Parceiro, destino: string) => {
-    if (destino === "ativado") return showError("O parceiro vai para Ativado sozinho, na primeira evidência de uso do canal.");
-    if (destino === "perdido") {
-      if (!gestao) return showError("Só admin ou gerente marcam o parceiro como Perdido.");
-      return setPerdendo(parceiro);
-    }
-    mover(parceiro, destino);
-  };
 
   if (carregando) return <LoadingSpinner />;
 
@@ -78,8 +57,8 @@ export default function AquisicaoKanban() {
         itens={visiveis}
         idDe={(p) => p.id}
         etapaDe={(p) => p.stage}
+        // Sem onMover: as situações mudam sozinhas (convite e aceite) ou pelo botão Bloquear.
         onAbrir={(p) => navigate(`/parcerias/aquisicao/${p.id}`)}
-        onMover={podeMover ? aoMover : undefined}
         onAdicionar={gestao ? () => setNovo(true) : undefined}
         renderCard={(p) => {
           // Só as oportunidades ainda em negociação (fora Ganho e Perdido).
@@ -101,6 +80,9 @@ export default function AquisicaoKanban() {
                   {qualificacao && (
                     <CardBadge cls="bg-blue-500/15 text-blue-600 dark:text-blue-400" icon={<ClipboardCheck size={11} />} label={qualificacao} />
                   )}
+                  {p.kind === "hunter" && (
+                    <CardBadge cls="bg-purple-500/15 text-purple-600 dark:text-purple-400" label="Hunter" />
+                  )}
                   {totalOps > 0 && (
                     <CardBadge cls="bg-gray-100 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400" icon={<Trello size={11} />} label={totalOps > 1 ? `${totalOps} oportunidades abertas` : "1 oportunidade aberta"} />
                   )}
@@ -121,16 +103,6 @@ export default function AquisicaoKanban() {
         onCriado={(p) => {
           setNovo(false);
           navigate(`/parcerias/aquisicao/${p.id}`);
-        }}
-      />
-      <ModalTrava
-        isOpen={!!perdendo}
-        destinoNome="Perdido"
-        faltas={{ motivo: true, data: false, modalidade: false }}
-        onClose={() => setPerdendo(null)}
-        onConfirmar={(extras) => {
-          if (perdendo) mover(perdendo, "perdido", extras);
-          setPerdendo(null);
         }}
       />
     </div>

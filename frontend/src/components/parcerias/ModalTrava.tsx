@@ -30,9 +30,11 @@ interface Props {
   motivos?: string[];
   onConfirmar: (extras: Partial<MoverPayload>) => void;
   onClose: () => void;
+  /** Perfil externo (parceiro/hunter): só vende, então a modalidade não é perguntada e segue "venda". */
+  externo?: boolean;
 }
 
-export default function ModalTrava({ isOpen, destinoNome, faltas, motivos, onConfirmar, onClose }: Props) {
+export default function ModalTrava({ isOpen, destinoNome, faltas, motivos, onConfirmar, onClose, externo = false }: Props) {
   const [motivo, setMotivo] = useState("");
   const [detalhe, setDetalhe] = useState("");
   const [data, setData] = useState("");
@@ -48,7 +50,7 @@ export default function ModalTrava({ isOpen, destinoNome, faltas, motivos, onCon
   }, [isOpen]);
 
   const pronto =
-    (!faltas.motivo || motivo.trim() !== "") && (!faltas.data || data !== "") && (!faltas.modalidade || modalidade !== "");
+    (!faltas.motivo || motivo.trim() !== "") && (!faltas.data || data !== "") && (!faltas.modalidade || externo || modalidade !== "");
 
   const confirmar = () => {
     const extras: Partial<MoverPayload> = {};
@@ -57,7 +59,7 @@ export default function ModalTrava({ isOpen, destinoNome, faltas, motivos, onCon
       if (detalhe.trim()) extras.loss_detail = detalhe.trim();
     }
     if (faltas.data) extras.expected_close_date = data;
-    if (faltas.modalidade) extras.modality = modalidade as "venda" | "locacao";
+    if (faltas.modalidade) extras.modality = externo ? "venda" : (modalidade as "venda" | "locacao");
     onConfirmar(extras);
   };
 
@@ -99,7 +101,7 @@ export default function ModalTrava({ isOpen, destinoNome, faltas, motivos, onCon
             <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
           </FormField>
         )}
-        {faltas.modalidade && (
+        {faltas.modalidade && !externo && (
           <FormField label="É venda ou locação?" required>
             <SelectMenu
               value={modalidade}

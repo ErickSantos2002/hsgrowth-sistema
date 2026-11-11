@@ -13,6 +13,8 @@ interface Props<T> {
   onAbrir: (item: T) => void;
   /** Ausente = só leitura (Financeiro). */
   onMover?: (item: T, destino: string) => void;
+  /** Cards que não se arrastam (ex.: oportunidade de empresa indicada, só leitura). Ausente = todos. */
+  podeArrastar?: (item: T) => boolean;
   /** "Adicionar card" no rodapé da primeira coluna, como nos boards de Serviço. */
   onAdicionar?: () => void;
   /** Resumo no pé de cada coluna (ex.: valor total). */
@@ -90,7 +92,7 @@ export function CardPadrao({ titulo, linhas, pendencia, quantidade = 0, badges, 
 }
 
 export default function KanbanParcerias<T>({
-  etapas, itens, idDe, etapaDe, renderCard, onAbrir, onMover, onAdicionar, rodapeColuna,
+  etapas, itens, idDe, etapaDe, renderCard, onAbrir, onMover, podeArrastar, onAdicionar, rodapeColuna,
 }: Props<T>) {
   const [arrastando, setArrastando] = useState<number | null>(null);
   const [sobre, setSobre] = useState<string | null>(null);
@@ -104,7 +106,7 @@ export default function KanbanParcerias<T>({
     const item = itens.find((i) => idDe(i) === arrastando);
     setArrastando(null);
     setSobre(null);
-    if (item && onMover && etapaDe(item) !== destino) onMover(item, destino);
+    if (item && onMover && (!podeArrastar || podeArrastar(item)) && etapaDe(item) !== destino) onMover(item, destino);
   };
 
   return (
@@ -162,7 +164,7 @@ export default function KanbanParcerias<T>({
                     <div
                       key={idDe(item)}
                       data-card-parceria
-                      draggable={!!onMover}
+                      draggable={!!onMover && (!podeArrastar || podeArrastar(item))}
                       onDragStart={() => setArrastando(idDe(item))}
                       onDragEnd={() => {
                         setArrastando(null);

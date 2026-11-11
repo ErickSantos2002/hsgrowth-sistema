@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Building2, CheckCircle2, ClipboardCheck, FileSignature, KeyRound, RefreshCw, Trello, Users, XCircle,
+  ArrowLeft, Ban, Building2, CheckCircle2, ClipboardCheck, FileSignature, KeyRound, ShieldCheck, Trello, Users, XCircle,
 } from "lucide-react";
 import { Button, FormField, Input, LoadingSpinner, SelectMenu } from "../../components/common";
 import ExpandableSection from "../../components/cardDetails/ExpandableSection";
 import AbasDoCard from "../../components/parcerias/AbasDoCard";
 import ContratoDoParceiro from "../../components/parcerias/ContratoDoParceiro";
 import EtapasParceria from "../../components/parcerias/EtapasParceria";
-import ModalTrava from "../../components/parcerias/ModalTrava";
 import { errosDoForm, paraTela, propsDeTexto } from "../../components/parcerias/campos";
 import FormularioDeAcesso, { type DadosDoAcesso } from "../../components/acessos/FormularioDeAcesso";
 import StatusDoAcesso from "../../components/acessos/StatusDoAcesso";
@@ -16,10 +15,11 @@ import AcoesDoConvite from "../../components/acessos/AcoesDoConvite";
 import { useConfirm } from "../../contexts/ConfirmContext";
 import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess, showWarning } from "../../utils/toast";
+import { maskCPF } from "../../utils/formatters";
 import userService from "../../services/userService";
-import { EVIDENCIA_LABEL, PERFIS_GESTAO, PERFIS_QUE_EDITAM, PERFIS_RESPONSAVEL_HS, QUALIFICACAO_OPCOES } from "../../constants/parcerias";
+import { EVIDENCIA_LABEL, PERFIS_DO_PARCEIRO, PERFIS_GESTAO, PERFIS_QUE_EDITAM, PERFIS_RESPONSAVEL_HS, QUALIFICACAO_OPCOES } from "../../constants/parcerias";
 import parceriasService, {
-  Acesso, Etapa, Membro, MoverPayload, Parceiro, ParceiroForm, mensagemDeErro,
+  Acesso, Etapa, Membro, Parceiro, ParceiroForm, mensagemDeErro,
 } from "../../services/parceriasService";
 
 const CAMPOS_TEXTO: { nome: keyof ParceiroForm; label: string }[] = [
@@ -50,7 +50,13 @@ export default function ParceiroDetalhe() {
   const { user } = useAuth();
   const { confirm } = useConfirm();
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
-  const podeEditar = PERFIS_QUE_EDITAM.includes(user?.role ?? "");
+  // Dono do card: o parceiro (ou o vendedor dele) olhando o card da própria empresa.
+  const meuCard = !!user?.partner_id && user.partner_id === id;
+  // Empresa/hunter olhando o card de outra (a unidade que indicou): só leitura, sem Equipe, Acessos nem contrato.
+  const externoAlheio = PERFIS_DO_PARCEIRO.includes(user?.role ?? "") && !meuCard;
+  const podeEditar = PERFIS_QUE_EDITAM.includes(user?.role ?? "") && !externoAlheio;
+  // Equipe e Acessos: só no card do próprio login ou da gestão (o vendedor da equipe nunca lê a equipe).
+  const podeLerEquipe = !externoAlheio && user?.role !== "partner_member";
   // Login do vendedor (dar acesso, reenviar, desativar): só o dono do parceiro e a gestão.
   const podeGerirLogin = gestao || user?.role === "partner";
 
@@ -63,7 +69,6 @@ export default function ParceiroDetalhe() {
   const [usuariosHs, setUsuariosHs] = useState<{ value: string; label: string }[]>([]);
   const [novoMembro, setNovoMembro] = useState({ name: "", email: "", phone: "" });
   const [darAcessoA, setDarAcessoA] = useState<number | null>(null);
-  const [perdendo, setPerdendo] = useState(false);
 
   const preencher = (p: Parceiro) => {
     setParceiro(p);
@@ -72,16 +77,13 @@ export default function ParceiroDetalhe() {
 
   const carregar = useCallback(async () => {
     try {
-      const [p, e, eq] = await Promise.all([
-        parceriasService.buscarParceiro(id),
-        parceriasService.etapas(),
-        parceriasService.listarEquipe(id),
-      ]);
+      const [p, e] = await Promise.all([parceriasService.buscarParceiro(id), parceriasService.etapas()]);
       preencher(p);
       setEtapas(e.aquisicao);
       setEtapasOp(e.oportunidades);
-      setEquipe(eq);
-      if (gestao) {
+      // Hunter não tem equipe; a empresa indicadora recebe 404 em /equipe e /acessos da unidade.
+      if (podeLerEquipe && p.kind !== "hunter") setEquipe(await parceriasService.listarEquipe(id));
+      if (gestao && p.kind !== "hunter") {
         setAcessos(await parceriasService.listarAcessos(id));
         const usuarios = await userService.listActive();
         // Sem responsável: o parceiro que não precisa de treinamento fica só com a gestão.
@@ -96,7 +98,7 @@ export default function ParceiroDetalhe() {
       showError(mensagemDeErro(err, "Erro ao carregar o parceiro."));
       navigate("/parcerias/aquisicao");
     }
-  }, [id, gestao, navigate]);
+  }, [id, gestao, podeLerEquipe, navigate]);
 
   useEffect(() => {
     carregar();
@@ -104,10 +106,13 @@ export default function ParceiroDetalhe() {
 
   if (!parceiro) return <LoadingSpinner />;
 
-  const perdido = parceiro.stage === "perdido";
   const ativado = parceiro.stage === "ativado";
-  // De Ativado e de Perdido só a gestão tira o parceiro.
-  const podeMover = podeEditar && (gestao || (!perdido && !ativado));
+  const bloqueado = parceiro.stage === "bloqueado";
+  const ehHunterCard = parceiro.kind === "hunter";
+  // Equipe e Acessos só existem para empresa, vistos pelo dono ou pela gestão.
+  const mostraEquipe = podeLerEquipe && !ehHunterCard;
+  // A chave PIX é da gestão e do dono; os outros nem a veem.
+  const veChavePix = gestao || meuCard;
 
   const salvar = async () => {
     // Manda só o que mudou: um dado antigo fora da regra (ex.: telefone curto,
@@ -126,11 +131,21 @@ export default function ParceiroDetalhe() {
     }
   };
 
-  const mover = async (destino: string, extras: Partial<MoverPayload> = {}) => {
+  const alternarBloqueio = async () => {
+    const ok = await confirm({
+      title: bloqueado ? "Desbloquear parceiro" : "Bloquear parceiro",
+      message: bloqueado
+        ? "O acesso do dono volta a funcionar; os vendedores só voltam se o cadastro deles estiver ativo."
+        : "Os acessos desta empresa e da equipe dela serão desativados.",
+      confirmText: bloqueado ? "Desbloquear" : "Bloquear",
+      isDanger: !bloqueado,
+    });
+    if (!ok) return;
     try {
-      preencher(await parceriasService.moverParceiro(id, { stage: destino, ...extras }));
+      preencher(bloqueado ? await parceriasService.desbloquear(id) : await parceriasService.bloquear(id));
+      showSuccess(bloqueado ? "Parceiro desbloqueado." : "Parceiro bloqueado.");
     } catch (err) {
-      showError(mensagemDeErro(err, "Não foi possível mover o parceiro."));
+      showError(mensagemDeErro(err, bloqueado ? "Erro ao desbloquear o parceiro." : "Erro ao bloquear o parceiro."));
     }
   };
 
@@ -229,32 +244,24 @@ export default function ParceiroDetalhe() {
                 {parceiro.activated_at && ` em ${new Date(parceiro.activated_at).toLocaleDateString("pt-BR")}`}
               </p>
             )}
-            {perdido && parceiro.loss_reason && (
-              <p className="text-sm text-red-500">Motivo: {parceiro.loss_reason}{parceiro.loss_detail && ` — ${parceiro.loss_detail}`}</p>
-            )}
           </div>
           <div className="flex flex-shrink-0 items-center gap-2">
-            {perdido ? (
-              <>
-                <div className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-3 py-2 text-sm font-medium text-red-500 dark:text-red-400">
-                  <XCircle size={16} /> Parceiro Perdido
-                </div>
-                {gestao && (
-                  <button onClick={() => mover("potencial")} title="Volta para Potencial Parceiro" className="flex items-center gap-2 rounded-lg bg-blue-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600">
-                    <RefreshCw size={16} /> Reabrir
-                  </button>
-                )}
-              </>
+            {bloqueado ? (
+              <div className="flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/20 px-3 py-2 text-sm font-medium text-red-500 dark:text-red-400">
+                <XCircle size={16} /> Parceiro Bloqueado
+              </div>
             ) : ativado ? (
               <div className="flex items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/20 px-3 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 size={16} /> Parceiro Ativado
               </div>
-            ) : (
-              gestao && (
-                <button onClick={() => setPerdendo(true)} className="flex items-center gap-2 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600">
-                  <XCircle size={16} /> Perdido
-                </button>
-              )
+            ) : null}
+            {gestao && (
+              <button
+                onClick={alternarBloqueio}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors ${bloqueado ? "bg-blue-500 hover:bg-blue-600" : "bg-red-500 hover:bg-red-600"}`}
+              >
+                {bloqueado ? <ShieldCheck size={16} /> : <Ban size={16} />} {bloqueado ? "Desbloquear" : "Bloquear"}
+              </button>
             )}
           </div>
         </div>
@@ -262,8 +269,7 @@ export default function ParceiroDetalhe() {
           <EtapasParceria
             etapas={etapas}
             atual={parceiro.stage}
-            fixas={["ativado"]}
-            onMover={podeMover ? (destino) => mover(destino) : undefined}
+            fixas={[]}
           />
         </div>
       </div>
@@ -271,6 +277,24 @@ export default function ParceiroDetalhe() {
       {/* Conteúdo: 30/70 */}
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="w-full flex-shrink-0 space-y-3 overflow-y-auto border-b border-gray-200 p-4 dark:border-slate-700/50 lg:w-[30%] lg:border-b-0 lg:border-r">
+          <ExpandableSection title="Programa de Parceiros" icon={<ShieldCheck size={18} />}>
+            <div className="space-y-3">
+              <FormField label="Tipo"><Input value={ehHunterCard ? "Hunter" : "Empresa"} disabled readOnly /></FormField>
+              <FormField label={parceiro.cpf ? "CPF" : "CNPJ"}>
+                <Input value={parceiro.cpf ? maskCPF(parceiro.cpf) : paraTela("cnpj", parceiro.cnpj)} disabled readOnly />
+              </FormField>
+              {veChavePix && <FormField label="Chave PIX"><Input value={parceiro.pix_key ?? ""} placeholder="Não informada" disabled readOnly /></FormField>}
+              <FormField label="Indicado por"><Input value={parceiro.indicated_by_name ?? "Ninguém"} disabled readOnly /></FormField>
+              <FormField label="Termos aceitos em">
+                <Input
+                  value={parceiro.terms_accepted_at ? new Date(parceiro.terms_accepted_at).toLocaleDateString("pt-BR") : "Pendente"}
+                  disabled
+                  readOnly
+                />
+              </FormField>
+            </div>
+          </ExpandableSection>
+
           <ExpandableSection title="Dados do parceiro" icon={<Building2 size={18} />}>
             <div className="space-y-3">
               {CAMPOS_TEXTO.map(({ nome, label }) => (
@@ -317,6 +341,7 @@ export default function ParceiroDetalhe() {
             </div>
           </ExpandableSection>
 
+          {mostraEquipe && (
           <ExpandableSection title="Equipe" icon={<Users size={18} />} badge={equipe.filter((m) => m.is_active).length}>
             <div className="space-y-3">
               <div className="space-y-2">
@@ -378,8 +403,9 @@ export default function ParceiroDetalhe() {
               )}
             </div>
           </ExpandableSection>
+          )}
 
-          {gestao && (
+          {gestao && mostraEquipe && (
             <ExpandableSection title="Acessos ao CRM" icon={<KeyRound size={18} />} badge={acessos.filter((a) => a.is_active).length}>
               <div className="space-y-3">
                 <div className="space-y-2">
@@ -412,6 +438,7 @@ export default function ParceiroDetalhe() {
         <AbasDoCard
           alvo={{ tipo: "parceiro", id }}
           versao={parceiro.updated_at}
+          somenteExtras={externoAlheio}
           extras={[{
             chave: "oportunidades", rotulo: "Oportunidades", icone: <Trello size={16} />,
             conteudo: (
@@ -424,23 +451,12 @@ export default function ParceiroDetalhe() {
                 ))}
               </div>
             ),
-          }, {
+          }, ...(externoAlheio || ehHunterCard ? [] : [{
             chave: "contrato", rotulo: "Contrato", icone: <FileSignature size={16} />,
             conteudo: <ContratoDoParceiro parceiro={parceiro} podeEditar={podeEditar} onParceiro={preencher} />,
-          }]}
+          }])]}
         />
       </div>
-
-      <ModalTrava
-        isOpen={perdendo}
-        destinoNome="Perdido"
-        faltas={{ motivo: true, data: false, modalidade: false }}
-        onClose={() => setPerdendo(false)}
-        onConfirmar={(extras) => {
-          setPerdendo(false);
-          mover("perdido", extras);
-        }}
-      />
     </div>
   );
 }
