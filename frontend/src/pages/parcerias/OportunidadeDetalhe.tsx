@@ -10,6 +10,7 @@ import PersonModal from "../../components/persons/PersonModal";
 import AbasDoCard from "../../components/parcerias/AbasDoCard";
 import EtapasParceria from "../../components/parcerias/EtapasParceria";
 import ModalTrava, { faltasParaMover, temFalta } from "../../components/parcerias/ModalTrava";
+import CalibracoesDaOportunidade from "../../components/parcerias/CalibracoesDaOportunidade";
 import ProdutosDaOportunidade from "../../components/parcerias/ProdutosDaOportunidade";
 import { errosDoForm, paraTela, propsDeTexto } from "../../components/parcerias/campos";
 import { useAuth } from "../../hooks/useAuth";
@@ -382,6 +383,7 @@ export default function OportunidadeDetalhe() {
           </ExpandableSection>
 
           <ProdutosDaOportunidade op={op} podeEditar={podeMover} onOportunidade={setOp} />
+          {op.won_confirmed_at && <CalibracoesDaOportunidade oportunidadeId={op.id} />}
         </div>
         {clienteAberto && (
           <ClientModal

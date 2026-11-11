@@ -49,7 +49,9 @@ import ConsultaCnpj from './pages/parcerias/ConsultaCnpj';
 import ParceiroDetalhe from './pages/parcerias/ParceiroDetalhe';
 import OportunidadesKanban from './pages/parcerias/OportunidadesKanban';
 import OportunidadeDetalhe from './pages/parcerias/OportunidadeDetalhe';
-import { PERFIS_CONSULTA_CNPJ, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM } from './constants/parcerias';
+import Comissoes from './pages/parcerias/Comissoes';
+import ConfigComissoes from './pages/parcerias/ConfigComissoes';
+import { PERFIS_COMISSOES, PERFIS_COMISSOES_TUDO, PERFIS_CONSULTA_CNPJ, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM } from './constants/parcerias';
 // Módulo de Propostas descontinuado (migrado p/ sistema externo). Página e API
 // preservadas no repo (dormentes); rota removida da navegação.
 
@@ -126,6 +128,24 @@ const AquisicaoGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const GestaoParceriasGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     if (user && !PERFIS_GESTAO.includes(user.role)) {
+        return <Navigate to="/parcerias" replace />;
+    }
+    return <>{children}</>;
+};
+
+/** Comissões: parceiro, hunter, admin, gerente e Financeiro (o vendedor do parceiro não vê). */
+const ComissoesGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    if (user && !PERFIS_COMISSOES.includes(user.role)) {
+        return <Navigate to="/parcerias" replace />;
+    }
+    return <>{children}</>;
+};
+
+/** Configuração das comissões: admin e gerente editam; o Financeiro só lê. */
+const ConfigComissoesGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    if (user && !PERFIS_COMISSOES_TUDO.includes(user.role)) {
         return <Navigate to="/parcerias" replace />;
     }
     return <>{children}</>;
@@ -233,6 +253,8 @@ const AppRoutes: React.FC = () => (
       <Route path="/parcerias" element={<ParceriasGuard><ParceriasHome /></ParceriasGuard>} />
       <Route path="/parcerias/termos" element={<GestaoParceriasGuard><TermosAdmin /></GestaoParceriasGuard>} />
       <Route path="/parcerias/hunters" element={<GestaoParceriasGuard><Hunters /></GestaoParceriasGuard>} />
+      <Route path="/parcerias/comissoes" element={<ComissoesGuard><Comissoes /></ComissoesGuard>} />
+      <Route path="/parcerias/comissoes/config" element={<ConfigComissoesGuard><ConfigComissoes /></ConfigComissoesGuard>} />
       <Route path="/parcerias/indicacoes" element={<IndicacoesGuard><Indicacoes /></IndicacoesGuard>} />
       <Route path="/parcerias/consulta-cnpj" element={<ConsultaCnpjGuard><ConsultaCnpj /></ConsultaCnpjGuard>} />
       <Route path="/parcerias/aquisicao" element={<ParceriasGuard><AquisicaoGuard><AquisicaoKanban /></AquisicaoGuard></ParceriasGuard>} />

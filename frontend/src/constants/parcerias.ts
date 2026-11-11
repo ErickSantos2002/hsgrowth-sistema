@@ -54,6 +54,9 @@ export const PERFIS_DO_PARCEIRO = ["partner", "partner_member", "hunter"];
 /** Quem indica empresas ao Programa. */
 export const PERFIS_QUE_INDICAM = ["partner", "hunter"];
 export const PERFIS_GESTAO = ["admin", "manager"];
+/** Veem a página de Comissões (parceiro e hunter só as próprias; gestão e Financeiro, tudo). */
+export const PERFIS_COMISSOES = ["admin", "manager", "finance", "partner", "hunter"];
+export const PERFIS_COMISSOES_TUDO = ["admin", "manager", "finance"];
 // Quem mexe nos cards que enxerga (o Financeiro só acompanha).
 export const PERFIS_QUE_EDITAM = ["admin", "manager", "partner", "partner_member", "hunter", "salesperson"];
 // Quem pode ser escolhido como Responsável H&S — é opcional.
@@ -108,3 +111,24 @@ export const MOTIVO_SEMAFORO: Record<string, string> = {
   livre: "Livre", em_negociacao: "Em negociação", compra_recente: "Compra recente",
   perdida_recente: "Perdida há pouco", outra_unidade: "Outra unidade",
 };
+
+export const COMISSAO_TIPO_LABEL: Record<string, string> = {
+  venda_propria: "Venda própria",
+  indicacao: "Indicação",
+  bonus_primeira_venda: "Bônus 1ª venda",
+  calibracao: "Calibração",
+};
+
+export const COMISSAO_STATUS_LABEL: Record<string, string> = {
+  pendente: "Pendente", paga: "Paga", cancelada: "Cancelada",
+};
+
+export const COMISSAO_STATUS_COR: Record<string, string> = {
+  pendente: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+  paga: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+  cancelada: "bg-gray-500/15 text-gray-600 dark:text-gray-400",
+};
+
+/** Percentual vindo como string do backend, com vírgula ("7.50" -> "7,5%"). */
+export const formatarPercentual = (valor?: string | number | null) =>
+  valor == null ? "" : `${Number(valor).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;

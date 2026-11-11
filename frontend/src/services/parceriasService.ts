@@ -316,6 +316,95 @@ export interface Hunter {
   convite_expira_em?: string | null;
 }
 
+// ─── Comissões ───────────────────────────────────────────────────────────────
+// Dinheiro e percentuais chegam como string (Decimal): converter com Number() para exibir.
+export type TipoComissao = "venda_propria" | "indicacao" | "bonus_primeira_venda" | "calibracao";
+export type SituacaoComissao = "pendente" | "paga" | "cancelada";
+
+export interface ComissaoConfig {
+  own_sale_pct: string;
+  indication_pct: string;
+  first_sale_bonus: string;
+  indication_months: number;
+  calibration_pct: string;
+  updated_at?: string | null;
+}
+
+export interface ComissaoConfigForm {
+  own_sale_pct: number;
+  indication_pct: number;
+  first_sale_bonus: number;
+  indication_months: number;
+  calibration_pct: number;
+}
+
+export interface Comissao {
+  id: number;
+  beneficiary_partner_id: number;
+  beneficiary_name?: string | null;
+  source_partner_id: number;
+  source_name?: string | null;
+  opportunity_id: number;
+  opportunity_title?: string | null;
+  calibration_id?: number | null;
+  kind: TipoComissao;
+  base_value: string;
+  rate?: string | null;
+  fixed_value?: string | null;
+  amount: string;
+  status: SituacaoComissao;
+  created_at: string;
+  paid_at?: string | null;
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
+}
+
+export interface ComissaoResumo {
+  pendente: string;
+  pago: string;
+  cancelado: string;
+}
+
+export interface APagarBeneficiario {
+  beneficiary_partner_id: number;
+  nome: string;
+  kind: string;
+  documento?: string | null;
+  pix_key?: string | null;
+  total: string;
+  quantidade: number;
+  lancamentos: Comissao[];
+}
+
+export interface PagarResposta {
+  quantidade: number;
+  total: string;
+  ignorados: number;
+}
+
+export interface FiltroComissoes {
+  status?: SituacaoComissao;
+  beneficiario?: number;
+  de?: string;
+  ate?: string;
+}
+
+export interface Calibracao {
+  id: number;
+  opportunity_id: number;
+  serial_number: string;
+  calibration_date: string;
+  value: string;
+  created_at: string;
+  commission_amount?: string | null;
+}
+
+export interface CalibracaoForm {
+  serial_number: string;
+  calibration_date: string;
+  value: number;
+}
+
 export function mensagemDeErro(err: any, padrao: string): string {
   const detail = err?.response?.data?.detail;
   if (typeof detail === "string") return detail;
@@ -470,6 +559,44 @@ const parceriasService = {
   },
   async historicoConsultas(filtro: FiltroHistorico) {
     return (await api.get<{ total: number; itens: ConsultaHistoricoItem[] }>(`${BASE}/consulta-cnpj/historico`, { params: filtro })).data;
+  },
+  // Comissões
+  async lerConfigComissoes() {
+    return (await api.get<ComissaoConfig>(`${BASE}/comissoes/config`)).data;
+  },
+  async salvarConfigComissoes(dados: ComissaoConfigForm) {
+    return (await api.put<ComissaoConfig>(`${BASE}/comissoes/config`, dados)).data;
+  },
+  async listarComissoes(filtro: FiltroComissoes = {}) {
+    return (await api.get<Comissao[]>(`${BASE}/comissoes`, { params: filtro })).data;
+  },
+  async resumoComissoes(filtro: Omit<FiltroComissoes, "status"> = {}) {
+    return (await api.get<ComissaoResumo>(`${BASE}/comissoes/resumo`, { params: filtro })).data;
+  },
+  async comissoesAPagar(filtro: { de?: string; ate?: string } = {}) {
+    return (await api.get<APagarBeneficiario[]>(`${BASE}/comissoes/a-pagar`, { params: filtro })).data;
+  },
+  /** Baixa o CSV pelo cliente autenticado (a rota exige o Bearer) e salva como arquivo. */
+  async baixarAPagarCsv(filtro: { de?: string; ate?: string } = {}) {
+    const r = await api.get<Blob>(`${BASE}/comissoes/a-pagar.csv`, { params: filtro, responseType: "blob" });
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `comissoes-a-pagar-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+  /** Paga exatamente os lançamentos informados (o que o Financeiro viu na tela). */
+  async pagarComissoes(ids: number[]) {
+    return (await api.post<PagarResposta>(`${BASE}/comissoes/pagar`, { ids })).data;
+  },
+  async listarCalibracoes(oportunidadeId: number) {
+    return (await api.get<Calibracao[]>(`${BASE}/oportunidades/${oportunidadeId}/calibracoes`)).data;
+  },
+  async lancarCalibracao(oportunidadeId: number, dados: CalibracaoForm) {
+    return (await api.post<Calibracao>(`${BASE}/oportunidades/${oportunidadeId}/calibracoes`, dados)).data;
   },
   async avisoParceriasDoCard(cardId: number) {
     return (await api.get<{ parceiro: string; desde: string }[]>(`/api/v1/cards/${cardId}/aviso-parcerias`)).data;

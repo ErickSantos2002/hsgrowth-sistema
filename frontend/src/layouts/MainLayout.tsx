@@ -27,6 +27,7 @@ import {
     Send,
     UserPlus,
     ScrollText,
+    Wallet,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -37,7 +38,7 @@ import GlobalSearch from "../components/GlobalSearch";
 import { UserAvatar } from "../components/common";
 import ChangelogModal from "../components/common/ChangelogModal";
 import { AgentGrowthWidget } from "../components/agentGrowth";
-import { PERFIS_CONSULTA_CNPJ, PERFIS_DO_PARCEIRO, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM, PERFIS_TRANCADOS } from "../constants/parcerias";
+import { PERFIS_COMISSOES, PERFIS_CONSULTA_CNPJ, PERFIS_DO_PARCEIRO, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM, PERFIS_TRANCADOS } from "../constants/parcerias";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -49,6 +50,7 @@ const menuItems = [
     { path: "/parcerias", icon: Handshake, label: "Boards (Parcerias)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/parcerias/consulta-cnpj", icon: ShieldCheck, label: "Consulta de CNPJ", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/parcerias/indicacoes", icon: Send, label: "Indicações", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
+    { path: "/parcerias/comissoes", icon: Wallet, label: "Comissões", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/parcerias/hunters", icon: UserPlus, label: "Hunters", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/parcerias/termos", icon: ScrollText, label: "Termos", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -229,10 +231,13 @@ export default function MainLayout() {
                                 if (item.path === "/parcerias/indicacoes" && !PERFIS_QUE_INDICAM.includes(user?.role ?? "")) {
                                     return null;
                                 }
+                                if (item.path === "/parcerias/comissoes" && !PERFIS_COMISSOES.includes(user?.role ?? "")) {
+                                    return null;
+                                }
                                 if (["/parcerias/hunters", "/parcerias/termos"].includes(item.path) && !PERFIS_GESTAO.includes(user?.role ?? "")) {
                                     return null;
                                 }
-                                if (trancado && !["/parcerias", "/parcerias/consulta-cnpj", "/parcerias/indicacoes", "/settings"].includes(item.path)) {
+                                if (trancado && !["/parcerias", "/parcerias/consulta-cnpj", "/parcerias/indicacoes", "/parcerias/comissoes", "/settings"].includes(item.path)) {
                                     return null;
                                 }
 
@@ -267,7 +272,7 @@ export default function MainLayout() {
                                      location.pathname.startsWith("/servicos/")) ||
                                     (item.path === "/parcerias" &&
                                      location.pathname.startsWith("/parcerias/") &&
-                                     !["/parcerias/consulta-cnpj", "/parcerias/indicacoes", "/parcerias/hunters", "/parcerias/termos"].some((r) =>
+                                     !["/parcerias/consulta-cnpj", "/parcerias/indicacoes", "/parcerias/comissoes", "/parcerias/hunters", "/parcerias/termos"].some((r) =>
                                          location.pathname.startsWith(r)
                                      ));
 
