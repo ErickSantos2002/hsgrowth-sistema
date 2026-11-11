@@ -27,9 +27,20 @@ def listar(db: Session, user: User) -> List[Partner]:
     return acesso.parceiros_visiveis(db, user).order_by(Partner.position, Partner.id).all()
 
 
+def _conferir_indicador(db: Session, partner_id) -> None:
+    """Quem indica pela H&S tem que ser um hunter (empresa indicando passa pelo fluxo de indicação)."""
+    if partner_id is None:
+        return
+    h = db.query(Partner).filter(Partner.id == partner_id, Partner.is_deleted.is_(False),
+                                 Partner.kind == "hunter").first()
+    if not h:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "O indicador tem que ser um hunter cadastrado.")
+
+
 def criar(db: Session, user: User, dados: ParceiroCreate) -> Partner:
     acesso.exigir_gestao(user)
     acesso.conferir_responsavel(db, dados.hs_owner_id)
+    _conferir_indicador(db, dados.indicated_by_partner_id)
     p = Partner(**dados.model_dump(), stage="potencial", position=0, created_by_id=user.id)
     db.add(p)
     db.flush()
@@ -48,8 +59,11 @@ def atualizar(db: Session, user: User, partner_id: int, dados: ParceiroUpdate) -
     if not acesso.eh_gestao(user):
         # O responsável H&S é escolha da H&S.
         campos.pop("hs_owner_id", None)
+        campos.pop("indicated_by_partner_id", None)
     if "hs_owner_id" in campos:
         acesso.conferir_responsavel(db, campos["hs_owner_id"])
+    if "indicated_by_partner_id" in campos:
+        _conferir_indicador(db, campos["indicated_by_partner_id"])
     for campo, valor in campos.items():
         setattr(p, campo, valor)
     db.commit()
@@ -197,6 +211,8 @@ def criar_acesso(db: Session, user: User, partner_id: int, dados: AcessoCreate) 
         modo=dados.modo, senha=dados.password, partner_id=p.id,
     )
     # Só registra no histórico depois que o acesso foi de fato criado.
+    if p.stage == "potencial":
+        p.stage = "convidado"
     atividades.registrar_evento(db, user, f"Acesso criado para {dados.email}", partner_id=p.id)
     db.commit()
     return resultado

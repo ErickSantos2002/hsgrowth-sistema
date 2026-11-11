@@ -130,6 +130,8 @@ class ParceiroCreate(BaseModel):
     qualification_status: Optional[Qualificacao] = None
     onboarding_date: Optional[date] = None
     contract_date: Optional[date] = None
+    indicated_by_partner_id: Optional[int] = None
+    pix_key: Optional[str] = Field(None, max_length=140)
 
     @field_validator("cnpj")
     @classmethod
@@ -172,6 +174,12 @@ class ParceiroResponse(BaseModel):
     contract_date: Optional[date] = None
     contract_activity_id: Optional[int] = None
     contract_file_name: Optional[str] = None
+    kind: str = "empresa"
+    cpf: Optional[str] = None
+    pix_key: Optional[str] = None
+    indicated_by_partner_id: Optional[int] = None
+    indicated_by_name: Optional[str] = None
+    terms_accepted_at: Optional[datetime] = None
     stage: str
     position: float = 0
     loss_reason: Optional[str] = None
@@ -185,6 +193,42 @@ class ParceiroResponse(BaseModel):
     pending_count: int = 0
 
     model_config = {"from_attributes": True}
+
+
+class IndicacaoCreate(BaseModel):
+    """Empresa que um hunter (ou outra empresa) indica: nasce Convidado, com o convite saindo na hora."""
+    name: str = Field(..., min_length=1, max_length=255)
+    cnpj: str
+    main_contact_name: str = Field(..., min_length=1, max_length=255)
+    main_contact_email: str = Field(..., max_length=255)
+    main_contact_phone: Optional[str] = Field(None, max_length=30)
+    pix_key: Optional[str] = Field(None, max_length=140)
+
+    @field_validator("cnpj")
+    @classmethod
+    def _validar_cnpj(cls, valor):
+        cnpj = _cnpj_opcional(valor)
+        if not cnpj:
+            raise ValueError("Informe o CNPJ")
+        return cnpj
+
+    @field_validator("main_contact_phone")
+    @classmethod
+    def _validar_telefone(cls, valor):
+        return _telefone_opcional(valor)
+
+    @field_validator("main_contact_email")
+    @classmethod
+    def _validar_email(cls, valor):
+        email = _email_opcional(valor)
+        if not email:
+            raise ValueError("Informe o e-mail")
+        return email
+
+
+class IndicacaoResponse(BaseModel):
+    parceiro: ParceiroResponse
+    email_enviado: bool
 
 
 class MembroCreate(BaseModel):

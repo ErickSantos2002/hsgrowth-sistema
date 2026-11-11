@@ -38,6 +38,8 @@ from app.schemas.parcerias import (
     ParceiroCreate,
     ParceiroResponse,
     ParceiroUpdate,
+    IndicacaoCreate,
+    IndicacaoResponse,
     ProdutoCatalogo,
     ProdutoItemCreate,
     ProdutoItemResponse,
@@ -45,7 +47,7 @@ from app.schemas.parcerias import (
 )
 from app.schemas.acessos import ConviteRequest, ConviteResponse
 from app.services import tokens_de_acesso
-from app.services.parcerias import acesso, atividades, oportunidades, parceiros, respostas
+from app.services.parcerias import acesso, atividades, indicacoes, oportunidades, parceiros, respostas
 from app.services.parcerias.etapas import ETAPAS_AQUISICAO, ETAPAS_OPORTUNIDADE
 
 router = APIRouter()
@@ -61,39 +63,52 @@ def etapas_dos_boards():
 
 # ─── Board 1: Aquisição de Parceiros ─────────────────────────────────────────
 
+@router.post("/indicacoes", response_model=IndicacaoResponse, status_code=201)
+def indicar_empresa(dados: IndicacaoCreate, db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_active_user)):
+    r = indicacoes.indicar(db, current_user, dados)
+    p = acesso.buscar_parceiro(db, current_user, r.user.partner_id)
+    return IndicacaoResponse(parceiro=respostas.parceiro_out(db, p, current_user), email_enviado=r.email_enviado)
+
+
+@router.get("/indicacoes", response_model=List[ParceiroResponse])
+def listar_indicacoes(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    return respostas.parceiros_out(db, indicacoes.listar(db, current_user), current_user)
+
+
 @router.get("/parceiros", response_model=List[ParceiroResponse])
 def listar_parceiros(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    return respostas.parceiros_out(db, parceiros.listar(db, current_user))
+    return respostas.parceiros_out(db, parceiros.listar(db, current_user), current_user)
 
 
 @router.post("/parceiros", response_model=ParceiroResponse, status_code=201)
 def criar_parceiro(dados: ParceiroCreate, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_active_user)):
-    return respostas.parceiro_out(db, parceiros.criar(db, current_user, dados))
+    return respostas.parceiro_out(db, parceiros.criar(db, current_user, dados), current_user)
 
 
 @router.get("/parceiros/{partner_id}", response_model=ParceiroResponse)
 def buscar_parceiro(partner_id: int, db: Session = Depends(get_db),
                     current_user: User = Depends(get_current_active_user)):
-    return respostas.parceiro_out(db, acesso.buscar_parceiro(db, current_user, partner_id))
+    return respostas.parceiro_out(db, acesso.buscar_parceiro(db, current_user, partner_id), current_user)
 
 
 @router.put("/parceiros/{partner_id}", response_model=ParceiroResponse)
 def atualizar_parceiro(partner_id: int, dados: ParceiroUpdate, db: Session = Depends(get_db),
                        current_user: User = Depends(get_current_active_user)):
-    return respostas.parceiro_out(db, parceiros.atualizar(db, current_user, partner_id, dados))
+    return respostas.parceiro_out(db, parceiros.atualizar(db, current_user, partner_id, dados), current_user)
 
 
 @router.post("/parceiros/{partner_id}/contrato", response_model=ParceiroResponse)
 async def anexar_contrato(partner_id: int, file: UploadFile = File(...), db: Session = Depends(get_db),
                           current_user: User = Depends(get_current_active_user)):
-    return respostas.parceiro_out(db, await parceiros.anexar_contrato(db, current_user, partner_id, file))
+    return respostas.parceiro_out(db, await parceiros.anexar_contrato(db, current_user, partner_id, file), current_user)
 
 
 @router.put("/parceiros/{partner_id}/mover", response_model=ParceiroResponse)
 def mover_parceiro(partner_id: int, req: MoverRequest, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_active_user)):
-    return respostas.parceiro_out(db, parceiros.mover(db, current_user, partner_id, req))
+    return respostas.parceiro_out(db, parceiros.mover(db, current_user, partner_id, req), current_user)
 
 
 @router.get("/parceiros/{partner_id}/equipe", response_model=List[MembroResponse])

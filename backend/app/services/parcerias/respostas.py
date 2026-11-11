@@ -63,20 +63,35 @@ def _com_pendencia(resposta, pendencia: Tuple[str, int]):
     return resposta.model_copy(update={"pending_status": pendencia[0], "pending_count": pendencia[1]})
 
 
-def parceiro_out(db: Session, p: Partner) -> ParceiroResponse:
+def _de_outro(user: Optional[User], p: Partner) -> bool:
+    """Login de fora olhando o card de outro parceiro (a empresa que ele indicou)."""
+    return user is not None and acesso.eh_externo(user) and p.id != acesso.parceiro_do_login(user)
+
+
+def parceiro_out(db: Session, p: Partner, user: Optional[User] = None) -> ParceiroResponse:
     contrato = None
     if p.contract_activity_id is not None:
         contrato = db.query(PartnerActivity.file_name).filter(PartnerActivity.id == p.contract_activity_id).scalar()
-    return ParceiroResponse.model_validate(p).model_copy(update={
+    campos = {
         "hs_owner_name": p.hs_owner.name if p.hs_owner else None,
+        "indicated_by_name": p.indicated_by.name if p.indicated_by else None,
         "oportunidades_por_etapa": contagem_por_etapa(db, p.id),
         "contract_file_name": contrato,
-    })
+    }
+    if _de_outro(user, p):
+        # Quem indicou acompanha a situação; motivo de perda, contrato e dados de pagamento são da empresa.
+        campos.update({"loss_reason": None, "loss_detail": None, "contract_file_name": None,
+                       "pix_key": None, "cpf": None})
+    return ParceiroResponse.model_validate(p).model_copy(update=campos)
 
 
-def parceiros_out(db: Session, lista: List[Partner]) -> List[ParceiroResponse]:
+def parceiros_out(db: Session, lista: List[Partner], user: Optional[User] = None) -> List[ParceiroResponse]:
     situacoes = pendencias(db, PartnerActivity.partner_id, [p.id for p in lista])
-    return [_com_pendencia(parceiro_out(db, p), situacoes.get(p.id, ("none", 0))) for p in lista]
+    return [
+        _com_pendencia(parceiro_out(db, p, user),
+                       ("none", 0) if _de_outro(user, p) else situacoes.get(p.id, ("none", 0)))
+        for p in lista
+    ]
 
 
 def valor_do_negocio(total_produtos: float, op: PartnerOpportunity) -> float:
