@@ -90,16 +90,14 @@ def atualizar(db: Session, user: User, partner_id: int, dados: ParceiroUpdate) -
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Hunter não recebe indicador.")
         _conferir_indicador(db, novo, p.id)
         mudou_indicador = novo != p.indicated_by_partner_id
-        antes = p.indicated_by.name if p.indicated_by else "nenhum"
     for campo, valor in campos.items():
         setattr(p, campo, valor)
     if mudou_pix:
         atividades.registrar_evento(db, user, "Chave PIX alterada", partner_id=p.id)
     if mudou_indicador:
-        db.flush()
-        db.refresh(p)
-        depois = p.indicated_by.name if p.indicated_by else "nenhum"
-        atividades.registrar_evento(db, user, f"Indicador alterado: {antes} → {depois}", partner_id=p.id)
+        # Texto neutro: a própria empresa lê o histórico e não sabe quem a indicou
+        # (a gestão vê o indicador atual no campo).
+        atividades.registrar_evento(db, user, "Indicador alterado", partner_id=p.id)
     db.commit()
     db.refresh(p)
     return p

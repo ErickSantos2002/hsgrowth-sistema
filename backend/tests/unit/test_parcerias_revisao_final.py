@@ -173,3 +173,18 @@ def test_login_traz_termos_pendentes(client, db):
 def test_login_sem_termos_pendentes(client, db, test_salesperson_user):
     r = client.post("/api/v1/auth/login", json={"email": "sales@test.com", "password": "sales123"})
     assert r.status_code == 200 and r.json()["user"]["termos_pendentes"] is False
+
+
+def test_historico_da_troca_de_indicador_nao_revela_o_nome(client, db, manager_headers):
+    h, _ = hunter(db, "João Hunter")
+    h2, _ = hunter(db, "Maria Hunter", "m@hunter.com")
+    p = parceiro(db, "Dmap", indicated_by_partner_id=h.id)
+    dono = usuario(db, "partner", "dono@dmap.com", p)
+    for novo in (h2.id, None):
+        r = client.put(f"{URL}/parceiros/{p.id}", headers=manager_headers, json={"indicated_by_partner_id": novo})
+        assert r.status_code == 200, r.text
+    historico = client.get(f"{URL}/parceiros/{p.id}/atividades", headers=headers(dono))
+    assert historico.status_code == 200
+    textos = [a["description"] for a in historico.json()]
+    assert textos.count("Indicador alterado") == 2
+    assert not any("João" in (t or "") or "Maria" in (t or "") for t in textos)

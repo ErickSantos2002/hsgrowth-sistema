@@ -191,8 +191,9 @@ def test_gestao_troca_limpa_e_registra_indicador(client, db, manager_headers):
     r = client.put(f"{URL}/parceiros/{p.id}", headers=manager_headers, json={"indicated_by_partner_id": None})
     assert r.status_code == 200 and r.json()["indicated_by_partner_id"] is None
     textos = [a.description for a in db.query(PartnerActivity).filter(PartnerActivity.partner_id == p.id)]
-    assert "Indicador alterado: Hunter → Segundo" in textos
-    assert "Indicador alterado: Segundo → nenhum" in textos
+    # Neutro: o histórico é lido pela própria empresa, que não sabe quem a indicou.
+    assert textos.count("Indicador alterado") == 2
+    assert not any("Hunter" in (t or "") or "Segundo" in (t or "") for t in textos)
 
 
 def test_indicador_invalido_422(client, db, manager_headers):
