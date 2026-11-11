@@ -95,7 +95,7 @@ def test_parceiro_so_ve_o_proprio_card(client, db):
 
 
 def test_trava_ao_sair_de_potencial(client, db, admin_headers):
-    p = parceiro(db)
+    p = parceiro(db, stage="potencial")
     h = headers(usuario(db, "partner", "a@dmap.com", p))
 
     barrado = client.put(f"{URL}/parceiros/{p.id}/mover", json={"stage": "qualificacao"}, headers=h)

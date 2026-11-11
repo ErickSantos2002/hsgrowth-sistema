@@ -1,5 +1,5 @@
 """Apoio dos testes de Parcerias: perfis, logins, parceiros e oportunidades."""
-from datetime import date
+from datetime import date, datetime
 
 from app.core.security import create_access_token, hash_password
 from app.models.partner import Partner
@@ -43,11 +43,19 @@ def headers(user: User) -> dict:
 
 
 def parceiro(db, nome: str = "Dmap", **campos) -> Partner:
+    campos.setdefault("stage", "ativado")
+    campos.setdefault("terms_accepted_at", datetime.utcnow())
     p = Partner(name=nome, **campos)
     db.add(p)
     db.commit()
     db.refresh(p)
     return p
+
+
+def hunter(db, nome: str = "Hunter", email: str = "h@hunter.com"):
+    """Hunter (pessoa física que indica) e o login dele."""
+    p = parceiro(db, nome, kind="hunter")
+    return p, usuario(db, "hunter", email, partner=p)
 
 
 def parceiro_pronto(db, nome: str = "Dmap", stage: str = "ativacao") -> Partner:

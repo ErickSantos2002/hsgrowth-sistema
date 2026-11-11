@@ -55,7 +55,19 @@ class Partner(Base, TimestampMixin, SoftDeleteMixin):
 
     created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
+    # empresa | hunter. O hunter é pessoa física (CPF + chave Pix) que só indica.
+    kind = Column(String(10), nullable=False, default="empresa", server_default="empresa")
+    cpf = Column(String(11), nullable=True, index=True)
+    pix_key = Column(String(140), nullable=True)
+    # Quem indicou: um nível só (hunter -> empresa, ou empresa -> unidade).
+    indicated_by_partner_id = Column(Integer, ForeignKey("partners.id", ondelete="SET NULL"),
+                                     nullable=True, index=True)
+    blocked_at = Column(DateTime, nullable=True)
+    blocked_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    terms_accepted_at = Column(DateTime, nullable=True)
+
     hs_owner = relationship("User", foreign_keys=[hs_owner_id])
+    indicated_by = relationship("Partner", remote_side=[id], foreign_keys=[indicated_by_partner_id])
     team = relationship("PartnerTeamMember", back_populates="partner", order_by="PartnerTeamMember.name")
 
     def __repr__(self):

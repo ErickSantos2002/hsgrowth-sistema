@@ -8,7 +8,7 @@ from tests.unit.apoio_parcerias import CNPJ_A, oportunidade, parceiro, usuario
 
 
 def test_parceiro_com_equipe_oportunidade_produto_e_historico(db):
-    p = parceiro(db)
+    p = parceiro(db, stage="potencial")
     db.add(PartnerTeamMember(partner_id=p.id, name="Ana"))
     db.commit()
     op = oportunidade(db, p)
