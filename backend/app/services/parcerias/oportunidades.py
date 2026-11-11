@@ -72,6 +72,17 @@ def _conferir_valor_aberto(user: User, op: PartnerOpportunity) -> None:
         raise _422("Oportunidade encerrada: produtos e valores só a gestão altera.")
 
 
+MENSAGEM_GANHO_CONFIRMADO = "Ganho confirmado: desfaça o ganho para alterar os valores."
+# Campos que mudam a base da comissão (o frete não entra na base).
+CAMPOS_DA_BASE = ("global_discount", "global_discount_type", "modality")
+
+
+def _conferir_sem_ganho_confirmado(op: PartnerOpportunity) -> None:
+    """Com o ganho confirmado as comissões já saíram: produtos e base só mudam desfazendo o ganho."""
+    if op.won_confirmed_at is not None:
+        raise _422(MENSAGEM_GANHO_CONFIRMADO)
+
+
 def _liberacao(user: User, s: semaforo.Situacao, justificativa: Optional[str]) -> Optional[str]:
     """No vermelho só a gestão passa, e com justificativa. Devolve o texto da justificativa."""
     if s.resultado != "vermelho":
@@ -164,6 +175,8 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
             campos[campo] = 0
     if "global_discount_type" in campos and campos["global_discount_type"] is None:
         campos.pop("global_discount_type")
+    if any(c in campos and campos[c] != getattr(op, c) for c in CAMPOS_DA_BASE):
+        _conferir_sem_ganho_confirmado(op)
     tipo = campos.get("global_discount_type", op.global_discount_type)
     desconto = campos.get("global_discount", op.global_discount) or 0
     if tipo == "percent" and desconto > 100:
@@ -200,6 +213,8 @@ def mover(db: Session, user: User, opportunity_id: int, req: MoverRequest) -> Pa
     op = acesso.buscar_oportunidade_para_escrever(db, user, opportunity_id)
     origem = op.stage
     _so_venda(user, req.modality)
+    if req.modality and req.modality != op.modality and req.stage == origem:
+        _conferir_sem_ganho_confirmado(op)
     if req.expected_close_date:
         op.expected_close_date = req.expected_close_date
     if req.modality:
@@ -272,9 +287,16 @@ def confirmar_ganho(db: Session, user: User, opportunity_id: int, req: GanhoRequ
     if acesso.perfil(user) not in acesso.VALIDAM_ELEGIBILIDADE:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Só o Financeiro, admin ou gerente confirmam o ganho.")
     op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    # Trava a linha: duas confirmações ao mesmo tempo não geram comissão duas vezes.
+    op = db.query(PartnerOpportunity).filter(PartnerOpportunity.id == op.id) \
+        .populate_existing().with_for_update().one()
     if op.stage != "ganho":
         raise _422("Só oportunidade em Ganho tem o ganho confirmado ou negado.")
     if req.acao == "confirmar":
+        if op.won_confirmed_at is not None:
+            raise _422("Ganho já confirmado.")
+        if op.partner is None or op.partner.stage == "bloqueado":
+            raise _422("Parceiro bloqueado: desbloqueie antes de confirmar o ganho.")
         agora = datetime.utcnow()
         op.won_confirmed_at = agora
         op.won_confirmed_by_id = user.id
@@ -331,6 +353,7 @@ def adicionar_produto(db: Session, user: User, opportunity_id: int,
     acesso.exigir_escrita(user)
     op = acesso.buscar_oportunidade_para_escrever(db, user, opportunity_id)
     _conferir_valor_aberto(user, op)
+    _conferir_sem_ganho_confirmado(op)
     produto = _produto_do_catalogo(db, dados.product_id)
     ja_tem = db.query(PartnerOpportunityProduct).filter(
         PartnerOpportunityProduct.opportunity_id == op.id, PartnerOpportunityProduct.product_id == produto.id
@@ -354,6 +377,7 @@ def atualizar_produto(db: Session, user: User, opportunity_id: int, item_id: int
     acesso.exigir_escrita(user)
     op = acesso.buscar_oportunidade_para_escrever(db, user, opportunity_id)
     _conferir_valor_aberto(user, op)
+    _conferir_sem_ganho_confirmado(op)
     item = _buscar_item(db, op, item_id)
     for campo, valor in dados.model_dump(exclude_unset=True).items():
         if valor is not None:
@@ -370,6 +394,7 @@ def remover_produto(db: Session, user: User, opportunity_id: int, item_id: int) 
     acesso.exigir_escrita(user)
     op = acesso.buscar_oportunidade_para_escrever(db, user, opportunity_id)
     _conferir_valor_aberto(user, op)
+    _conferir_sem_ganho_confirmado(op)
     db.delete(_buscar_item(db, op, item_id))
     db.commit()
 

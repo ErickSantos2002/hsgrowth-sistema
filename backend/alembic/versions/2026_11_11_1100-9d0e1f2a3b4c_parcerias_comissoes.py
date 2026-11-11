@@ -78,6 +78,12 @@ def upgrade():
     op.create_index('ix_partner_commissions_beneficiary_partner_id', 'partner_commissions', ['beneficiary_partner_id'])
     op.create_index('ix_partner_commissions_opportunity_id', 'partner_commissions', ['opportunity_id'])
     op.create_index('ix_partner_commissions_status', 'partner_commissions', ['status'])
+    # Um lançamento ativo por (oportunidade, tipo); calibração fora.
+    op.create_index(
+        'uq_partner_commissions_ativo_por_tipo', 'partner_commissions', ['opportunity_id', 'kind'],
+        unique=True,
+        postgresql_where=sa.text("status IN ('pendente', 'paga') AND kind <> 'calibracao'"),
+    )
 
 
 def downgrade():

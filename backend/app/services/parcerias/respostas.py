@@ -1,5 +1,6 @@
 """Montagem das respostas da API de Parcerias (nomes e totais que a tela mostra)."""
 from datetime import datetime, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from sqlalchemy import func
@@ -112,20 +113,28 @@ def parceiros_out(db: Session, lista: List[Partner], user: Optional[User] = None
     ]
 
 
-def produtos_menos_desconto(total_produtos: float, op: PartnerOpportunity) -> float:
-    """Produtos − desconto geral (R$ ou %), sem o frete. Pode dar negativo: quem usa limita."""
-    desconto = float(op.global_discount or 0)
+CENTAVO = Decimal("0.01")
+
+
+def _decimal(valor) -> Decimal:
+    return Decimal(str(valor or 0)).quantize(CENTAVO, rounding=ROUND_HALF_UP)
+
+
+def produtos_menos_desconto(total_produtos, op: PartnerOpportunity) -> Decimal:
+    """Produtos − desconto geral (R$ ou %), sem o frete, em Decimal. Pode dar negativo: quem usa limita."""
+    total = _decimal(total_produtos)
+    desconto = _decimal(op.global_discount)
     if op.global_discount_type == "percent":
-        desconto = round(total_produtos * desconto / 100, 2)
-    return round(total_produtos - desconto, 2)
+        desconto = (total * desconto / 100).quantize(CENTAVO, rounding=ROUND_HALF_UP)
+    return total - desconto
 
 
-def valor_do_negocio(total_produtos: float, op: PartnerOpportunity) -> float:
+def valor_do_negocio(total_produtos, op: PartnerOpportunity) -> float:
     """Como no card de Serviço: produtos − desconto geral (R$ ou %) + frete, nunca negativo."""
-    return max(0.0, round(produtos_menos_desconto(total_produtos, op) + float(op.shipping or 0), 2))
+    return float(max(Decimal("0.00"), produtos_menos_desconto(total_produtos, op) + _decimal(op.shipping)))
 
 
-def totais_de_produtos(db: Session, ids: Iterable[int]) -> Dict[int, float]:
+def totais_de_produtos(db: Session, ids: Iterable[int]) -> Dict[int, Decimal]:
     """Soma dos produtos (quantidade × preço − desconto do item) por oportunidade."""
     ids = list(ids)
     if not ids:
@@ -140,13 +149,13 @@ def totais_de_produtos(db: Session, ids: Iterable[int]) -> Dict[int, float]:
         .group_by(PartnerOpportunityProduct.opportunity_id)
         .all()
     )
-    return {op_id: float(total or 0) for op_id, total in linhas}
+    return {op_id: _decimal(total) for op_id, total in linhas}
 
 
 def valores_por_oportunidade(db: Session, ops: Iterable[PartnerOpportunity]) -> Dict[int, float]:
     ops = list(ops)
     produtos = totais_de_produtos(db, [op.id for op in ops])
-    return {op.id: valor_do_negocio(produtos.get(op.id, 0.0), op) for op in ops}
+    return {op.id: valor_do_negocio(produtos.get(op.id, 0), op) for op in ops}
 
 
 def oportunidade_out(op: PartnerOpportunity, total: float = 0, user: Optional[User] = None) -> OportunidadeResponse:

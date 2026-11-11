@@ -6,7 +6,7 @@ Quem recebe é sempre um Partner (empresa ou hunter). Percentuais em Numeric(5, 
 """
 from datetime import datetime
 
-from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Column, Date, DateTime, ForeignKey, Index, Integer, Numeric, String, text
 
 from app.db.base import Base
 
@@ -40,6 +40,15 @@ class PartnerCalibration(Base):
 
 class PartnerCommission(Base):
     __tablename__ = "partner_commissions"
+    # Um lançamento ativo (pendente/paga) por oportunidade e tipo — barra a corrida de duas confirmações.
+    # Calibração fica de fora: cada calibração tem o seu.
+    __table_args__ = (
+        Index(
+            "uq_partner_commissions_ativo_por_tipo", "opportunity_id", "kind", unique=True,
+            postgresql_where=text("status IN ('pendente', 'paga') AND kind <> 'calibracao'"),
+            sqlite_where=text("status IN ('pendente', 'paga') AND kind <> 'calibracao'"),
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     beneficiary_partner_id = Column(Integer, ForeignKey("partners.id", ondelete="RESTRICT"),

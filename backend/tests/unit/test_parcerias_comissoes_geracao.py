@@ -225,7 +225,6 @@ def test_confirmar_negar_confirmar_nao_duplica(client, db, admin_headers):
     a = parceiro(db, "Empresa A", indicated_by_partner_id=h.id)
     op = oportunidade_ganha(db, a, 1000)
     _confirmar(client, op, admin_headers)
-    _confirmar(client, op, admin_headers)  # confirmar de novo também não duplica
     assert len(_lancamentos(db, op)) == 3
     _negar(client, op, admin_headers)
     assert {c.status for c in _lancamentos(db, op)} == {"cancelada"}
@@ -316,3 +315,200 @@ def test_sair_de_ganho_pelo_board_cancela(client, db, admin_headers):
     assert {c.status for c in _lancamentos(db, op)} == {"cancelada"}
     db.refresh(a)
     assert a.first_sale_opportunity_id is None
+
+
+# ─── Rodada de correções 1 ───────────────────────────────────────────────────
+
+def _ativos_por_tipo(db, op):
+    tipos = {}
+    for c in _lancamentos(db, op):
+        if c.status in ("pendente", "paga"):
+            tipos[c.kind] = tipos.get(c.kind, 0) + 1
+    return tipos
+
+
+def test_confirmar_duas_vezes_da_422(client, db, admin_headers):
+    config_comissoes(db, y=10, x=5, bonus=100)
+    h, _ = hunter(db)
+    a = parceiro(db, "Empresa A", indicated_by_partner_id=h.id)
+    op = oportunidade_ganha(db, a, 1000)
+    _confirmar(client, op, admin_headers)
+    r = client.put(f"{URL}/oportunidades/{op.id}/ganho", json={"acao": "confirmar"}, headers=admin_headers)
+    assert r.status_code == 422 and r.json()["detail"] == "Ganho já confirmado."
+    assert len(_lancamentos(db, op)) == 3
+
+
+def test_reconfirmar_depois_de_trocar_indicador_nao_paga_dois(client, db, admin_headers):
+    config_comissoes(db, y=10, x=5, bonus=100)
+    h1, _ = hunter(db, "Hunter 1", "h1@hunter.com")
+    h2, _ = hunter(db, "Hunter 2", "h2@hunter.com")
+    a = parceiro(db, "Empresa A", indicated_by_partner_id=h1.id)
+    op = oportunidade_ganha(db, a, 1000)
+    _confirmar(client, op, admin_headers)
+    _negar(client, op, admin_headers)
+    a.indicated_by_partner_id = h2.id
+    db.commit()
+    _de_novo_em_ganho(db, op)
+    _confirmar(client, op, admin_headers)
+    assert _ativos_por_tipo(db, op) == {"venda_propria": 1, "indicacao": 1, "bonus_primeira_venda": 1}
+    assert {c.status for c in _lancamentos(db, op, beneficiary_partner_id=h1.id)} == {"cancelada"}
+    assert {c.status for c in _lancamentos(db, op, beneficiary_partner_id=h2.id)} == {"pendente"}
+
+
+def test_pago_desfeito_troca_indicador_reconfirma_sem_duplicar(client, db, admin_headers):
+    config_comissoes(db, y=10, x=5, bonus=100)
+    h1, _ = hunter(db, "Hunter 1", "h1@hunter.com")
+    h2, _ = hunter(db, "Hunter 2", "h2@hunter.com")
+    a = parceiro(db, "Empresa A", indicated_by_partner_id=h1.id)
+    op = oportunidade_ganha(db, a, 1000)
+    _confirmar(client, op, admin_headers)
+    ind = _lancamentos(db, op, kind="indicacao")[0]
+    ind.status, ind.paid_at = "paga", datetime.utcnow()
+    db.commit()
+    _negar(client, op, admin_headers)
+    a.indicated_by_partner_id = h2.id
+    db.commit()
+    _de_novo_em_ganho(db, op)
+    _confirmar(client, op, admin_headers)
+    ativos = _ativos_por_tipo(db, op)
+    assert ativos["indicacao"] == 1 and ativos["venda_propria"] == 1
+    assert ativos.get("bonus_primeira_venda", 0) <= 1
+    assert _lancamentos(db, op, kind="indicacao", beneficiary_partner_id=h2.id) == []
+
+
+def test_indice_unico_barra_dois_ativos_do_mesmo_tipo(db):
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+
+    a = parceiro(db, "Dmap")
+    op = oportunidade_ganha(db, a, 1000)
+    comum = dict(source_partner_id=a.id, opportunity_id=op.id, amount=Decimal("1.00"))
+    db.add(PartnerCommission(beneficiary_partner_id=a.id, kind="venda_propria", status="pendente", **comum))
+    db.add(PartnerCommission(beneficiary_partner_id=a.id, kind="venda_propria", status="cancelada", **comum))
+    db.add(PartnerCommission(beneficiary_partner_id=a.id, kind="calibracao", status="pendente", **comum))
+    db.add(PartnerCommission(beneficiary_partner_id=a.id, kind="calibracao", status="pendente", **comum))
+    db.commit()
+    db.add(PartnerCommission(beneficiary_partner_id=a.id, kind="venda_propria", status="paga", **comum))
+    with pytest.raises(IntegrityError):
+        db.commit()
+    db.rollback()
+
+
+def test_corrida_vira_ja_gerado(db, monkeypatch):
+    config_comissoes(db, y=10, x=5, bonus=100)
+    a = parceiro(db, "Dmap")
+    op = oportunidade_ganha(db, a, 1000)
+    agora = datetime.utcnow()
+    assert len(comissoes.gerar(db, op, agora)) == 1
+    db.commit()
+    # Simula a outra transação: a checagem não vê o lançamento, o índice barra.
+    monkeypatch.setattr(comissoes, "_ja_lancado", lambda *a, **k: False)
+    assert comissoes.gerar(db, op, agora) == []
+    db.commit()
+    assert len(_lancamentos(db, op)) == 1
+
+
+def test_reancora_na_proxima_venda_confirmada(client, db, admin_headers):
+    config_comissoes(db, y=10, x=5, bonus=100)
+    h, _ = hunter(db)
+    a = parceiro(db, "Empresa A", indicated_by_partner_id=h.id)
+    op1 = oportunidade_ganha(db, a, 1000)
+    _confirmar(client, op1, admin_headers)
+    op2 = oportunidade_ganha(db, a, 2000)
+    _confirmar(client, op2, admin_headers)
+    _negar(client, op1, admin_headers)
+    db.refresh(a)
+    db.refresh(op2)
+    assert (a.first_sale_opportunity_id, a.first_sale_at) == (op2.id, op2.won_confirmed_at)
+    assert _resumo(_lancamentos(db, op2, beneficiary_partner_id=h.id)) == sorted([
+        (h.id, "bonus_primeira_venda", Decimal("100.00"), "pendente"),
+        (h.id, "indicacao", Decimal("100.00"), "pendente"),
+    ])
+
+
+def test_reancora_sem_indicacao_nao_gera_bonus(client, db, admin_headers):
+    config_comissoes(db, y=10, x=5, bonus=100)
+    a = parceiro(db, "Dmap")
+    op1 = oportunidade_ganha(db, a, 1000)
+    _confirmar(client, op1, admin_headers)
+    op2 = oportunidade_ganha(db, a, 2000)
+    _confirmar(client, op2, admin_headers)
+    _negar(client, op1, admin_headers)
+    db.refresh(a)
+    assert a.first_sale_opportunity_id == op2.id
+    assert _lancamentos(db, op2, kind="bonus_primeira_venda") == []
+
+
+def test_reancora_ignora_locacao_e_limpa_sem_outra_venda(client, db, admin_headers):
+    config_comissoes(db, y=10, x=5, bonus=100)
+    h, _ = hunter(db)
+    a = parceiro(db, "Empresa A", indicated_by_partner_id=h.id)
+    op1 = oportunidade_ganha(db, a, 1000)
+    _confirmar(client, op1, admin_headers)
+    loc = oportunidade_ganha(db, a, 3000, modality="locacao")
+    _confirmar(client, loc, admin_headers)
+    _negar(client, op1, admin_headers)
+    db.refresh(a)
+    assert (a.first_sale_at, a.first_sale_opportunity_id) == (None, None)
+
+
+def test_qualquer_lancamento_pago_mantem_ancora(client, db, admin_headers):
+    config_comissoes(db, y=10, x=5, bonus=100)
+    h, _ = hunter(db)
+    a = parceiro(db, "Empresa A", indicated_by_partner_id=h.id)
+    op1 = oportunidade_ganha(db, a, 1000)
+    _confirmar(client, op1, admin_headers)
+    op2 = oportunidade_ganha(db, a, 2000)
+    _confirmar(client, op2, admin_headers)
+    propria = _lancamentos(db, op1, kind="venda_propria")[0]
+    propria.status, propria.paid_at = "paga", datetime.utcnow()
+    db.commit()
+    _negar(client, op1, admin_headers)
+    db.refresh(a)
+    assert a.first_sale_opportunity_id == op1.id
+    assert _lancamentos(db, op2, kind="bonus_primeira_venda") == []
+
+
+def test_desconto_percentual_em_decimal(db):
+    a = parceiro(db, "Dmap")
+    op = oportunidade_ganha(db, a, Decimal("1000.05"), global_discount=10, global_discount_type="percent")
+    assert comissoes.base_sem_frete(db, op) == Decimal("900.04")
+
+
+def test_ganho_confirmado_trava_valores(client, db, admin_headers):
+    config_comissoes(db, y=10, x=5, bonus=100)
+    a = parceiro(db, "Dmap")
+    op = oportunidade_ganha(db, a, 1000, modality="venda")
+    item = op.products[0]
+    _confirmar(client, op, admin_headers)
+    msg = "Ganho confirmado: desfaça o ganho para alterar os valores."
+    base = f"{URL}/oportunidades/{op.id}"
+    respostas = [
+        client.post(f"{base}/produtos", json={"product_id": item.product_id}, headers=admin_headers),
+        client.put(f"{base}/produtos/{item.id}", json={"quantity": 2}, headers=admin_headers),
+        client.delete(f"{base}/produtos/{item.id}", headers=admin_headers),
+        client.put(base, json={"global_discount": 50}, headers=admin_headers),
+        client.put(base, json={"global_discount_type": "percent"}, headers=admin_headers),
+        client.put(base, json={"modality": "locacao"}, headers=admin_headers),
+    ]
+    for r in respostas:
+        assert r.status_code == 422, r.text
+        assert r.json()["detail"] == msg
+    assert client.put(base, json={"shipping": 30}, headers=admin_headers).status_code == 200
+    # Mandar o mesmo valor (formulário inteiro) não é alteração.
+    assert client.put(base, json={"modality": "venda", "global_discount": 0}, headers=admin_headers).status_code == 200
+    # Desfeito o ganho, volta a poder.
+    _negar(client, op, admin_headers)
+    assert client.put(base, json={"global_discount": 50}, headers=admin_headers).status_code == 200
+
+
+def test_parceiro_bloqueado_nao_confirma_ganho(client, db, admin_headers):
+    config_comissoes(db, y=10, x=5, bonus=100)
+    a = parceiro(db, "Dmap")
+    op = oportunidade_ganha(db, a, 1000)
+    a.stage = "bloqueado"
+    db.commit()
+    r = client.put(f"{URL}/oportunidades/{op.id}/ganho", json={"acao": "confirmar"}, headers=admin_headers)
+    assert r.status_code == 422
+    assert r.json()["detail"] == "Parceiro bloqueado: desbloqueie antes de confirmar o ganho."
+    assert _lancamentos(db, op) == []
