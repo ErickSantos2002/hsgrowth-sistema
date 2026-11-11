@@ -125,6 +125,8 @@ export default function MainLayout() {
     };
 
     if (user?.must_change_password) return <Navigate to="/trocar-senha" replace />;
+    // Termos pendentes: antes de qualquer request do layout (o backend dá 403 até o aceite).
+    if (user?.termos_pendentes) return <Navigate to="/aceite-termos" replace />;
 
     if (trancado && !location.pathname.startsWith("/parcerias") && location.pathname !== "/settings") {
         return <Navigate to="/parcerias" replace />;

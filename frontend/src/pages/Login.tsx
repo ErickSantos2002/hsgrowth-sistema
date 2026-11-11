@@ -33,7 +33,9 @@ export default function Login() {
         try {
             const usuario = await login(email, senha);
             // Força reload completo da página para limpar todo o estado anterior
-            window.location.href = usuario.must_change_password ? "/trocar-senha" : "/";
+            window.location.href = usuario.must_change_password
+                ? "/trocar-senha"
+                : usuario.termos_pendentes ? "/aceite-termos" : "/";
         } catch (error: any) {
             // A mensagem do servidor ("Email ou senha incorretos"), não a do
             // axios ("Request failed with status code 401").

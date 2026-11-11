@@ -11,6 +11,8 @@ import Login from './pages/Login';
 import DefinirSenha from './pages/DefinirSenha';
 import EsqueciSenha from './pages/EsqueciSenha';
 import TrocarSenha from './pages/TrocarSenha';
+import AceiteTermos from './pages/AceiteTermos';
+import TermosAdmin from './pages/parcerias/TermosAdmin';
 import Dashboard from './pages/Dashboard';
 import Boards from './pages/Boards';
 import KanbanBoard from './pages/KanbanBoard';
@@ -45,7 +47,7 @@ import ConsultaCnpj from './pages/parcerias/ConsultaCnpj';
 import ParceiroDetalhe from './pages/parcerias/ParceiroDetalhe';
 import OportunidadesKanban from './pages/parcerias/OportunidadesKanban';
 import OportunidadeDetalhe from './pages/parcerias/OportunidadeDetalhe';
-import { PERFIS_CONSULTA_CNPJ, PERFIS_PARCERIAS } from './constants/parcerias';
+import { PERFIS_CONSULTA_CNPJ, PERFIS_GESTAO, PERFIS_PARCERIAS } from './constants/parcerias';
 // Módulo de Propostas descontinuado (migrado p/ sistema externo). Página e API
 // preservadas no repo (dormentes); rota removida da navegação.
 
@@ -109,6 +111,15 @@ const AquisicaoGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <>{children}</>;
 };
 
+/** Só admin e gerente publicam os termos do Programa. */
+const GestaoParceriasGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    if (user && !PERFIS_GESTAO.includes(user.role)) {
+        return <Navigate to="/parcerias" replace />;
+    }
+    return <>{children}</>;
+};
+
 const ConsultaCnpjGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     if (user && !PERFIS_CONSULTA_CNPJ.includes(user.role)) {
@@ -137,6 +148,15 @@ const AppRoutes: React.FC = () => (
       element={
         <ProtectedRoute>
           <TrocarSenha />
+        </ProtectedRoute>
+      }
+    />
+    {/* Aceite obrigatório dos termos do Programa de Parceiros: logado, fora do MainLayout */}
+    <Route
+      path="/aceite-termos"
+      element={
+        <ProtectedRoute>
+          <AceiteTermos />
         </ProtectedRoute>
       }
     />
@@ -200,6 +220,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/servicos/:boardId" element={<ServiceTeamGuard><ServiceKanban /></ServiceTeamGuard>} />
       <Route path="/servicos/:boardId/cards/:cardId" element={<ServiceTeamGuard><ServiceCardDetails /></ServiceTeamGuard>} />
       <Route path="/parcerias" element={<ParceriasGuard><ParceriasHome /></ParceriasGuard>} />
+      <Route path="/parcerias/termos" element={<GestaoParceriasGuard><TermosAdmin /></GestaoParceriasGuard>} />
       <Route path="/parcerias/consulta-cnpj" element={<ConsultaCnpjGuard><ConsultaCnpj /></ConsultaCnpjGuard>} />
       <Route path="/parcerias/aquisicao" element={<ParceriasGuard><AquisicaoGuard><AquisicaoKanban /></AquisicaoGuard></ParceriasGuard>} />
       <Route path="/parcerias/aquisicao/:partnerId" element={<ParceriasGuard><AquisicaoGuard><ParceiroDetalhe /></AquisicaoGuard></ParceriasGuard>} />

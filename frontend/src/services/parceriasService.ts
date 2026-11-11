@@ -28,6 +28,9 @@ export interface ParceiroForm {
   qualification_status?: string | null;
   onboarding_date?: string | null;
   contract_date?: string | null;
+  pix_key?: string | null;
+  /** Só gestão; tem de ser um hunter. */
+  indicated_by_partner_id?: number | null;
 }
 
 export interface Parceiro extends ParceiroForm {
@@ -45,6 +48,15 @@ export interface Parceiro extends ParceiroForm {
   loss_reason?: string | null;
   loss_detail?: string | null;
   lost_at?: string | null;
+  /** "empresa" (parceiro comum) ou "hunter". */
+  kind?: "empresa" | "hunter";
+  cpf?: string | null;
+  /** Só gestão e o próprio dono veem. */
+  pix_key?: string | null;
+  indicated_by_partner_id?: number | null;
+  indicated_by_name?: string | null;
+  terms_accepted_at?: string | null;
+  blocked_at?: string | null;
   created_at: string;
   updated_at: string;
   oportunidades_por_etapa: Record<string, number>;
@@ -248,6 +260,61 @@ export interface FiltroHistorico {
   pagina?: number;
 }
 
+export type AudienceTermos = "empresa" | "hunter";
+
+export interface TermosPendentes {
+  pendente: boolean;
+  version?: number;
+  text?: string;
+}
+
+export interface Termos {
+  id: number;
+  audience: AudienceTermos;
+  version: number;
+  text: string;
+  published_at: string;
+  published_by_id?: number | null;
+}
+
+export interface IndicacaoForm {
+  name: string;
+  cnpj: string;
+  main_contact_name: string;
+  main_contact_email: string;
+  main_contact_phone?: string;
+  pix_key?: string;
+}
+
+export interface IndicacaoResposta {
+  parceiro: Parceiro;
+  email_enviado: boolean;
+}
+
+export interface HunterForm {
+  name: string;
+  /** Exatamente um entre cpf e cnpj. */
+  cpf?: string;
+  cnpj?: string;
+  email: string;
+  phone?: string;
+  pix_key?: string;
+}
+
+export interface Hunter {
+  id: number;
+  name: string;
+  cpf?: string | null;
+  cnpj?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  pix_key?: string | null;
+  stage: string;
+  indicadas?: number;
+  status_acesso?: StatusAcesso | null;
+  [campo: string]: unknown;
+}
+
 export function mensagemDeErro(err: any, padrao: string): string {
   const detail = err?.response?.data?.detail;
   if (typeof detail === "string") return detail;
@@ -302,6 +369,44 @@ const parceriasService = {
   },
   async alterarAcesso(id: number, userId: number, isActive: boolean) {
     return (await api.put<Acesso>(`${BASE}/parceiros/${id}/acessos/${userId}`, { is_active: isActive })).data;
+  },
+
+  async bloquear(id: number) {
+    return (await api.post<Parceiro>(`${BASE}/parceiros/${id}/bloquear`)).data;
+  },
+  async desbloquear(id: number) {
+    return (await api.post<Parceiro>(`${BASE}/parceiros/${id}/desbloquear`)).data;
+  },
+
+  // Termos do Programa
+  async termosPendentes() {
+    return (await api.get<TermosPendentes>(`${BASE}/termos/pendente`)).data;
+  },
+  async aceitarTermos() {
+    return (await api.post<{ ok: boolean; stage: string; terms_accepted_at: string }>(`${BASE}/termos/aceitar`)).data;
+  },
+  async listarTermos(audience: AudienceTermos) {
+    return (await api.get<Termos[]>(`${BASE}/termos`, { params: { audience } })).data;
+  },
+  async publicarTermos(audience: AudienceTermos, text: string) {
+    return (await api.post<Termos>(`${BASE}/termos`, { audience, text })).data;
+  },
+
+  // Indicações e hunters
+  async indicar(dados: IndicacaoForm) {
+    return (await api.post<IndicacaoResposta>(`${BASE}/indicacoes`, dados)).data;
+  },
+  async listarIndicacoes() {
+    return (await api.get<Parceiro[]>(`${BASE}/indicacoes`)).data;
+  },
+  async criarHunter(dados: HunterForm) {
+    return (await api.post<ConviteResposta>(`${BASE}/hunters`, dados)).data;
+  },
+  async listarHunters() {
+    return (await api.get<Hunter[]>(`${BASE}/hunters`)).data;
+  },
+  async reenviarConviteHunter(id: number, enviar: boolean) {
+    return (await api.post<ConviteResposta>(`${BASE}/hunters/${id}/convite`, { enviar })).data;
   },
 
   // Board 2

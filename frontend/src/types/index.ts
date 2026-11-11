@@ -10,9 +10,11 @@ export interface User {
   phone: string | null;
   email_signature: string | null;
   role_id: number;
-  role: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service" | "partner" | "finance" | "partner_member"; // Role do usuário
+  role: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service" | "partner" | "finance" | "partner_member" | "hunter"; // Role do usuário
   role_name: string; // Nome formatado da role (Administrador, Gerente, Vendedor, SDR)
   must_change_password?: boolean;
+  /** Parceiro/hunter que ainda não aceitou os termos vigentes do Programa. */
+  termos_pendentes?: boolean;
   partner_id?: number | null;
   status_acesso?: "ativo" | "convite_pendente" | "convite_expirado" | "desativado" | null;
   convite_expira_em?: string | null; // validade do último convite (pendente/expirado)

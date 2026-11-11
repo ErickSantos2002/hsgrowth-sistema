@@ -30,21 +30,32 @@ export const BOARDS_PARCERIAS: BoardParceria[] = [
   },
 ];
 
-/** Cor da coluna/etapa: verde no fim do funil, vermelho no Perdido, azul no resto. */
+/** As situações do board de Aquisição (mudam sozinhas ou pelo botão Bloquear; o backend manda a lista em /etapas). */
+export const ETAPAS_AQUISICAO = [
+  { codigo: "potencial", nome: "Potencial", cor: COLORS.board.gray },
+  { codigo: "convidado", nome: "Convidado", cor: COLORS.board.amber },
+  { codigo: "ativado", nome: "Ativado", cor: COLORS.board.green },
+  { codigo: "bloqueado", nome: "Bloqueado", cor: COLORS.board.red },
+];
+
+/** Cor da coluna/etapa: as situações de Aquisição têm cor própria; no Pipeline, verde no Ganho, vermelho no Perdido, azul no resto. */
 export const corDaEtapa = (codigo: string) =>
-  ["ativado", "ganho"].includes(codigo) ? COLORS.board.green
+  ETAPAS_AQUISICAO.find((e) => e.codigo === codigo)?.cor
+  ?? (codigo === "ganho" ? COLORS.board.green
   : codigo === "perdido" ? COLORS.board.red
-  : COLORS.board.blue;
+  : COLORS.board.blue);
 
 // Perfis presos à seção Parcerias — o backend nega o resto do CRM a eles.
-export const PERFIS_TRANCADOS = ["partner", "partner_member", "finance"];
+export const PERFIS_TRANCADOS = ["partner", "partner_member", "hunter", "finance"];
 // O vendedor entra, mas só vê os parceiros dos quais é o Responsável H&S (o backend filtra).
-export const PERFIS_PARCERIAS = ["admin", "manager", "finance", "partner", "partner_member", "salesperson"];
-/** Lado do parceiro: o dono ou um vendedor da equipe dele. */
-export const PERFIS_DO_PARCEIRO = ["partner", "partner_member"];
+export const PERFIS_PARCERIAS = ["admin", "manager", "finance", "partner", "partner_member", "hunter", "salesperson"];
+/** Lado do parceiro: o dono, um vendedor da equipe dele ou o hunter (que não tem equipe). */
+export const PERFIS_DO_PARCEIRO = ["partner", "partner_member", "hunter"];
+/** Quem indica empresas ao Programa. */
+export const PERFIS_QUE_INDICAM = ["partner", "hunter"];
 export const PERFIS_GESTAO = ["admin", "manager"];
 // Quem mexe nos cards que enxerga (o Financeiro só acompanha).
-export const PERFIS_QUE_EDITAM = ["admin", "manager", "partner", "partner_member", "salesperson"];
+export const PERFIS_QUE_EDITAM = ["admin", "manager", "partner", "partner_member", "hunter", "salesperson"];
 // Quem pode ser escolhido como Responsável H&S — é opcional.
 export const PERFIS_RESPONSAVEL_HS = ["admin", "manager", "salesperson"];
 
@@ -81,7 +92,7 @@ export const formatarCnpj = (cnpj?: string | null) =>
     : cnpj || "";
 
 // Consulta de CNPJ: o SDR consulta mesmo sem ver os boards de Parcerias.
-export const PERFIS_CONSULTA_CNPJ = ["admin", "manager", "salesperson", "sdr", "partner", "partner_member"];
+export const PERFIS_CONSULTA_CNPJ = ["admin", "manager", "salesperson", "sdr", "partner", "partner_member", "hunter"];
 
 export const SEMAFORO_COR: Record<string, string> = {
   verde: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
