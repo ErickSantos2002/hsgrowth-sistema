@@ -112,17 +112,23 @@ def parceiros_out(db: Session, lista: List[Partner], user: Optional[User] = None
     ]
 
 
-def valor_do_negocio(total_produtos: float, op: PartnerOpportunity) -> float:
-    """Como no card de Serviço: produtos − desconto geral (R$ ou %) + frete, nunca negativo."""
+def produtos_menos_desconto(total_produtos: float, op: PartnerOpportunity) -> float:
+    """Produtos − desconto geral (R$ ou %), sem o frete. Pode dar negativo: quem usa limita."""
     desconto = float(op.global_discount or 0)
     if op.global_discount_type == "percent":
         desconto = round(total_produtos * desconto / 100, 2)
-    return max(0.0, round(total_produtos - desconto + float(op.shipping or 0), 2))
+    return round(total_produtos - desconto, 2)
 
 
-def valores_por_oportunidade(db: Session, ops: Iterable[PartnerOpportunity]) -> Dict[int, float]:
-    ops = list(ops)
-    if not ops:
+def valor_do_negocio(total_produtos: float, op: PartnerOpportunity) -> float:
+    """Como no card de Serviço: produtos − desconto geral (R$ ou %) + frete, nunca negativo."""
+    return max(0.0, round(produtos_menos_desconto(total_produtos, op) + float(op.shipping or 0), 2))
+
+
+def totais_de_produtos(db: Session, ids: Iterable[int]) -> Dict[int, float]:
+    """Soma dos produtos (quantidade × preço − desconto do item) por oportunidade."""
+    ids = list(ids)
+    if not ids:
         return {}
     linhas = (
         db.query(
@@ -130,11 +136,16 @@ def valores_por_oportunidade(db: Session, ops: Iterable[PartnerOpportunity]) -> 
             func.sum(PartnerOpportunityProduct.quantity * PartnerOpportunityProduct.unit_price
                      - PartnerOpportunityProduct.discount),
         )
-        .filter(PartnerOpportunityProduct.opportunity_id.in_([op.id for op in ops]))
+        .filter(PartnerOpportunityProduct.opportunity_id.in_(ids))
         .group_by(PartnerOpportunityProduct.opportunity_id)
         .all()
     )
-    produtos = {op_id: float(total or 0) for op_id, total in linhas}
+    return {op_id: float(total or 0) for op_id, total in linhas}
+
+
+def valores_por_oportunidade(db: Session, ops: Iterable[PartnerOpportunity]) -> Dict[int, float]:
+    ops = list(ops)
+    produtos = totais_de_produtos(db, [op.id for op in ops])
     return {op.id: valor_do_negocio(produtos.get(op.id, 0.0), op) for op in ops}
 
 

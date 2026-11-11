@@ -19,7 +19,7 @@ from app.schemas.parcerias import (
     ProdutoItemCreate,
     ProdutoItemUpdate,
 )
-from app.services.parcerias import acesso, atividades, clientes, semaforo
+from app.services.parcerias import acesso, atividades, clientes, comissoes, semaforo
 from app.services.parcerias.etapas import (
     ETAPAS_OPORTUNIDADE,
     TravaError,
@@ -221,6 +221,10 @@ def mover(db: Session, user: User, opportunity_id: int, req: MoverRequest) -> Pa
         # Ganho novo (ou reaberto) volta a esperar a confirmação da H&S.
         op.won_confirmed_at = op.won_confirmed_by_id = None
         op.lost_at = agora if req.stage == "perdido" else None
+        if origem == "ganho":
+            # Saiu de Ganho: as comissões pendentes caem (as pagas ficam).
+            comissoes.cancelar_da_oportunidade(
+                db, op, f"Saiu de Ganho para {nome_da_etapa(ETAPAS_OPORTUNIDADE, req.stage)}")
         if origem == "perdido":
             op.loss_reason = op.loss_detail = None
         atividades.registrar_evento(
@@ -271,15 +275,18 @@ def confirmar_ganho(db: Session, user: User, opportunity_id: int, req: GanhoRequ
     if op.stage != "ganho":
         raise _422("Só oportunidade em Ganho tem o ganho confirmado ou negado.")
     if req.acao == "confirmar":
-        op.won_confirmed_at = datetime.utcnow()
+        agora = datetime.utcnow()
+        op.won_confirmed_at = agora
         op.won_confirmed_by_id = user.id
         atividades.registrar_evento(db, user, "Ganho confirmado", opportunity_id=op.id)
+        comissoes.gerar(db, op, agora)
     else:
         motivo = (req.motivo or "").strip()
         if not motivo:
             raise _422("Explique por que o ganho foi negado.")
         op.stage = "aguardando_pedido"
         op.won_at = op.won_confirmed_at = op.won_confirmed_by_id = None
+        comissoes.cancelar_da_oportunidade(db, op, f"Ganho negado: {motivo}")
         atividades.registrar_evento(db, user, f"Ganho negado: {motivo}", opportunity_id=op.id,
                                     tipo="stage_change")
     db.commit()

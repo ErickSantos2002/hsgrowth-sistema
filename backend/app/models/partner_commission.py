@@ -42,13 +42,13 @@ class PartnerCommission(Base):
     __tablename__ = "partner_commissions"
 
     id = Column(Integer, primary_key=True, index=True)
-    beneficiary_partner_id = Column(Integer, ForeignKey("partners.id", ondelete="CASCADE"),
+    beneficiary_partner_id = Column(Integer, ForeignKey("partners.id", ondelete="RESTRICT"),
                                     nullable=False, index=True)
     # A empresa/hunter que vendeu.
-    source_partner_id = Column(Integer, ForeignKey("partners.id", ondelete="CASCADE"), nullable=False)
-    opportunity_id = Column(Integer, ForeignKey("partner_opportunities.id", ondelete="CASCADE"),
+    source_partner_id = Column(Integer, ForeignKey("partners.id", ondelete="RESTRICT"), nullable=False)
+    opportunity_id = Column(Integer, ForeignKey("partner_opportunities.id", ondelete="RESTRICT"),
                             nullable=False, index=True)
-    calibration_id = Column(Integer, ForeignKey("partner_calibrations.id", ondelete="CASCADE"), nullable=True)
+    calibration_id = Column(Integer, ForeignKey("partner_calibrations.id", ondelete="RESTRICT"), nullable=True)
     # venda_propria | indicacao | bonus_primeira_venda | calibracao
     kind = Column(String(20), nullable=False)
     base_value = Column(Numeric(12, 2), nullable=False, default=0)
