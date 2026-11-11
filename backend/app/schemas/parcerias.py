@@ -740,3 +740,120 @@ class TermosAceiteResponse(BaseModel):
     ok: bool = True
     stage: str
     terms_accepted_at: Optional[datetime] = None
+
+
+# ─── Comissões ───────────────────────────────────────────────────────────────
+
+class ComissaoConfigUpdate(BaseModel):
+    own_sale_pct: Decimal = Field(..., ge=0, le=100)
+    indication_pct: Decimal = Field(..., ge=0, le=100)
+    first_sale_bonus: Decimal = Field(..., ge=0)
+    indication_months: int = Field(..., ge=1, le=120)
+    calibration_pct: Decimal = Field(..., ge=0, le=100)
+
+    @field_validator("first_sale_bonus")
+    @classmethod
+    def _bonus_no_limite(cls, v):
+        return _valor_no_limite(v)
+
+
+class ComissaoConfigResponse(BaseModel):
+    own_sale_pct: Decimal
+    indication_pct: Decimal
+    first_sale_bonus: Decimal
+    indication_months: int
+    calibration_pct: Decimal
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ComissaoResponse(BaseModel):
+    """`de`/`ate` dos filtros são datas de calendário inclusivas, aplicadas em `created_at`."""
+    id: int
+    beneficiary_partner_id: int
+    beneficiary_name: Optional[str] = None
+    source_partner_id: int
+    source_name: Optional[str] = None
+    opportunity_id: int
+    opportunity_title: Optional[str] = None
+    calibration_id: Optional[int] = None
+    kind: str
+    base_value: Decimal
+    rate: Optional[Decimal] = None
+    fixed_value: Optional[Decimal] = None
+    amount: Decimal
+    status: str
+    created_at: datetime
+    paid_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    cancel_reason: Optional[str] = None
+
+
+class ComissaoResumo(BaseModel):
+    pendente: Decimal
+    pago: Decimal
+    cancelado: Decimal
+
+
+class APagarBeneficiario(BaseModel):
+    beneficiary_partner_id: int
+    nome: str
+    kind: str
+    documento: Optional[str] = None
+    pix_key: Optional[str] = None
+    total: Decimal
+    quantidade: int
+    lancamentos: List[ComissaoResponse]
+
+
+class PagarRequest(BaseModel):
+    """Exatamente um entre `ids` e `beneficiary_partner_id` (este com `ate` opcional, inclusivo)."""
+    ids: Optional[List[int]] = None
+    beneficiary_partner_id: Optional[int] = None
+    ate: Optional[date] = None
+
+    @model_validator(mode="after")
+    def _um_so(self):
+        if (self.ids is None) == (self.beneficiary_partner_id is None):
+            raise ValueError("Informe ids ou beneficiary_partner_id (só um dos dois).")
+        if self.ids is not None and (not self.ids or self.ate is not None):
+            raise ValueError("Com ids, informe ao menos um id e não use ate.")
+        return self
+
+
+class PagarResponse(BaseModel):
+    quantidade: int
+    total: Decimal
+    ignorados: int = 0
+
+
+class CalibracaoCreate(BaseModel):
+    serial_number: str = Field(..., min_length=1, max_length=60)
+    calibration_date: date
+    value: Decimal = Field(..., gt=0)
+
+    @field_validator("serial_number")
+    @classmethod
+    def _serie(cls, v):
+        v = v.strip()
+        if not v:
+            raise ValueError("Informe o número de série.")
+        return v
+
+    @field_validator("value")
+    @classmethod
+    def _valor(cls, v):
+        return _valor_no_limite(v)
+
+
+class CalibracaoResponse(BaseModel):
+    id: int
+    opportunity_id: int
+    serial_number: str
+    calibration_date: date
+    value: Decimal
+    created_at: datetime
+    commission_amount: Optional[Decimal] = None
+
+    model_config = {"from_attributes": True}

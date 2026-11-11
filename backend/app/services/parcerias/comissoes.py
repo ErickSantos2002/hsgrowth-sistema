@@ -181,3 +181,259 @@ def cancelar_da_oportunidade(db: Session, op: PartnerOpportunity, motivo: str) -
         if algo_pago is None:
             _reancorar(db, vendedor, op, agora)
     db.flush()
+
+
+# ─── Consulta, pagamento e calibração ────────────────────────────────────────
+
+from datetime import date, time  # noqa: E402
+
+from fastapi import HTTPException, status  # noqa: E402
+from sqlalchemy import func  # noqa: E402
+
+from app.models.partner_commission import PartnerCalibration  # noqa: E402
+from app.models.user import User  # noqa: E402
+from app.services.parcerias import acesso  # noqa: E402
+
+MSG_SO_FINANCEIRO = "Só o Financeiro, admin ou gerente marcam pagamento."
+MSG_LIMITE_CALIBRACAO = "Este aparelho já tem 2 calibrações com comissão."
+MSG_CALIBRACAO_SEM_GANHO = "Só oportunidade com ganho confirmado recebe calibração."
+LIMITE_CALIBRACOES = 2
+VEEM_TUDO = ("admin", "manager", "finance")
+FINANCEIRO = ("admin", "manager", "finance")
+
+
+def exigir_ver_tudo(user: User) -> None:
+    if acesso.perfil(user) not in VEEM_TUDO:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Só admin, gerente ou Financeiro.")
+
+
+def exigir_pagador(user: User) -> None:
+    if acesso.perfil(user) not in FINANCEIRO:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, MSG_SO_FINANCEIRO)
+
+
+def ler_config(db: Session) -> PartnerCommissionConfig:
+    cfg = db.query(PartnerCommissionConfig).first()
+    if cfg is None:
+        cfg = PartnerCommissionConfig(own_sale_pct=0, indication_pct=0, first_sale_bonus=0,
+                                      indication_months=24, calibration_pct=0)
+        db.add(cfg)
+        db.commit()
+        db.refresh(cfg)
+    return cfg
+
+
+def salvar_config(db: Session, user: User, dados) -> PartnerCommissionConfig:
+    acesso.exigir_gestao(user)
+    cfg = ler_config(db)
+    cfg.own_sale_pct = dados.own_sale_pct
+    cfg.indication_pct = dados.indication_pct
+    cfg.first_sale_bonus = dados.first_sale_bonus
+    cfg.indication_months = dados.indication_months
+    cfg.calibration_pct = dados.calibration_pct
+    cfg.updated_by_id = user.id
+    cfg.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(cfg)
+    return cfg
+
+
+def _fim_do_dia(d: date) -> datetime:
+    return datetime.combine(d, time.max)
+
+
+def _filtrar(q, de: Optional[date], ate: Optional[date]):
+    if de is not None:
+        q = q.filter(PartnerCommission.created_at >= datetime.combine(de, time.min))
+    if ate is not None:
+        q = q.filter(PartnerCommission.created_at <= _fim_do_dia(ate))
+    return q
+
+
+def _escopo(db: Session, user: User, beneficiario: Optional[int]):
+    """Consulta de lançamentos já restrita ao que o login pode ver."""
+    perfil = acesso.perfil(user)
+    q = db.query(PartnerCommission)
+    if perfil in VEEM_TUDO:
+        if beneficiario is not None:
+            q = q.filter(PartnerCommission.beneficiary_partner_id == beneficiario)
+    elif perfil in (acesso.PARCEIRO_DONO, acesso.HUNTER):
+        # Ignora o parâmetro: só os próprios lançamentos.
+        q = q.filter(PartnerCommission.beneficiary_partner_id == acesso.parceiro_do_login(user))
+    else:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Você não tem acesso às comissões.")
+    return q
+
+
+def _como_resposta(db: Session, lancs: List[PartnerCommission]) -> list:
+    ids = {x for c in lancs for x in (c.beneficiary_partner_id, c.source_partner_id)}
+    nomes = dict(db.query(Partner.id, Partner.name).filter(Partner.id.in_(ids)).all()) if ids else {}
+    ops = {c.opportunity_id for c in lancs}
+    titulos = dict(db.query(PartnerOpportunity.id, PartnerOpportunity.title)
+                   .filter(PartnerOpportunity.id.in_(ops)).all()) if ops else {}
+    return [{
+        "id": c.id, "beneficiary_partner_id": c.beneficiary_partner_id,
+        "beneficiary_name": nomes.get(c.beneficiary_partner_id),
+        "source_partner_id": c.source_partner_id, "source_name": nomes.get(c.source_partner_id),
+        "opportunity_id": c.opportunity_id, "opportunity_title": titulos.get(c.opportunity_id),
+        "calibration_id": c.calibration_id, "kind": c.kind, "base_value": c.base_value,
+        "rate": c.rate, "fixed_value": c.fixed_value, "amount": c.amount, "status": c.status,
+        "created_at": c.created_at, "paid_at": c.paid_at, "cancelled_at": c.cancelled_at,
+        "cancel_reason": c.cancel_reason,
+    } for c in lancs]
+
+
+def listar(db: Session, user: User, status_: Optional[str], beneficiario: Optional[int],
+           de: Optional[date], ate: Optional[date]) -> list:
+    q = _filtrar(_escopo(db, user, beneficiario), de, ate)
+    if status_:
+        q = q.filter(PartnerCommission.status == status_)
+    return _como_resposta(db, q.order_by(PartnerCommission.created_at.desc(), PartnerCommission.id.desc()).all())
+
+
+def resumo(db: Session, user: User, status_: Optional[str] = None, beneficiario: Optional[int] = None,
+           de: Optional[date] = None, ate: Optional[date] = None) -> dict:
+    q = _filtrar(_escopo(db, user, beneficiario), de, ate)
+    somas = {s: ZERO for s in ("pendente", "paga", "cancelada")}
+    for st, total in q.with_entities(PartnerCommission.status, func.sum(PartnerCommission.amount)) \
+            .group_by(PartnerCommission.status).all():
+        somas[st] = _dinheiro(total)
+    return {"pendente": somas["pendente"], "pago": somas["paga"], "cancelado": somas["cancelada"]}
+
+
+def a_pagar(db: Session, user: User, de: Optional[date], ate: Optional[date]) -> list:
+    exigir_ver_tudo(user)
+    lancs = _filtrar(db.query(PartnerCommission).filter(PartnerCommission.status == "pendente"), de, ate) \
+        .order_by(PartnerCommission.created_at, PartnerCommission.id).all()
+    grupos = {}
+    for item in _como_resposta(db, lancs):
+        grupos.setdefault(item["beneficiary_partner_id"], []).append(item)
+    parceiros = {p.id: p for p in db.query(Partner).filter(Partner.id.in_(list(grupos))).all()} if grupos else {}
+    saida = []
+    for pid, itens in grupos.items():
+        p = parceiros.get(pid)
+        eh_hunter = p is not None and p.kind == "hunter"
+        saida.append({
+            "beneficiary_partner_id": pid,
+            "nome": p.name if p else str(pid),
+            "kind": "hunter" if eh_hunter else "empresa",
+            "documento": ((p.cpf or p.cnpj) if eh_hunter else p.cnpj) if p else None,
+            "pix_key": p.pix_key if p else None,
+            "total": sum((i["amount"] for i in itens), ZERO),
+            "quantidade": len(itens),
+            "lancamentos": itens,
+        })
+    saida.sort(key=lambda g: (-g["total"], g["nome"]))
+    return saida
+
+
+def _virgula(valor: Decimal) -> str:
+    return f"{Decimal(valor):.2f}".replace(".", ",")
+
+
+def _celula(texto) -> str:
+    """Neutraliza fórmula (=, +, -, @) e o separador no CSV aberto em planilha."""
+    t = "" if texto is None else str(texto).replace("\r", " ").replace("\n", " ")
+    if t[:1] in ("=", "+", "-", "@", "\t"):
+        t = "'" + t
+    if ";" in t or '"' in t:
+        t = '"' + t.replace('"', '""') + '"'
+    return t
+
+
+def a_pagar_csv(db: Session, user: User, de: Optional[date], ate: Optional[date]) -> str:
+    linhas = ["Beneficiário;Tipo;Documento;Chave PIX;Quantidade;Total"]
+    for g in a_pagar(db, user, de, ate):
+        linhas.append(";".join([
+            _celula(g["nome"]), _celula(g["kind"]), _celula(g["documento"]), _celula(g["pix_key"]),
+            str(g["quantidade"]), _virgula(g["total"]),
+        ]))
+    return "﻿" + "\r\n".join(linhas) + "\r\n"
+
+
+def pagar(db: Session, user: User, dados) -> dict:
+    exigir_pagador(user)
+    q = db.query(PartnerCommission).filter(PartnerCommission.status == "pendente")
+    if dados.ids is not None:
+        pedidos = set(dados.ids)
+        q = q.filter(PartnerCommission.id.in_(pedidos))
+    else:
+        pedidos = None
+        q = q.filter(PartnerCommission.beneficiary_partner_id == dados.beneficiary_partner_id)
+        if dados.ate is not None:
+            q = q.filter(PartnerCommission.created_at <= _fim_do_dia(dados.ate))
+    pendentes = q.with_for_update().all()
+    agora = datetime.utcnow()
+    for c in pendentes:
+        c.status, c.paid_at, c.paid_by_id = "paga", agora, user.id
+    db.commit()
+    return {
+        "quantidade": len(pendentes),
+        "total": sum((c.amount for c in pendentes), ZERO),
+        "ignorados": (len(pedidos) - len(pendentes)) if pedidos is not None else 0,
+    }
+
+
+def _op_para_calibracao(db: Session, user: User, opportunity_id: int, escrever: bool) -> PartnerOpportunity:
+    perfil = acesso.perfil(user)
+    if escrever:
+        if perfil not in FINANCEIRO:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Só o Financeiro, admin ou gerente lançam calibração.")
+    elif perfil == acesso.PARCEIRO_VENDEDOR or perfil not in VEEM_TUDO + (acesso.PARCEIRO_DONO, acesso.HUNTER):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Você não tem acesso às calibrações.")
+    op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    if not escrever:
+        acesso.exigir_oportunidade_propria(user, op)
+    return op
+
+
+def listar_calibracoes(db: Session, user: User, opportunity_id: int) -> list:
+    op = _op_para_calibracao(db, user, opportunity_id, escrever=False)
+    cals = db.query(PartnerCalibration).filter(PartnerCalibration.opportunity_id == op.id) \
+        .order_by(PartnerCalibration.id).all()
+    valores = dict(db.query(PartnerCommission.calibration_id, PartnerCommission.amount).filter(
+        PartnerCommission.opportunity_id == op.id, PartnerCommission.kind == "calibracao",
+        PartnerCommission.status != "cancelada").all())
+    return [{"id": c.id, "opportunity_id": c.opportunity_id, "serial_number": c.serial_number,
+             "calibration_date": c.calibration_date, "value": c.value, "created_at": c.created_at,
+             "commission_amount": valores.get(c.id)} for c in cals]
+
+
+def lancar_calibracao(db: Session, user: User, opportunity_id: int, dados) -> dict:
+    op = _op_para_calibracao(db, user, opportunity_id, escrever=True)
+    # Trava a oportunidade: duas calibrações simultâneas do mesmo aparelho não passam do limite.
+    op = db.query(PartnerOpportunity).filter(PartnerOpportunity.id == op.id) \
+        .populate_existing().with_for_update().one()
+    if op.won_confirmed_at is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MSG_CALIBRACAO_SEM_GANHO)
+    existentes = db.query(func.count(PartnerCalibration.id)).filter(
+        PartnerCalibration.opportunity_id == op.id,
+        PartnerCalibration.serial_number == dados.serial_number,
+    ).scalar() or 0
+    if existentes >= LIMITE_CALIBRACOES:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MSG_LIMITE_CALIBRACAO)
+
+    agora = datetime.utcnow()
+    cal = PartnerCalibration(opportunity_id=op.id, serial_number=dados.serial_number,
+                             calibration_date=dados.calibration_date, value=_dinheiro(dados.value),
+                             created_by_id=user.id, created_at=agora)
+    db.add(cal)
+    db.flush()
+
+    comissao = None
+    # Só empresa vendendo (não hunter) e só venda (locação não gera) recebem Z%.
+    if op.partner is not None and op.partner.kind == "empresa" and op.modality != "locacao":
+        taxa = Decimal(str(_config(db).calibration_pct or 0))
+        valor = (cal.value * taxa / 100).quantize(CENTAVO, rounding=ROUND_HALF_UP)
+        if valor > 0:
+            comissao = PartnerCommission(
+                opportunity_id=op.id, calibration_id=cal.id, kind="calibracao",
+                beneficiary_partner_id=op.partner_id, source_partner_id=op.partner_id,
+                base_value=cal.value, rate=taxa, amount=valor, status="pendente", created_at=agora,
+            )
+            db.add(comissao)
+    db.commit()
+    db.refresh(cal)
+    return {"id": cal.id, "opportunity_id": cal.opportunity_id, "serial_number": cal.serial_number,
+            "calibration_date": cal.calibration_date, "value": cal.value, "created_at": cal.created_at,
+            "commission_amount": comissao.amount if comissao else None}

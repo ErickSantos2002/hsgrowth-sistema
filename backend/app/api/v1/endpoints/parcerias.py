@@ -9,12 +9,23 @@ parceiro e vendedor); quem vê o quê fica em app/services/parcerias/acesso.py.
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
-from fastapi.responses import FileResponse
+from datetime import date
+
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_active_user, get_db, ip_do_cliente
 from app.models.user import User
 from app.schemas.parcerias import (
+    APagarBeneficiario,
+    CalibracaoCreate,
+    CalibracaoResponse,
+    ComissaoConfigResponse,
+    ComissaoConfigUpdate,
+    ComissaoResponse,
+    ComissaoResumo,
+    PagarRequest,
+    PagarResponse,
     AcessoCreate,
     AcessoCriadoResponse,
     AcessoMembroCreate,
@@ -53,7 +64,7 @@ from app.schemas.parcerias import (
 )
 from app.schemas.acessos import ConviteRequest, ConviteResponse
 from app.services import tokens_de_acesso
-from app.services.parcerias import acesso, atividades, bloqueio, hunters, indicacoes, oportunidades, parceiros, respostas, termos
+from app.services.parcerias import acesso, atividades, bloqueio, comissoes, hunters, indicacoes, oportunidades, parceiros, respostas, termos
 from app.services.parcerias.etapas import ETAPAS_AQUISICAO, ETAPAS_OPORTUNIDADE
 
 router = APIRouter()
@@ -388,3 +399,62 @@ def baixar_arquivo(atividade_id: int, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_active_user)):
     caminho, nome, tipo = atividades.arquivo_para_baixar(db, current_user, atividade_id)
     return FileResponse(path=str(caminho), filename=nome, media_type=tipo)
+
+
+# ─── Comissões ───────────────────────────────────────────────────────────────
+
+@router.get("/comissoes/config", response_model=ComissaoConfigResponse)
+def ler_config_comissoes(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    comissoes.exigir_ver_tudo(current_user)
+    return comissoes.ler_config(db)
+
+
+@router.put("/comissoes/config", response_model=ComissaoConfigResponse)
+def salvar_config_comissoes(dados: ComissaoConfigUpdate, db: Session = Depends(get_db),
+                            current_user: User = Depends(get_current_active_user)):
+    return comissoes.salvar_config(db, current_user, dados)
+
+
+@router.get("/comissoes", response_model=List[ComissaoResponse])
+def listar_comissoes(status: Optional[str] = Query(None, pattern="^(pendente|paga|cancelada)$"),
+                     beneficiario: Optional[int] = None, de: Optional[date] = None, ate: Optional[date] = None,
+                     db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    return comissoes.listar(db, current_user, status, beneficiario, de, ate)
+
+
+@router.get("/comissoes/resumo", response_model=ComissaoResumo)
+def resumo_comissoes(beneficiario: Optional[int] = None, de: Optional[date] = None, ate: Optional[date] = None,
+                     db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    return comissoes.resumo(db, current_user, None, beneficiario, de, ate)
+
+
+@router.get("/comissoes/a-pagar", response_model=List[APagarBeneficiario])
+def comissoes_a_pagar(de: Optional[date] = None, ate: Optional[date] = None, db: Session = Depends(get_db),
+                      current_user: User = Depends(get_current_active_user)):
+    return comissoes.a_pagar(db, current_user, de, ate)
+
+
+@router.get("/comissoes/a-pagar.csv")
+def comissoes_a_pagar_csv(de: Optional[date] = None, ate: Optional[date] = None, db: Session = Depends(get_db),
+                          current_user: User = Depends(get_current_active_user)):
+    conteudo = comissoes.a_pagar_csv(db, current_user, de, ate)
+    return Response(content=conteudo.encode("utf-8"), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="comissoes-a-pagar.csv"'})
+
+
+@router.post("/comissoes/pagar", response_model=PagarResponse)
+def pagar_comissoes(dados: PagarRequest, db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_active_user)):
+    return comissoes.pagar(db, current_user, dados)
+
+
+@router.get("/oportunidades/{opportunity_id}/calibracoes", response_model=List[CalibracaoResponse])
+def listar_calibracoes(opportunity_id: int, db: Session = Depends(get_db),
+                       current_user: User = Depends(get_current_active_user)):
+    return comissoes.listar_calibracoes(db, current_user, opportunity_id)
+
+
+@router.post("/oportunidades/{opportunity_id}/calibracoes", response_model=CalibracaoResponse, status_code=201)
+def lancar_calibracao(opportunity_id: int, dados: CalibracaoCreate, db: Session = Depends(get_db),
+                      current_user: User = Depends(get_current_active_user)):
+    return comissoes.lancar_calibracao(db, current_user, opportunity_id, dados)
