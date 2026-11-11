@@ -15,7 +15,8 @@ import parceriasService, {
 } from "../../services/parceriasService";
 
 const dinheiro = (v: string | number) => formatarMoeda(Number(v));
-const dia = (iso: string) => new Date(iso).toLocaleDateString("pt-BR");
+// O backend manda datetime sem fuso (UTC): sem o "Z" o navegador leria como hora local e o dia poderia mudar.
+const dia = (iso: string) => new Date(/(Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : `${iso}Z`).toLocaleDateString("pt-BR");
 
 const OPCOES_STATUS = [
   { value: "", label: "Todas as situações" },
@@ -236,13 +237,20 @@ function APagar() {
       confirmText: "Marcar pago",
     });
     if (!ok) return;
+    // O backend aceita até 500 ids por chamada: paga em lotes, em sequência.
+    let quantidade = 0, soma = 0, ignorados = 0;
     try {
-      const r = await parceriasService.pagarComissoes(ids);
-      showSuccess(`${r.quantidade} ${r.quantidade === 1 ? "lançamento pago" : "lançamentos pagos"} (${dinheiro(r.total)}).`);
-      if (r.ignorados > 0) showWarning(`${r.ignorados} já não estavam pendentes e foram ignorados.`);
+      for (let i = 0; i < ids.length; i += 500) {
+        const r = await parceriasService.pagarComissoes(ids.slice(i, i + 500));
+        quantidade += r.quantidade; soma += Number(r.total); ignorados += r.ignorados;
+      }
+      showSuccess(`${quantidade} ${quantidade === 1 ? "lançamento pago" : "lançamentos pagos"} (${dinheiro(soma)}).`);
+      if (ignorados > 0) showWarning(`${ignorados} já não estavam pendentes e foram ignorados.`);
       await carregar();
     } catch (e) {
+      if (quantidade > 0) showWarning(`${quantidade} lançamentos já foram pagos antes do erro.`);
       showError(mensagemDeErro(e, "Erro ao marcar como pago."));
+      await carregar();
     }
   };
 

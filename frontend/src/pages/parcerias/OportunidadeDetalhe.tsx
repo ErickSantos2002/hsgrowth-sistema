@@ -383,7 +383,7 @@ export default function OportunidadeDetalhe() {
           </ExpandableSection>
 
           <ProdutosDaOportunidade op={op} podeEditar={podeMover} onOportunidade={setOp} />
-          {op.won_confirmed_at && <CalibracoesDaOportunidade oportunidadeId={op.id} />}
+          {op.won_confirmed_at && !somenteLeitura && <CalibracoesDaOportunidade oportunidadeId={op.id} />}
         </div>
         {clienteAberto && (
           <ClientModal
