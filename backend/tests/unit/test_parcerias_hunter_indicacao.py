@@ -249,3 +249,13 @@ def test_financeiro_ve_pix_e_cpf_e_dono_de_outra_empresa_nao(client, db):
     dono_outra = usuario(db, "partner", "dono@outra.com", outra)
     r2 = client.get(f"{URL}/parceiros/{p.id}", headers=headers(dono_outra))
     assert r2.status_code == 404 or (r2.json()["pix_key"] is None and r2.json()["cpf"] is None)
+
+
+def test_vendedor_hs_responsavel_nao_ve_pix_nem_cpf(client, db):
+    vend = usuario(db, "salesperson", "vend@hs.com")
+    p = parceiro(db, "Dmap", pix_key="k", cpf="12345678909", hs_owner_id=vend.id)
+    r = client.get(f"{URL}/parceiros/{p.id}", headers=headers(vend))
+    assert r.status_code == 200, r.text
+    assert r.json()["pix_key"] is None and r.json()["cpf"] is None
+    lista = {i["id"]: i for i in client.get(f"{URL}/parceiros", headers=headers(vend)).json()}
+    assert lista[p.id]["pix_key"] is None and lista[p.id]["cpf"] is None

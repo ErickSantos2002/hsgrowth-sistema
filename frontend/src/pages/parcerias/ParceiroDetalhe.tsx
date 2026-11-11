@@ -114,7 +114,7 @@ export default function ParceiroDetalhe() {
   // Equipe e Acessos só existem para empresa, vistos pelo dono ou pela gestão.
   const mostraEquipe = podeLerEquipe && !ehHunterCard;
   // A chave PIX é da gestão e do dono; os outros nem a veem.
-  const veChavePix = gestao || meuCard || user?.role === "finance";
+  const veChavePix = gestao || meuCard || user?.role === "finance"; // vendedor H&S não vê PIX nem CPF
 
   const salvar = async () => {
     // Manda só o que mudou: um dado antigo fora da regra (ex.: telefone curto,

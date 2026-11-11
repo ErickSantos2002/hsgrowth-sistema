@@ -68,6 +68,15 @@ def _de_outro(user: Optional[User], p: Partner) -> bool:
     return user is not None and acesso.eh_externo(user) and p.id != acesso.parceiro_do_login(user)
 
 
+def _ve_dados_de_pagamento(user: Optional[User], p: Partner) -> bool:
+    """PIX e CPF: só admin, gerente, Financeiro e o login dono do próprio card (vendedor H&S não vê)."""
+    if user is None:
+        return True
+    if acesso.perfil(user) in ("admin", "manager", "finance"):
+        return True
+    return acesso.eh_externo(user) and p.id == acesso.parceiro_do_login(user)
+
+
 def parceiro_out(db: Session, p: Partner, user: Optional[User] = None) -> ParceiroResponse:
     contrato = None
     if p.contract_activity_id is not None:
@@ -79,9 +88,10 @@ def parceiro_out(db: Session, p: Partner, user: Optional[User] = None) -> Parcei
         "contract_file_name": contrato,
     }
     if _de_outro(user, p):
-        # Quem indicou acompanha a situação; motivo de perda, contrato e dados de pagamento são da empresa.
-        campos.update({"loss_reason": None, "loss_detail": None, "contract_file_name": None,
-                       "pix_key": None, "cpf": None})
+        # Quem indicou acompanha a situação; motivo de perda e contrato são da empresa.
+        campos.update({"loss_reason": None, "loss_detail": None, "contract_file_name": None})
+    if not _ve_dados_de_pagamento(user, p):
+        campos.update({"pix_key": None, "cpf": None})
     return ParceiroResponse.model_validate(p).model_copy(update=campos)
 
 
