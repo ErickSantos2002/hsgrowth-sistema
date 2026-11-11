@@ -9,7 +9,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_user, get_current_active_user, require_role, token_anterior_a_senha
+from app.api.deps import get_db, get_current_user, get_current_active_user, ip_do_cliente, require_role, token_anterior_a_senha
 from app.core.limite_redefinicao import permitir_redefinicao
 from app.core.security import (
     verify_password,
@@ -111,11 +111,7 @@ async def login(
 
     # Captura informações da requisição para possível log de falha
     # X-Forwarded-For é preenchido pelo proxy reverso (Traefik/Nginx) com o IP real do cliente
-    client_ip = (
-        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-        or request.headers.get("X-Real-IP", "")
-        or (request.client.host if request.client else "unknown")
-    )
+    client_ip = ip_do_cliente(request)
     user_agent = request.headers.get("user-agent", "unknown")
 
     # Verifica se o usuário existe e a senha está correta
@@ -339,11 +335,7 @@ async def logout(
 
     # Registra no audit log
     # X-Forwarded-For é preenchido pelo proxy reverso (Traefik/Nginx) com o IP real do cliente
-    client_ip = (
-        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-        or request.headers.get("X-Real-IP", "")
-        or (request.client.host if request.client else "unknown")
-    )
+    client_ip = ip_do_cliente(request)
     user_agent = request.headers.get("user-agent", "unknown")
 
     audit_log = AuditLog(
@@ -895,11 +887,7 @@ async def microsoft_callback(
     db.commit()
 
     # Registra no audit log
-    client_ip = (
-        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-        or request.headers.get("X-Real-IP", "")
-        or (request.client.host if request.client else "unknown")
-    )
+    client_ip = ip_do_cliente(request)
     user_agent = request.headers.get("user-agent", "unknown")
 
     audit_log = AuditLog(

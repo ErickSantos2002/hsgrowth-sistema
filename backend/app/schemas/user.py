@@ -94,6 +94,7 @@ class UserResponse(UserBase):
     email_signature: Optional[str] = Field(None, description="Assinatura HTML do e-mail")
     must_change_password: bool = Field(False, description="Precisa trocar a senha no próximo acesso")
     partner_id: Optional[int] = Field(None, description="ID do parceiro (perfis de parceiro)")
+    termos_pendentes: bool = Field(False, description="Dono/hunter com termos do Programa a aceitar")
     status_acesso: Optional[str] = Field(None, description="ativo | convite_pendente | convite_expirado | desativado")
     convite_expira_em: Optional[datetime] = Field(None, description="Validade do último convite (só com convite pendente/expirado)")
 

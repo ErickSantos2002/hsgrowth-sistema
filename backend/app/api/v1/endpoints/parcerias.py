@@ -8,11 +8,11 @@ parceiro e vendedor); quem vê o quê fica em app/services/parcerias/acesso.py.
 """
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_active_user, get_db
+from app.api.deps import get_current_active_user, get_db, ip_do_cliente
 from app.models.user import User
 from app.schemas.parcerias import (
     AcessoCreate,
@@ -46,10 +46,13 @@ from app.schemas.parcerias import (
     ProdutoItemCreate,
     ProdutoItemResponse,
     ProdutoItemUpdate,
+    TermosCreate,
+    TermosPendenteResponse,
+    TermosResponse,
 )
 from app.schemas.acessos import ConviteRequest, ConviteResponse
 from app.services import tokens_de_acesso
-from app.services.parcerias import acesso, atividades, bloqueio, hunters, indicacoes, oportunidades, parceiros, respostas
+from app.services.parcerias import acesso, atividades, bloqueio, hunters, indicacoes, oportunidades, parceiros, respostas, termos
 from app.services.parcerias.etapas import ETAPAS_AQUISICAO, ETAPAS_OPORTUNIDADE
 
 router = APIRouter()
@@ -61,6 +64,33 @@ def etapas_dos_boards():
         aquisicao=[EtapaOut(codigo=e.codigo, nome=e.nome) for e in ETAPAS_AQUISICAO],
         oportunidades=[EtapaOut(codigo=e.codigo, nome=e.nome) for e in ETAPAS_OPORTUNIDADE],
     )
+
+
+# ─── Termos do Programa ──────────────────────────────────────────────────────
+
+@router.get("/termos/pendente", response_model=TermosPendenteResponse, response_model_exclude_none=True)
+def termos_pendentes(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    t = termos.pendente(db, current_user)
+    return TermosPendenteResponse(pendente=bool(t), version=t.version if t else None, text=t.text if t else None)
+
+
+@router.post("/termos/aceitar", response_model=ParceiroResponse)
+def aceitar_termos(request: Request, db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_active_user)):
+    p = termos.aceitar(db, current_user, ip_do_cliente(request))
+    return respostas.parceiro_out(db, acesso.buscar_parceiro(db, current_user, p.id), current_user)
+
+
+@router.get("/termos", response_model=List[TermosResponse])
+def listar_termos(audience: str = Query("empresa", pattern="^(empresa|hunter)$"), db: Session = Depends(get_db),
+                  current_user: User = Depends(get_current_active_user)):
+    return termos.listar(db, current_user, audience)
+
+
+@router.post("/termos", response_model=TermosResponse, status_code=201)
+def publicar_termos(dados: TermosCreate, db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_active_user)):
+    return termos.publicar(db, current_user, dados.audience, dados.text)
 
 
 # ─── Board 1: Aquisição de Parceiros ─────────────────────────────────────────

@@ -26,6 +26,7 @@ class NotificationTypeEnum(str, Enum):
     BADGE_EARNED = "badge_earned"
     RANKING_UPDATED = "ranking_updated"
     POINTS_AWARDED = "points_awarded"
+    PARCERIA_ATIVADA = "parceria_ativada"
     GENERAL = "general"
 
 

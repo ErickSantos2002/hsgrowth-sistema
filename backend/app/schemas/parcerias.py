@@ -709,3 +709,27 @@ class ConsultaHistoricoResponse(BaseModel):
 class AvisoParceriasItem(BaseModel):
     parceiro: str
     desde: datetime
+
+
+# ─── Termos do Programa ──────────────────────────────────────────────────────
+
+class TermosCreate(BaseModel):
+    audience: Literal["empresa", "hunter"]
+    text: str = Field(..., min_length=20)
+
+
+class TermosResponse(BaseModel):
+    id: int
+    audience: str
+    version: int
+    text: str
+    published_at: datetime
+    published_by_id: Optional[int] = None
+
+    model_config = {"from_attributes": True}
+
+
+class TermosPendenteResponse(BaseModel):
+    pendente: bool
+    version: Optional[int] = None
+    text: Optional[str] = None

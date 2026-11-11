@@ -188,7 +188,10 @@ async def get_current_user_data(
     Endpoint de dados do usuário autenticado.
     """
     # Converte para response schema
-    return _user_response(current_user)
+    resposta = _user_response(current_user)
+    from app.services.parcerias import termos  # import tardio: evita ciclo
+    resposta.termos_pendentes = termos.pendente(db, current_user) is not None
+    return resposta
 
 
 @router.get(

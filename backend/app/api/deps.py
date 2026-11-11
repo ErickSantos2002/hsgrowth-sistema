@@ -36,6 +36,18 @@ CAMINHOS_COM_SENHA_PENDENTE = (
 )
 PREFIXOS_COM_SENHA_PENDENTE = ("/api/v1/auth/token/",)
 
+# Com termos do Programa pendentes, dono e hunter só alcançam isto.
+PREFIXOS_COM_TERMOS_PENDENTES = ("/api/v1/auth/", "/api/v1/users/me", "/api/v1/parcerias/termos")
+
+
+def ip_do_cliente(request: Request) -> str:
+    """IP real do cliente: o proxy reverso (Traefik/Nginx) o põe em X-Forwarded-For."""
+    return (
+        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or request.headers.get("X-Real-IP", "")
+        or (request.client.host if request.client else "unknown")
+    )
+
 CAMINHOS_DOS_TRANCADOS = (
     "/api/v1/auth/",
     "/api/v1/users/me",
@@ -209,7 +221,8 @@ async def get_current_user(
 
 async def get_current_active_user(
     request: Request,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> User:
     """
     Dependency para obter usuário autenticado e ativo.
@@ -247,6 +260,16 @@ async def get_current_active_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso restrito ao Programa de Parceiros."
         )
+
+    # Dono/hunter sem o aceite da versão vigente dos termos: só auth, /users/me e os termos.
+    if papel in ("partner", "hunter") and not request.url.path.startswith(PREFIXOS_COM_TERMOS_PENDENTES):
+        from app.services.parcerias import termos  # import tardio: evita ciclo
+
+        if termos.pendente(db, current_user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Aceite os termos do Programa de Parceiros para continuar.",
+            )
     return current_user
 
 
