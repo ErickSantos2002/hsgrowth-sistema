@@ -92,7 +92,8 @@ export default function ParceriasHome() {
   }, [carregar, ehParceiro]);
 
   // O parceiro trabalha no Pipeline; o card dele no board 1 abre pelo menu do board.
-  if (ehParceiro) return <Navigate to="/parcerias/oportunidades" replace />;
+  // O hunter não tem oportunidades: a página dele são as indicações.
+  if (ehParceiro) return <Navigate to={user?.role === "hunter" ? "/parcerias/indicacoes" : "/parcerias/oportunidades"} replace />;
 
   const termo = busca.trim().toLowerCase();
   const boards = BOARDS_PARCERIAS.filter(

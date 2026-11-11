@@ -13,6 +13,8 @@ import EsqueciSenha from './pages/EsqueciSenha';
 import TrocarSenha from './pages/TrocarSenha';
 import AceiteTermos from './pages/AceiteTermos';
 import TermosAdmin from './pages/parcerias/TermosAdmin';
+import Hunters from './pages/parcerias/Hunters';
+import Indicacoes from './pages/parcerias/Indicacoes';
 import Dashboard from './pages/Dashboard';
 import Boards from './pages/Boards';
 import KanbanBoard from './pages/KanbanBoard';
@@ -47,7 +49,7 @@ import ConsultaCnpj from './pages/parcerias/ConsultaCnpj';
 import ParceiroDetalhe from './pages/parcerias/ParceiroDetalhe';
 import OportunidadesKanban from './pages/parcerias/OportunidadesKanban';
 import OportunidadeDetalhe from './pages/parcerias/OportunidadeDetalhe';
-import { PERFIS_CONSULTA_CNPJ, PERFIS_GESTAO, PERFIS_PARCERIAS } from './constants/parcerias';
+import { PERFIS_CONSULTA_CNPJ, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM } from './constants/parcerias';
 // Módulo de Propostas descontinuado (migrado p/ sistema externo). Página e API
 // preservadas no repo (dormentes); rota removida da navegação.
 
@@ -98,6 +100,15 @@ const ParceriasGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =
     const { user } = useAuth();
     if (user && !PERFIS_PARCERIAS.includes(user.role)) {
         return <Navigate to="/" replace />;
+    }
+    return <>{children}</>;
+};
+
+/** Indicações: só o dono do parceiro e o hunter. */
+const IndicacoesGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    if (user && !PERFIS_QUE_INDICAM.includes(user.role)) {
+        return <Navigate to="/parcerias" replace />;
     }
     return <>{children}</>;
 };
@@ -221,6 +232,8 @@ const AppRoutes: React.FC = () => (
       <Route path="/servicos/:boardId/cards/:cardId" element={<ServiceTeamGuard><ServiceCardDetails /></ServiceTeamGuard>} />
       <Route path="/parcerias" element={<ParceriasGuard><ParceriasHome /></ParceriasGuard>} />
       <Route path="/parcerias/termos" element={<GestaoParceriasGuard><TermosAdmin /></GestaoParceriasGuard>} />
+      <Route path="/parcerias/hunters" element={<GestaoParceriasGuard><Hunters /></GestaoParceriasGuard>} />
+      <Route path="/parcerias/indicacoes" element={<IndicacoesGuard><Indicacoes /></IndicacoesGuard>} />
       <Route path="/parcerias/consulta-cnpj" element={<ConsultaCnpjGuard><ConsultaCnpj /></ConsultaCnpjGuard>} />
       <Route path="/parcerias/aquisicao" element={<ParceriasGuard><AquisicaoGuard><AquisicaoKanban /></AquisicaoGuard></ParceriasGuard>} />
       <Route path="/parcerias/aquisicao/:partnerId" element={<ParceriasGuard><AquisicaoGuard><ParceiroDetalhe /></AquisicaoGuard></ParceriasGuard>} />
