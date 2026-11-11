@@ -63,7 +63,7 @@ def atualizar(db: Session, user: User, partner_id: int, dados: ParceiroUpdate) -
         campos.pop("hs_owner_id", None)
         campos.pop("indicated_by_partner_id", None)
     if not (acesso.eh_gestao(user)
-            or ((acesso.eh_dono_do_parceiro(user) or acesso.eh_hunter(user)) and p.id == acesso.parceiro_do_login(user))):
+            or (acesso.eh_dono_do_parceiro(user) and p.id == acesso.parceiro_do_login(user))):
         # Dado de pagamento: só a gestão ou o dono do próprio card.
         campos.pop("pix_key", None)
     mudou_pix = "pix_key" in campos and campos["pix_key"] != p.pix_key

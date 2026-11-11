@@ -160,6 +160,11 @@ class ParceiroCreate(BaseModel):
     def _validar_email(cls, valor):
         return _email_opcional(valor)
 
+    @field_validator("pix_key")
+    @classmethod
+    def _pix_em_branco(cls, valor):
+        return (valor or "").strip() or None
+
 
 class ParceiroUpdate(ParceiroCreate):
     name: Optional[str] = Field(None, min_length=1, max_length=255)

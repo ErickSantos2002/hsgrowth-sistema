@@ -178,3 +178,33 @@ def test_convidado_bloqueado_nao_define_senha(client, db, manager_headers, email
     token = re.search(r"token=(.+)$", link).group(1)
     client.post(f"{URL}/parceiros/{p.id}/bloquear", headers=manager_headers)
     assert client.get(f"/api/v1/auth/token/{token}").json()["valido"] is False
+
+
+def test_desbloquear_nao_reativa_login_desligado_antes(client, db, manager_headers):
+    p = parceiro(db, "Dmap")
+    dono = usuario(db, "partner", "dono@dmap.com", p)
+    dono.is_active = False  # a gestão desligou antes do bloqueio
+    vend = usuario(db, "partner_member", "v@dmap.com", p)
+    db.add(PartnerTeamMember(partner_id=p.id, name="V", user_id=vend.id, is_active=True))
+    db.commit()
+    client.post(f"{URL}/parceiros/{p.id}/bloquear", headers=manager_headers)
+    client.post(f"{URL}/parceiros/{p.id}/desbloquear", headers=manager_headers)
+    db.refresh(dono); db.refresh(vend); db.refresh(p)
+    assert not dono.is_active and vend.is_active and p.blocked_login_ids is None
+
+
+def test_so_gestao_reenvia_convite_do_hunter(client, db, emails):
+    role(db, "hunter")
+    p = parceiro(db, "Dmap")
+    h, hl = hunter(db)
+    for quem in (usuario(db, "partner", "dono@dmap.com", p), hl):
+        r = client.post(f"{URL}/hunters/{h.id}/convite", headers=headers(quem), json={"enviar": False})
+        assert r.status_code == 403
+
+
+def test_pix_em_branco_nao_gera_evento(client, db, manager_headers):
+    from app.models.partner_activity import PartnerActivity
+    p = parceiro(db, "Dmap")
+    r = client.put(f"{URL}/parceiros/{p.id}", headers=manager_headers, json={"pix_key": "  "})
+    assert r.status_code == 200 and r.json()["pix_key"] is None
+    assert db.query(PartnerActivity).filter(PartnerActivity.description == "Chave PIX alterada").count() == 0

@@ -27,7 +27,9 @@ def bloquear(db: Session, user: User, partner_id: int) -> Partner:
     p.stage = "bloqueado"
     p.blocked_at = datetime.utcnow()
     p.blocked_by_id = user.id
-    for login, _ in _logins(db, p):
+    logins = _logins(db, p)
+    p.blocked_login_ids = [login.id for login, _ in logins if login.is_active]
+    for login, _ in logins:
         login.is_active = False
     atividades.registrar_evento(db, user, "Parceiro bloqueado", partner_id=p.id)
     db.commit()
@@ -46,12 +48,16 @@ def desbloquear(db: Session, user: User, partner_id: int) -> Partner:
             PartnerTeamMember.user_id.isnot(None)).all()
     }
     tem_dono = False
+    estavam_ativos = set(p.blocked_login_ids or [])
     for login, papel in _logins(db, p):  # login excluído (soft delete) nunca volta
         if papel in PAPEIS_DONOS:
-            login.is_active = True
             tem_dono = True
-        elif papel == "partner_member" and login.id in membros_ativos:
+        # Só volta quem estava ativo no bloqueio (desligado antes continua desligado).
+        if login.id not in estavam_ativos:
+            continue
+        if papel in PAPEIS_DONOS or (papel == "partner_member" and login.id in membros_ativos):
             login.is_active = True
+    p.blocked_login_ids = None
     p.stage = "ativado" if p.terms_accepted_at else ("convidado" if tem_dono else "potencial")
     p.blocked_at = None
     p.blocked_by_id = None

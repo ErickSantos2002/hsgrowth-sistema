@@ -30,6 +30,7 @@ def upgrade():
     op.add_column('partners', sa.Column('blocked_by_id', sa.Integer(),
                                         sa.ForeignKey('users.id', ondelete='SET NULL'), nullable=True))
     op.add_column('partners', sa.Column('terms_accepted_at', sa.DateTime(), nullable=True))
+    op.add_column('partners', sa.Column('blocked_login_ids', sa.JSON(), nullable=True))
     op.create_index('ix_partners_cpf', 'partners', ['cpf'])
     op.create_index('ix_partners_indicated_by_partner_id', 'partners', ['indicated_by_partner_id'])
 
@@ -88,5 +89,5 @@ def downgrade():
     op.drop_table('partner_terms')
     op.drop_index('ix_partners_indicated_by_partner_id', table_name='partners')
     op.drop_index('ix_partners_cpf', table_name='partners')
-    for c in ('terms_accepted_at', 'blocked_by_id', 'blocked_at', 'indicated_by_partner_id', 'pix_key', 'cpf', 'kind'):
+    for c in ('blocked_login_ids', 'terms_accepted_at', 'blocked_by_id', 'blocked_at', 'indicated_by_partner_id', 'pix_key', 'cpf', 'kind'):
         op.drop_column('partners', c)

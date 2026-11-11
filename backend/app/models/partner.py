@@ -5,7 +5,7 @@ O parceiro (ex.: Dmap) é ao mesmo tempo o canal de aquisição e o card do boar
 "Aquisição de Parceiros". Tabelas separadas de Vendas e de Serviço: o parceiro
 é gente de fora e não pode cruzar com os dados do CRM.
 """
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import JSON, Boolean, Column, Date, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -65,6 +65,8 @@ class Partner(Base, TimestampMixin, SoftDeleteMixin):
     blocked_at = Column(DateTime, nullable=True)
     blocked_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     terms_accepted_at = Column(DateTime, nullable=True)
+    # Logins que estavam ativos ao bloquear: só eles voltam no desbloqueio.
+    blocked_login_ids = Column(JSON, nullable=True)
 
     hs_owner = relationship("User", foreign_keys=[hs_owner_id])
     indicated_by = relationship("Partner", remote_side=[id], foreign_keys=[indicated_by_partner_id])
