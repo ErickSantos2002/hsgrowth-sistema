@@ -287,9 +287,11 @@ export default function ParceiroDetalhe() {
               </FormField>
               {veChavePix && (
                 <FormField label="Chave PIX">
-                  <Input {...propsDeTexto(form, setForm, "pix_key", !podeEditar || user?.role === "finance")} maxLength={255} placeholder="Não informada" />
+                  <Input {...propsDeTexto(form, setForm, "pix_key", !podeEditar || user?.role === "finance")} maxLength={140} placeholder="Não informada" />
                 </FormField>
               )}
+              {/* A empresa indicada não vê quem a indicou (o backend também não manda). */}
+              {(gestao || !meuCard) && (
               <FormField label="Indicado por">
                 {gestao && !ehHunterCard ? (
                   <SelectMenu
@@ -307,6 +309,7 @@ export default function ParceiroDetalhe() {
                   <Input value={parceiro.indicated_by_name ?? "Ninguém"} disabled readOnly />
                 )}
               </FormField>
+              )}
               {podeEditar && (gestao || meuCard) && <Button onClick={salvar} fullWidth>Salvar</Button>}
               <FormField label="Termos aceitos em">
                 <Input
@@ -322,7 +325,7 @@ export default function ParceiroDetalhe() {
             <div className="space-y-3">
               {CAMPOS_TEXTO.map(({ nome, label }) => (
                 <FormField key={nome} label={label} required={nome === "name"} error={erros[nome]}>
-                  <Input {...propsDeTexto(form, setForm, nome, !podeEditar)} />
+                  <Input {...propsDeTexto(form, setForm, nome, !podeEditar || (nome === "cnpj" && !gestao))} />
                 </FormField>
               ))}
               {podeEditar && <Button onClick={salvar} fullWidth disabled={!form.name?.trim() || temErro(erros)}>Salvar</Button>}

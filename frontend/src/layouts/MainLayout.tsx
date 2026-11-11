@@ -37,7 +37,7 @@ import GlobalSearch from "../components/GlobalSearch";
 import { UserAvatar } from "../components/common";
 import ChangelogModal from "../components/common/ChangelogModal";
 import { AgentGrowthWidget } from "../components/agentGrowth";
-import { PERFIS_CONSULTA_CNPJ, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM, PERFIS_TRANCADOS } from "../constants/parcerias";
+import { PERFIS_CONSULTA_CNPJ, PERFIS_DO_PARCEIRO, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM, PERFIS_TRANCADOS } from "../constants/parcerias";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -250,6 +250,11 @@ export default function MainLayout() {
                                 }
 
                                 const Icon = item.icon;
+                                // Para o parceiro e o hunter, "/parcerias" abre o Pipeline (as oportunidades);
+                                // as empresas indicadas ficam no item "Indicações".
+                                const rotulo = item.path === "/parcerias" && PERFIS_DO_PARCEIRO.includes(user?.role ?? "")
+                                    ? "Oportunidades"
+                                    : item.label;
 
                                 // Verifica se o item está ativo
                                 const isActive =
@@ -281,7 +286,7 @@ export default function MainLayout() {
                                                     ? "bg-gray-100 text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white dark:shadow-slate-800/20"
                                                     : "text-slate-600 hover:bg-gray-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/50 dark:hover:text-white"
                                             } ${sidebarOpen ? "" : "justify-center"}`}
-                                            title={!sidebarOpen ? item.label : ""}
+                                            title={!sidebarOpen ? rotulo : ""}
                                         >
                                             <Icon
                                                 size={20}
@@ -289,7 +294,7 @@ export default function MainLayout() {
                                             />
                                             {sidebarOpen && (
                                                 <>
-                                                    <span>{item.label}</span>
+                                                    <span>{rotulo}</span>
                                                     {/* Badge de Admin */}
                                                     {item.adminOnly && (
                                                         <span
@@ -307,7 +312,7 @@ export default function MainLayout() {
                                             {/* Tooltip para modo mini */}
                                             {!sidebarOpen && (
                                                 <div className="pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 opacity-0 transition-opacity group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-                                                    {item.label}
+                                                    {rotulo}
                                                     {item.adminOnly && (
                                                         <span className="ml-2 text-xs text-orange-500 dark:text-orange-400">
                                                             (Admin)

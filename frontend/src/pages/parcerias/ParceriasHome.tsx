@@ -91,9 +91,9 @@ export default function ParceriasHome() {
     if (!ehParceiro) carregar();
   }, [carregar, ehParceiro]);
 
-  // O parceiro trabalha no Pipeline; o card dele no board 1 abre pelo menu do board.
-  // O hunter não tem oportunidades: a página dele são as indicações.
-  if (ehParceiro) return <Navigate to={user?.role === "hunter" ? "/parcerias/indicacoes" : "/parcerias/oportunidades"} replace />;
+  // Parceiro e hunter trabalham no Pipeline (filtro Minhas / Das indicadas / Todas);
+  // as empresas indicadas ficam em Indicações, no menu ao lado.
+  if (ehParceiro) return <Navigate to="/parcerias/oportunidades" replace />;
 
   const termo = busca.trim().toLowerCase();
   const boards = BOARDS_PARCERIAS.filter(

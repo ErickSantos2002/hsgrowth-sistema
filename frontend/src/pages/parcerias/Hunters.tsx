@@ -99,7 +99,7 @@ function NovoHunterModal({ isOpen, onClose, onCriado }: { isOpen: boolean; onClo
             <Input value={form.phone} error={!!erroTel} inputMode="numeric" onChange={(e) => mudar("phone", mascarar("phone", e.target.value))} placeholder="(00) 00000-0000" />
           </FormField>
           <FormField label="Chave PIX" className="sm:col-span-2">
-            <Input value={form.pix_key} maxLength={255} onChange={(e) => mudar("pix_key", e.target.value)} />
+            <Input value={form.pix_key} maxLength={140} onChange={(e) => mudar("pix_key", e.target.value)} />
           </FormField>
         </div>
       </div>

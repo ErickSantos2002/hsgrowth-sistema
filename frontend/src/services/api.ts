@@ -1,5 +1,9 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
 
+// Mensagens exatas dos 403 de pendência do backend (app/api/deps.py).
+const MENSAGEM_TERMOS_PENDENTES = "Aceite os termos do Programa de Parceiros para continuar.";
+const MENSAGEM_SENHA_PENDENTE = "Troque a sua senha para continuar.";
+
 // Cria a instância do axios com a URL base da API
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
@@ -100,6 +104,19 @@ api.interceptors.response.use(
         window.location.href = "/login";
 
         return Promise.reject(refreshError);
+      }
+    }
+
+    // 403 de pendência (termos do Programa ou troca de senha): leva para a tela
+    // que resolve, sem depender do router e sem redirecionar de novo se já estiver lá.
+    if (error.response?.status === 403) {
+      const detalhe = (error.response.data as { detail?: unknown } | undefined)?.detail;
+      const destino =
+        detalhe === MENSAGEM_TERMOS_PENDENTES ? "/aceite-termos"
+        : detalhe === MENSAGEM_SENHA_PENDENTE ? "/trocar-senha"
+        : null;
+      if (destino && window.location.pathname !== destino) {
+        window.location.href = destino;
       }
     }
 

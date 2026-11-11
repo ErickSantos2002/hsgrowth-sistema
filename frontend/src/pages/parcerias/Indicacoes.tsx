@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Send } from "lucide-react";
+import { Plus, Send, Trello } from "lucide-react";
 import { BaseModal, Button, EmptyState, FormField, Input } from "../../components/common";
 import { errosDoForm, mascarar, limparCnpj } from "../../components/parcerias/campos";
 import { ETAPAS_AQUISICAO, corDaEtapa, formatarCnpj } from "../../constants/parcerias";
@@ -68,7 +68,7 @@ function IndicarModal({ isOpen, onClose, onFeito }: { isOpen: boolean; onClose: 
         <FormField label="Telefone do contato" error={erros.main_contact_phone}>
           <Input {...campo("main_contact_phone")} maxLength={15} inputMode="numeric" placeholder="(00) 00000-0000" />
         </FormField>
-        <FormField label="Chave PIX da empresa" className="sm:col-span-2"><Input {...campo("pix_key")} /></FormField>
+        <FormField label="Chave PIX da empresa" className="sm:col-span-2"><Input {...campo("pix_key")} maxLength={140} /></FormField>
       </div>
     </BaseModal>
   );
@@ -109,7 +109,15 @@ export default function Indicacoes() {
           </h1>
           <p className="mt-1 text-slate-500 dark:text-gray-400">As empresas que você indicou ao Programa de Parceiros.</p>
         </div>
-        <Button icon={<Plus size={16} />} onClick={() => setModalAberto(true)}>Indicar empresa</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/parcerias/oportunidades"
+            className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-gray-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800/50"
+          >
+            <Trello size={16} /> Ver oportunidades
+          </Link>
+          <Button icon={<Plus size={16} />} onClick={() => setModalAberto(true)}>Indicar empresa</Button>
+        </div>
       </div>
 
       {carregando && lista.length === 0 ? (
