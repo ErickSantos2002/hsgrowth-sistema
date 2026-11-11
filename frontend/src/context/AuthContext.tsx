@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useState, useEffect, useCallback, ReactNode } from "react";
 import authService from "../services/authService";
 import { User } from "../types";
 
@@ -101,11 +101,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Função para atualizar os dados do usuário
-  const updateUser = (updatedUser: User) => {
+  const updateUser = useCallback((updatedUser: User) => {
     setUser(updatedUser);
     // Atualiza também no localStorage
     authService.setCurrentUser(updatedUser);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, logout, updateUser, error }}>

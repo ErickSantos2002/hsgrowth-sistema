@@ -776,7 +776,7 @@ export interface CardFilters extends PaginationParams {
 }
 
 export interface UserFilters extends PaginationParams {
-  role?: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service" | "partner" | "finance" | "partner_member";
+  role?: "admin" | "manager" | "salesperson" | "sdr" | "viewer" | "service" | "partner" | "finance" | "partner_member" | "hunter";
   is_active?: boolean;
   search?: string;
 }

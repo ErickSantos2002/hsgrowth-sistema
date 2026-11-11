@@ -311,6 +311,7 @@ const Users: React.FC = () => {
               { value: "finance", label: "Financeiro" },
               { value: "partner", label: "Parceiro" },
               { value: "partner_member", label: "Vendedor do parceiro" },
+              { value: "hunter", label: "Hunter" },
             ]}
             onChange={(value) => setCustomFilter("role", value)}
           />

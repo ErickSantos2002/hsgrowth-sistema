@@ -23,7 +23,9 @@ export default function AceiteTermos() {
                     try {
                         updateUser(await authService.getMe());
                     } catch {
-                        // segue mesmo assim
+                        // Navegar com o usuário antigo faria o layout devolver para cá em loop.
+                        setErro("Não foi possível atualizar o seu cadastro. Recarregue a página.");
+                        return;
                     }
                     navigate("/parcerias", { replace: true });
                 } else setTermos(t);
