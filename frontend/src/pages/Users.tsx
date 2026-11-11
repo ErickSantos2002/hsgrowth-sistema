@@ -220,6 +220,7 @@ const Users: React.FC = () => {
         return "bg-cyan-500/20 text-slate-900 dark:text-cyan-400";
       case "partner":
       case "partner_member":
+      case "hunter":
         return "bg-orange-500/20 text-slate-900 dark:text-orange-400";
       default:
         return "bg-slate-500/20 text-slate-900 dark:text-slate-400";

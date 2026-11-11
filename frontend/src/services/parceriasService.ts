@@ -28,6 +28,7 @@ export interface ParceiroForm {
   qualification_status?: string | null;
   onboarding_date?: string | null;
   contract_date?: string | null;
+  /** Só gestão e o próprio dono veem. */
   pix_key?: string | null;
   /** Só gestão; tem de ser um hunter. */
   indicated_by_partner_id?: number | null;
@@ -51,8 +52,6 @@ export interface Parceiro extends ParceiroForm {
   /** "empresa" (parceiro comum) ou "hunter". */
   kind?: "empresa" | "hunter";
   cpf?: string | null;
-  /** Só gestão e o próprio dono veem. */
-  pix_key?: string | null;
   indicated_by_partner_id?: number | null;
   indicated_by_name?: string | null;
   terms_accepted_at?: string | null;
@@ -310,9 +309,11 @@ export interface Hunter {
   phone?: string | null;
   pix_key?: string | null;
   stage: string;
-  indicadas?: number;
+  terms_accepted_at?: string | null;
+  created_at: string;
+  empresas_indicadas: number;
   status_acesso?: StatusAcesso | null;
-  [campo: string]: unknown;
+  convite_expira_em?: string | null;
 }
 
 export function mensagemDeErro(err: any, padrao: string): string {

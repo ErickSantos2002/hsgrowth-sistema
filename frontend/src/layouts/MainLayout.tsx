@@ -374,6 +374,8 @@ export default function MainLayout() {
                                             ? "Parceiro"
                                             : user?.role === "partner_member"
                                             ? "Vendedor do parceiro"
+                                            : user?.role === "hunter"
+                                            ? "Hunter"
                                             : user?.role === "finance"
                                             ? "Financeiro"
                                             : "Usuário"}

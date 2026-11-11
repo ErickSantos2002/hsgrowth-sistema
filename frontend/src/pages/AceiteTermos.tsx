@@ -17,12 +17,19 @@ export default function AceiteTermos() {
     useEffect(() => {
         parceriasService
             .termosPendentes()
-            .then((t) => {
-                if (!t.pendente) navigate("/parcerias", { replace: true });
-                else setTermos(t);
+            .then(async (t) => {
+                if (!t.pendente) {
+                    // Sem termos pendentes: atualiza o usuário do contexto antes de sair (senão o layout devolve para cá).
+                    try {
+                        updateUser(await authService.getMe());
+                    } catch {
+                        // segue mesmo assim
+                    }
+                    navigate("/parcerias", { replace: true });
+                } else setTermos(t);
             })
             .catch((e) => setErro(mensagemDeErro(e, "Não foi possível carregar os termos.")));
-    }, [navigate]);
+    }, [navigate, updateUser]);
 
     // Quem não tem termos pendentes não tem o que fazer aqui.
     useEffect(() => {
@@ -33,11 +40,22 @@ export default function AceiteTermos() {
         setErro("");
         setEnviando(true);
         try {
-            await parceriasService.aceitarTermos();
-            updateUser(await authService.getMe());
+            try {
+                await parceriasService.aceitarTermos();
+            } catch (e: any) {
+                // 422 = não há termos pendentes (já aceitos em outra aba): trata como concluído.
+                if (e?.response?.status !== 422) {
+                    setErro(mensagemDeErro(e, "Não foi possível registrar o aceite."));
+                    return;
+                }
+            }
+            try {
+                updateUser(await authService.getMe());
+            } catch {
+                setErro("Aceite registrado, mas não foi possível atualizar o seu cadastro. Recarregue a página.");
+                return;
+            }
             navigate("/parcerias");
-        } catch (e) {
-            setErro(mensagemDeErro(e, "Não foi possível registrar o aceite."));
         } finally {
             setEnviando(false);
         }
@@ -56,9 +74,11 @@ export default function AceiteTermos() {
                         {erro}
                     </div>
                 )}
-                <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-300 bg-gray-50 p-4 text-sm text-slate-700 dark:border-slate-700/50 dark:bg-slate-800/50 dark:text-slate-300">
-                    {termos ? termos.text : erro ? "" : "Carregando..."}
-                </div>
+                {(termos || !erro) && (
+                    <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-300 bg-gray-50 p-4 text-sm text-slate-700 dark:border-slate-700/50 dark:bg-slate-800/50 dark:text-slate-300">
+                        {termos ? termos.text : "Carregando..."}
+                    </div>
+                )}
                 <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
                     <input type="checkbox" checked={aceito} onChange={(e) => setAceito(e.target.checked)}
                         disabled={enviando || !termos} className="mt-0.5 h-4 w-4" />
