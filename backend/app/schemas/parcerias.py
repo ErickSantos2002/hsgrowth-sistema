@@ -411,6 +411,7 @@ class OportunidadeCreate(BaseModel):
     contact_role: Optional[str] = Field(None, max_length=255)
     contact_phone: Optional[str] = Field(None, max_length=30)
     contact_email: Optional[str] = Field(None, max_length=255)
+    modality: Optional[Literal["venda", "locacao"]] = None
     # Só admin/gerente: cadastrar (ou trocar o CNPJ) mesmo com o semáforo vermelho.
     cnpj_justificativa: Optional[str] = Field(None, max_length=500)
 

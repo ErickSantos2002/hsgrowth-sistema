@@ -42,6 +42,12 @@ def _422(mensagem: str) -> HTTPException:
     return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, mensagem)
 
 
+def _so_venda(user: User, modalidade: Optional[str]) -> None:
+    """Perfis de fora da H&S trabalham só com venda."""
+    if acesso.eh_externo(user) and modalidade == "locacao":
+        raise _422("Parceiros trabalham só com venda.")
+
+
 def _conferir_vendedor(db: Session, partner_id: int, membro_id: Optional[int]) -> None:
     if membro_id is None:
         return
@@ -101,6 +107,9 @@ def listar(db: Session, user: User, partner_id: Optional[int] = None) -> List[Pa
 
 def criar(db: Session, user: User, dados: OportunidadeCreate) -> PartnerOpportunity:
     acesso.exigir_escrita(user)
+    _so_venda(user, dados.modality)
+    if acesso.eh_externo(user) and not dados.modality:
+        dados = dados.model_copy(update={"modality": "venda"})
     if acesso.eh_parceiro(user):
         partner_id = acesso.parceiro_do_login(user)
         if acesso.eh_vendedor_do_parceiro(user):
@@ -145,6 +154,9 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
     op = acesso.buscar_oportunidade_para_escrever(db, user, opportunity_id)
     campos = dados.model_dump(exclude_unset=True)
     justificativa = campos.pop("cnpj_justificativa", None)
+    _so_venda(user, campos.get("modality"))
+    if acesso.eh_externo(user) and "modality" in campos and campos["modality"] is None:
+        campos.pop("modality")
     if any(c in campos for c in CAMPOS_DE_VALOR):
         _conferir_valor_aberto(user, op)
     for campo in ("global_discount", "shipping"):
@@ -187,6 +199,7 @@ def mover(db: Session, user: User, opportunity_id: int, req: MoverRequest) -> Pa
     acesso.exigir_escrita(user)
     op = acesso.buscar_oportunidade_para_escrever(db, user, opportunity_id)
     origem = op.stage
+    _so_venda(user, req.modality)
     if req.expected_close_date:
         op.expected_close_date = req.expected_close_date
     if req.modality:
