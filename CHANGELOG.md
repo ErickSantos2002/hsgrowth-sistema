@@ -5,6 +5,35 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.18] — 11/11/2026
+
+### Adicionado
+- **Parcerias — Hunter:** novo perfil de hunter (pessoa ou empresa), cadastrado só pela H&S, com tela própria em Hunters.
+- **Indicação de empresas:** hunters e empresas parceiras (unidades) indicam empresas, em um nível só. O convite sai automaticamente e CNPJ repetido é recusado.
+- **Termos do Programa de Parceiros:** o aceite registra data, hora, quem aceitou, IP e versão, ativa a empresa na hora e avisa a gestão.
+- **Tela Termos:** a gestão publica novas versões dos termos.
+- **Bloquear/desbloquear parceiro:** derruba e devolve os acessos do parceiro e da equipe dele.
+- **Cadastro:** chave PIX, CPF e "Indicado por".
+- **Indicadores:** quem indicou acompanha a empresa indicada só para leitura.
+
+### Alterado
+- **Aquisição de Parceiros:** passa a ter 4 situações (Potencial, Convidado, Ativado, Bloqueado), sem arrastar cards.
+- **Só venda:** parceiros trabalham apenas com venda (a locação some para eles).
+- **Nova oportunidade:** a gestão agora grava a modalidade ao criar.
+
+### Segurança
+- O IP do aceite e do login vem do último valor do `X-Forwarded-For` (proxy confiável).
+- PIX e CPF só aparecem para admin, gerente, Financeiro e o dono do card.
+- A tela de Usuários e os cadastros de admin recusam login de hunter.
+
+### Banco
+- Migration `8c9d0e1f2a3b` (aditiva), aplicada só no homo. Converte as etapas antigas de Aquisição: Ativação/Ativado viram Ativado, Perdido vira Bloqueado e as demais viram Convidado (se o dono já tem login) ou Potencial. Parceiros já existentes terão de aceitar os termos no próximo login.
+
+### Configuração
+- Publicar os termos (Empresa e Hunter) em Parcerias → Termos antes de liberar parceiros. Sem termos publicados, ninguém é barrado.
+
+---
+
 ## [1.11.17] — 09/11/2026
 
 ### Adicionado

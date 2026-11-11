@@ -25,6 +25,36 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.18",
+    date: "11/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Parcerias: novo perfil de Hunter (pessoa ou empresa), cadastrado pela H&S, e indicação de empresas por hunters e por empresas parceiras.",
+      },
+      {
+        type: "feature",
+        text: "Termos do Programa de Parceiros: o aceite ativa a empresa na hora, e a gestão publica novas versões na tela Termos.",
+      },
+      {
+        type: "feature",
+        text: "Parcerias: bloquear e desbloquear parceiro, com chave PIX, CPF e \"Indicado por\" no cadastro. Quem indicou acompanha a empresa indicada só para leitura.",
+      },
+      {
+        type: "improvement",
+        text: "Aquisição de Parceiros agora tem 4 situações (Potencial, Convidado, Ativado, Bloqueado), sem arrastar cards.",
+      },
+      {
+        type: "improvement",
+        text: "Parceiros trabalham só com venda: a locação não aparece mais para eles.",
+      },
+      {
+        type: "improvement",
+        text: "Segurança: PIX e CPF só aparecem para quem precisa, e o IP do aceite e do login é registrado com mais confiança.",
+      },
+    ],
+  },
+  {
     version: "1.11.17",
     date: "09/11/2026",
     entries: [
