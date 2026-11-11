@@ -14,23 +14,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Tela Termos:** a gestão publica novas versões dos termos.
 - **Bloquear/desbloquear parceiro:** derruba e devolve os acessos do parceiro e da equipe dele.
 - **Cadastro:** chave PIX, CPF e "Indicado por".
-- **Indicadores:** quem indicou acompanha a empresa indicada só para leitura.
+- **Indicadores:** quem indicou acompanha a empresa indicada só para leitura; as atividades e os arquivos das oportunidades dela ficam só com ela.
+- **Hunter:** entra direto nas Oportunidades (filtro Minhas / Das indicadas / Todas), com Indicações no menu ao lado.
 
 ### Alterado
 - **Aquisição de Parceiros:** passa a ter 4 situações (Potencial, Convidado, Ativado, Bloqueado), sem arrastar cards.
 - **Só venda:** parceiros trabalham apenas com venda (a locação some para eles).
 - **Nova oportunidade:** a gestão agora grava a modalidade ao criar.
+- **CNPJ repetido:** também é recusado quando a H&S cadastra ou edita um parceiro; só admin e gerente trocam o CNPJ.
+- **Parceiro bloqueado:** não ganha acesso, convite nem reativação de login até ser desbloqueado.
+- **Pendências:** termos a aceitar ou senha a trocar levam direto para a tela certa, já a partir do login.
 
 ### Segurança
-- O IP do aceite e do login vem do último valor do `X-Forwarded-For` (proxy confiável).
+- O IP do aceite e do login vem só do último valor do `X-Forwarded-For` (o que o proxy confiável acrescenta); sem ele, o IP da conexão. `X-Real-IP` e os valores anteriores (forjáveis) não contam.
+- A empresa indicada não vê quem a indicou (nem no card, nem no histórico).
 - PIX e CPF só aparecem para admin, gerente, Financeiro e o dono do card.
 - A tela de Usuários e os cadastros de admin recusam login de hunter.
 
 ### Banco
-- Migration `8c9d0e1f2a3b` (aditiva), aplicada só no homo. Converte as etapas antigas de Aquisição: Ativação/Ativado viram Ativado, Perdido vira Bloqueado e as demais viram Convidado (se o dono já tem login) ou Potencial. Parceiros já existentes terão de aceitar os termos no próximo login.
+- Migration `8c9d0e1f2a3b`, aplicada só no homo. **Não é só aditiva:** reescreve `partners.stage`. Aplicar junto com o deploy do código (código primeiro, migration logo depois) — a versão anterior não conhece as situações novas. Converte as etapas antigas de Aquisição: Ativação/Ativado viram Ativado, Perdido vira Bloqueado e as demais viram Convidado (se o dono já tem login) ou Potencial. Parceiros já existentes terão de aceitar os termos no próximo login.
 
 ### Configuração
-- Publicar os termos (Empresa e Hunter) em Parcerias → Termos antes de liberar parceiros. Sem termos publicados, ninguém é barrado.
+- Publicar os termos (Empresa e Hunter) em Parcerias → Termos antes de liberar parceiros. Sem termos publicados ninguém é barrado, mas empresas e hunters convidados ficam em Convidado até existirem termos para aceitar — publique os termos antes de convidar.
 
 ---
 
