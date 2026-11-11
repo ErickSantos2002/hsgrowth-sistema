@@ -194,3 +194,14 @@ def test_ip_do_cliente_confia_so_no_ultimo_xff():
     assert ip_do_cliente(_req({"X-Forwarded-For": "lixo", "X-Real-IP": "x"})) == "10.0.0.1"
     assert ip_do_cliente(_req({"X-Forwarded-For": "lixo"}, host="nao-ip")) == "unknown"
     assert ip_do_cliente(_req({"X-Forwarded-For": "2001:db8::1"})) == "2001:db8::1"
+
+
+def test_parceiro_excluido_nao_barra_nem_aceita(client, db):
+    _termos(db)
+    p, dono = _dono(db)
+    p.is_deleted = True
+    db.commit()
+    h = headers(dono)
+    assert client.get("/api/v1/users/me", headers=h).json()["termos_pendentes"] is False
+    r = client.post(f"{URL}/termos/aceitar", headers=h)
+    assert r.status_code == 422 and r.json()["detail"] == "Não há termos pendentes."

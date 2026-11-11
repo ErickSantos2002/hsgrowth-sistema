@@ -52,7 +52,7 @@ def pendente(db: Session, user: User) -> Optional[PartnerTerms]:
     """Termos vigentes que o parceiro do login ainda não aceitou (só dono e hunter)."""
     if acesso.perfil(user) not in PAPEIS_COM_ACEITE or not user.partner_id:
         return None
-    parceiro = db.query(Partner.kind).filter(Partner.id == user.partner_id).first()
+    parceiro = db.query(Partner.kind).filter(Partner.id == user.partner_id, Partner.is_deleted.is_(False)).first()
     if not parceiro:
         return None
     termos = vigente(db, "hunter" if parceiro.kind == "hunter" else "empresa")
@@ -69,7 +69,7 @@ def aceitar(db: Session, user: User, ip: Optional[str]) -> Partner:
     if not pendente(db, user):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Não há termos pendentes.")
     # Trava a linha do parceiro e confere de novo: clique duplo não aceita nem ativa duas vezes.
-    p = db.query(Partner).filter(Partner.id == user.partner_id).with_for_update().one()
+    p = db.query(Partner).filter(Partner.id == user.partner_id, Partner.is_deleted.is_(False)).with_for_update().one()
     termos = pendente(db, user)
     if not termos:
         db.rollback()
