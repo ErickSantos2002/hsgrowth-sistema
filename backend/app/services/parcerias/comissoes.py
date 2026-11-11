@@ -165,7 +165,7 @@ def cancelar_da_oportunidade(db: Session, op: PartnerOpportunity, motivo: str) -
         PartnerCommission.opportunity_id == op.id,
         PartnerCommission.status == "pendente",
         PartnerCommission.kind != "calibracao",
-    ).all()
+    ).with_for_update().all()
     for c in pendentes:
         c.status = "cancelada"
         c.cancelled_at = agora
@@ -333,8 +333,10 @@ def _virgula(valor: Decimal) -> str:
 
 def _celula(texto) -> str:
     """Neutraliza fórmula (=, +, -, @) e o separador no CSV aberto em planilha."""
+    # Documentos (CNPJ/CPF) devem ser importados como texto no Excel, para não perder zeros à esquerda.
     t = "" if texto is None else str(texto).replace("\r", " ").replace("\n", " ")
-    if t[:1] in ("=", "+", "-", "@", "\t"):
+    telefone = t[:1] == "+" and t[1:].isdigit()  # chave PIX de telefone não é fórmula
+    if t[:1] in ("=", "+", "-", "@", "\t") and not telefone:
         t = "'" + t
     if ";" in t or '"' in t:
         t = '"' + t.replace('"', '""') + '"'
@@ -360,6 +362,8 @@ def pagar(db: Session, user: User, dados) -> dict:
     else:
         pedidos = None
         q = q.filter(PartnerCommission.beneficiary_partner_id == dados.beneficiary_partner_id)
+        if dados.de is not None:
+            q = q.filter(PartnerCommission.created_at >= datetime.combine(dados.de, time.min))
         if dados.ate is not None:
             q = q.filter(PartnerCommission.created_at <= _fim_do_dia(dados.ate))
     pendentes = q.with_for_update().all()
@@ -406,14 +410,21 @@ def lancar_calibracao(db: Session, user: User, opportunity_id: int, dados) -> di
         .populate_existing().with_for_update().one()
     if op.won_confirmed_at is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MSG_CALIBRACAO_SEM_GANHO)
-    existentes = db.query(func.count(PartnerCalibration.id)).filter(
+    # Só conta a calibração que gerou comissão: a mensagem do limite fala disso.
+    existentes = db.query(func.count(PartnerCalibration.id)).join(
+        PartnerCommission, PartnerCommission.calibration_id == PartnerCalibration.id,
+    ).filter(
         PartnerCalibration.opportunity_id == op.id,
         PartnerCalibration.serial_number == dados.serial_number,
+        PartnerCommission.kind == "calibracao",
+        PartnerCommission.status.in_(ATIVOS),
     ).scalar() or 0
     if existentes >= LIMITE_CALIBRACOES:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MSG_LIMITE_CALIBRACAO)
 
     agora = datetime.utcnow()
+    if dados.calibration_date > agora.date():
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Data da calibração no futuro.")
     cal = PartnerCalibration(opportunity_id=op.id, serial_number=dados.serial_number,
                              calibration_date=dados.calibration_date, value=_dinheiro(dados.value),
                              created_by_id=user.id, created_at=agora)

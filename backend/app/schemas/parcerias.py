@@ -809,16 +809,17 @@ class APagarBeneficiario(BaseModel):
 
 class PagarRequest(BaseModel):
     """Exatamente um entre `ids` e `beneficiary_partner_id` (este com `ate` opcional, inclusivo)."""
-    ids: Optional[List[int]] = None
+    ids: Optional[List[int]] = Field(None, max_length=500)
     beneficiary_partner_id: Optional[int] = None
+    de: Optional[date] = None
     ate: Optional[date] = None
 
     @model_validator(mode="after")
     def _um_so(self):
         if (self.ids is None) == (self.beneficiary_partner_id is None):
             raise ValueError("Informe ids ou beneficiary_partner_id (só um dos dois).")
-        if self.ids is not None and (not self.ids or self.ate is not None):
-            raise ValueError("Com ids, informe ao menos um id e não use ate.")
+        if self.ids is not None and (not self.ids or self.ate is not None or self.de is not None):
+            raise ValueError("Com ids, informe ao menos um id e não use de/ate.")
         return self
 
 
@@ -836,7 +837,7 @@ class CalibracaoCreate(BaseModel):
     @field_validator("serial_number")
     @classmethod
     def _serie(cls, v):
-        v = v.strip()
+        v = "".join(v.split()).upper()  # sem espaços e em maiúsculas: SN 1 = sn1
         if not v:
             raise ValueError("Informe o número de série.")
         return v

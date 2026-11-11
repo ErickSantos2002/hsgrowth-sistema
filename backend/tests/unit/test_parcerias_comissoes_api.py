@@ -232,3 +232,45 @@ def test_calibracao_em_locacao_guarda_mas_nao_gera(client, db, admin_headers):
     r = client.post(f"{URL}/oportunidades/{op.id}/calibracoes", headers=admin_headers,
                     json={"serial_number": "SN1", "calibration_date": "2026-11-01", "value": "200"})
     assert r.status_code == 201 and r.json()["commission_amount"] is None
+
+
+def test_pagar_por_beneficiario_respeita_de_e_ate(client, db, admin_headers):
+    from datetime import date, timedelta
+    h, _, _, _, _, _ = _cenario(client, db, admin_headers)
+    amanha = date.today() + timedelta(days=1)
+    r = client.post(f"{URL}/comissoes/pagar", json={"beneficiary_partner_id": h.id, "de": str(amanha)},
+                    headers=admin_headers)
+    assert r.status_code == 200 and r.json()["quantidade"] == 0
+    r = client.post(f"{URL}/comissoes/pagar", json={"beneficiary_partner_id": h.id, "de": str(date.today()),
+                                                    "ate": str(date.today())}, headers=admin_headers)
+    assert r.json()["quantidade"] == 3
+    assert client.post(f"{URL}/comissoes/pagar", json={"ids": list(range(501))},
+                       headers=admin_headers).status_code == 422
+
+
+def test_calibracao_serie_normalizada_e_limite_so_com_comissao(client, db, admin_headers):
+    _, _, _, _, op_a, op_h = _cenario(client, db, admin_headers)
+    base = {"calibration_date": "2026-11-01", "value": "100"}
+    for s in ("sn 1", "SN1"):
+        assert client.post(f"{URL}/oportunidades/{op_a.id}/calibracoes", json={**base, "serial_number": s},
+                           headers=admin_headers).json()["serial_number"] == "SN1"
+    assert client.post(f"{URL}/oportunidades/{op_a.id}/calibracoes", json={**base, "serial_number": " sn1"},
+                       headers=admin_headers).status_code == 422
+    # Sem comissão (hunter) não consome o limite
+    for _ in range(3):
+        assert client.post(f"{URL}/oportunidades/{op_h.id}/calibracoes", json={**base, "serial_number": "X"},
+                           headers=admin_headers).status_code == 201
+
+
+def test_calibracao_no_futuro(client, db, admin_headers):
+    _, _, _, _, op_a, _ = _cenario(client, db, admin_headers)
+    r = client.post(f"{URL}/oportunidades/{op_a.id}/calibracoes", headers=admin_headers,
+                    json={"serial_number": "S", "calibration_date": "2999-01-01", "value": "10"})
+    assert r.status_code == 422 and r.json()["detail"] == "Data da calibração no futuro."
+
+
+def test_celula_csv_pix_telefone_e_formula():
+    from app.services.parcerias.comissoes import _celula
+    assert _celula("+5511999998888") == "+5511999998888"
+    assert _celula("+cmd") == "'+cmd" and _celula("=1+1") == "'=1+1"
+    assert _celula("@x") == "'@x" and _celula("-5a") == "'-5a"
