@@ -16,7 +16,9 @@ import parceriasService, {
 
 const dinheiro = (v: string | number) => formatarMoeda(Number(v));
 // O backend manda datetime sem fuso (UTC): sem o "Z" o navegador leria como hora local e o dia poderia mudar.
-const dia = (iso: string) => new Date(/(Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : `${iso}Z`).toLocaleDateString("pt-BR");
+// O dia é o de São Paulo, o mesmo dos filtros De/até.
+const dia = (iso: string) =>
+  new Date(/(Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : `${iso}Z`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 
 const OPCOES_STATUS = [
   { value: "", label: "Todas as situações" },

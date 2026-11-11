@@ -38,7 +38,11 @@ const CHANGELOG: ChangelogVersion[] = [
       },
       {
         type: "improvement",
-        text: "Com o ganho confirmado, produtos, desconto e modalidade ficam travados; desfaça o ganho para alterar. Parceiro bloqueado não tem ganho confirmado.",
+        text: "Vendas confirmadas antes desta versão não contam como 1ª venda; o prazo e o bônus só começam a contar depois que a H&S preencher os percentuais.",
+      },
+      {
+        type: "improvement",
+        text: "Com o ganho confirmado, produtos, desconto e modalidade ficam travados; desfaça o ganho para alterar. Parceiro bloqueado não tem ganho confirmado nem calibração lançada.",
       },
     ],
   },

@@ -20,12 +20,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - Base de cálculo = produtos menos desconto, sem frete.
 - Só venda gera comissão (locação não).
 - Troca de indicador vale dali pra frente.
-- Ganho desfeito antes do pagamento cancela os lançamentos pendentes; lançamento pago nunca é desfeito.
-- Se a 1ª venda for desfeita, a âncora passa para a venda confirmada mais antiga que restar.
+- Ganho desfeito antes do pagamento cancela os lançamentos pendentes da oportunidade, calibração inclusive; lançamento pago nunca é desfeito. Reconfirmado o ganho, a calibração cancelada não volta sozinha.
+- Se a 1ª venda for desfeita, a âncora passa para a venda confirmada mais antiga que restar (entre as que têm lançamento) e o bônus vai para o indicador dela, se não estiver bloqueado nem excluído.
+- Filtros de período (De/até) e o pagamento por período usam o dia de São Paulo.
 
 ### Alterado
 - Com o ganho confirmado, produtos, desconto e modalidade ficam travados (desfaça o ganho para alterar).
-- Não se confirma ganho de parceiro bloqueado.
+- Não se confirma ganho de parceiro bloqueado ou excluído, nem se lança calibração para ele.
 - Confirmar o ganho duas vezes agora dá aviso.
 
 ### Banco
@@ -33,6 +34,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ### Configuração
 - Preencher os percentuais em Parcerias → Comissões → Configuração. Enquanto estiverem zerados, nenhum lançamento é gerado.
+- Vendas confirmadas antes desta versão não contam como 1ª venda; o prazo e o bônus só começam a contar depois que a H&S preencher os percentuais (X% de indicação ou o bônus).
+- Percentuais e bônus aceitam no máximo 2 casas decimais.
 
 ---
 
