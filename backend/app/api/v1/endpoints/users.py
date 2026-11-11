@@ -471,13 +471,14 @@ async def listar_perfis(
 
 def _recusar_login_de_parceiro(db: Session, role_id: Optional[int], role_atual: Optional[int] = None) -> None:
     """
-    Login de parceiro nasce no card do parceiro, que liga o usuário ao partner_id.
+    Login de parceiro (dono, vendedor da equipe ou hunter) nasce em Parcerias, que liga o
+    usuário ao partner_id.
     Na edição, manter o perfil atual passa (a tela de Usuários sempre manda o role_id).
     """
     if role_id is None or role_id == role_atual:
         return
     papel = db.query(Role).filter(Role.id == role_id).first()
-    if papel and papel.name in ("partner", "partner_member"):
+    if papel and papel.name in ("partner", "partner_member", "hunter"):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Login de parceiro se cria no card do parceiro, em Parcerias > Aquisição de Parceiros.",

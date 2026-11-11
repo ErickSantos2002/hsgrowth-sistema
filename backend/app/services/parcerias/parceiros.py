@@ -41,7 +41,7 @@ def criar(db: Session, user: User, dados: ParceiroCreate) -> Partner:
 
 def atualizar(db: Session, user: User, partner_id: int, dados: ParceiroUpdate) -> Partner:
     acesso.exigir_escrita(user)
-    p = acesso.buscar_parceiro(db, user, partner_id)
+    p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     campos = dados.model_dump(exclude_unset=True)
     if "name" in campos and campos["name"] is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "O nome do parceiro é obrigatório.")
@@ -60,13 +60,13 @@ def atualizar(db: Session, user: User, partner_id: int, dados: ParceiroUpdate) -
 def mover(db: Session, user: User, partner_id: int, req: MoverRequest) -> Partner:
     """As situações da Aquisição não se movem na mão (convite, aceite e Bloquear mudam sozinhas)."""
     acesso.exigir_escrita(user)
-    acesso.buscar_parceiro(db, user, partner_id)
+    acesso.buscar_parceiro_proprio(db, user, partner_id)
     raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MENSAGEM_SITUACAO_FIXA)
 
 
 async def anexar_contrato(db: Session, user: User, partner_id: int, arquivo: UploadFile) -> Partner:
     """O contrato entra no histórico como anexo; trocar aponta para o novo e o antigo fica lá."""
-    p = acesso.buscar_parceiro(db, user, partner_id)
+    p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     anexo = await atividades.anexar(db, user, arquivo, partner_id=p.id)
     anexo.activity_type = "contract"
     p.contract_activity_id = anexo.id
@@ -78,14 +78,14 @@ async def anexar_contrato(db: Session, user: User, partner_id: int, arquivo: Upl
 # ─── Equipe ──────────────────────────────────────────────────────────────────
 
 def listar_equipe(db: Session, user: User, partner_id: int) -> List[PartnerTeamMember]:
-    p = acesso.buscar_parceiro(db, user, partner_id)
+    p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     return db.query(PartnerTeamMember).filter(PartnerTeamMember.partner_id == p.id) \
         .order_by(PartnerTeamMember.name).all()
 
 
 def criar_membro(db: Session, user: User, partner_id: int, dados: MembroCreate) -> PartnerTeamMember:
     acesso.exigir_escrita(user)
-    p = acesso.buscar_parceiro(db, user, partner_id)
+    p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     membro = PartnerTeamMember(partner_id=p.id, **dados.model_dump())
     db.add(membro)
     db.commit()
@@ -96,7 +96,7 @@ def criar_membro(db: Session, user: User, partner_id: int, dados: MembroCreate) 
 def atualizar_membro(db: Session, user: User, partner_id: int, membro_id: int,
                      dados: MembroUpdate) -> PartnerTeamMember:
     acesso.exigir_escrita(user)
-    p = acesso.buscar_parceiro(db, user, partner_id)
+    p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     membro = _membro(db, p, membro_id)
     mudancas = dados.model_dump(exclude_unset=True)
     if membro.user_id and "is_active" in mudancas:
@@ -135,7 +135,7 @@ def dar_acesso_ao_membro(db: Session, user: User, partner_id: int, membro_id: in
                          dados: AcessoMembroCreate) -> criacao_de_login.Resultado:
     """Login partner_member para o vendedor da Equipe (dono do parceiro ou gestão)."""
     acesso.exigir_escrita(user)
-    p = acesso.buscar_parceiro(db, user, partner_id)  # vendedor do parceiro recebe 404
+    p = acesso.buscar_parceiro_proprio(db, user, partner_id)  # vendedor do parceiro recebe 404
     _exigir_dono_ou_gestao(user)
     membro = _membro(db, p, membro_id)
     if membro.user_id:
@@ -157,7 +157,7 @@ def dar_acesso_ao_membro(db: Session, user: User, partner_id: int, membro_id: in
 def convidar_membro(db: Session, user: User, partner_id: int, membro_id: int,
                     enviar: bool) -> criacao_de_login.Resultado:
     acesso.exigir_escrita(user)
-    p = acesso.buscar_parceiro(db, user, partner_id)
+    p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     _exigir_dono_ou_gestao(user)
     membro = _membro(db, p, membro_id)
     if not membro.user_id:
@@ -178,8 +178,9 @@ def convidar_membro(db: Session, user: User, partner_id: int, membro_id: int,
 # ─── Acessos (logins do parceiro) ────────────────────────────────────────────
 
 def listar_acessos(db: Session, user: User, partner_id: int) -> List[User]:
+    # Card primeiro: a indicada responde 404, como se não existisse.
+    p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     acesso.exigir_gestao(user)
-    p = acesso.buscar_parceiro(db, user, partner_id)
     return (
         db.query(User).join(Role, User.role_id == Role.id)
         .filter(User.partner_id == p.id, User.is_deleted.is_(False), Role.name == "partner")
@@ -188,8 +189,9 @@ def listar_acessos(db: Session, user: User, partner_id: int) -> List[User]:
 
 
 def criar_acesso(db: Session, user: User, partner_id: int, dados: AcessoCreate) -> criacao_de_login.Resultado:
+    # Card primeiro: a indicada responde 404, como se não existisse.
+    p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     acesso.exigir_gestao(user)
-    p = acesso.buscar_parceiro(db, user, partner_id)
     resultado = criacao_de_login.criar_login(
         db, user, nome=dados.name, email=dados.email, papel="partner",
         modo=dados.modo, senha=dados.password, partner_id=p.id,
@@ -202,8 +204,9 @@ def criar_acesso(db: Session, user: User, partner_id: int, dados: AcessoCreate) 
 
 def convidar_acesso(db: Session, user: User, partner_id: int, user_id: int,
                     enviar: bool) -> criacao_de_login.Resultado:
+    # Card primeiro: a indicada responde 404, como se não existisse.
+    p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     acesso.exigir_gestao(user)
-    p = acesso.buscar_parceiro(db, user, partner_id)
     login = (
         db.query(User).join(Role, User.role_id == Role.id)
         .filter(User.id == user_id, User.partner_id == p.id, User.is_deleted.is_(False), Role.name == "partner")
@@ -215,8 +218,9 @@ def convidar_acesso(db: Session, user: User, partner_id: int, user_id: int,
 
 
 def alterar_acesso(db: Session, user: User, partner_id: int, user_id: int, ativo: bool) -> User:
+    # Card primeiro: a indicada responde 404, como se não existisse.
+    p = acesso.buscar_parceiro_proprio(db, user, partner_id)
     acesso.exigir_gestao(user)
-    p = acesso.buscar_parceiro(db, user, partner_id)
     # Só os logins do dono; o do vendedor liga e desliga pela Equipe.
     login = (
         db.query(User).join(Role, User.role_id == Role.id)

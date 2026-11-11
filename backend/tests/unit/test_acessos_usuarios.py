@@ -46,14 +46,25 @@ def test_lista_traz_status_do_acesso(client, db, admin_headers, emails):
     assert any(u["email"] == "fin@hs.com" and u["status_acesso"] == "convite_pendente" for u in itens)
 
 
-@pytest.mark.parametrize("papel", ["partner", "partner_member"])
+@pytest.mark.parametrize("papel", ["partner", "partner_member", "hunter"])
 def test_login_de_parceiro_nao_nasce_na_tela_de_usuarios(client, db, admin_headers, papel):
     r = client.post(URL, headers=admin_headers, json={
         "email": "x@dmap.com", "name": "X", "role_id": role(db, papel).id, "modo": "senha", "password": "Senha@123"})
     assert r.status_code == 422
     r2 = client.post("/api/v1/admin/users", headers=admin_headers, json={
-        "email": "y@dmap.com", "name": "Y", "role_id": role(db, papel).id, "password": "Senha@123"})
+        "email": "y@dmap.com", "name": "Yuri", "role_id": role(db, papel).id, "password": "Senha@123"})
     assert r2.status_code == 422
+    r3 = client.post("/api/v1/auth/register", headers=admin_headers, json={
+        "email": "z@dmap.com", "name": "Zeca", "role_id": role(db, papel).id, "password": "Senha@123"})
+    assert r3.status_code == 422
+    # Nem virar parceiro/hunter pela edição de um login existente.
+    fin = client.post(URL, headers=admin_headers, json={
+        "email": "fin@hs.com", "name": "Fin", "role_id": role(db, "finance").id, "modo": "senha",
+        "password": "Senha@123"}).json()
+    r4 = client.put(f"{URL}/{fin['id']}", headers=admin_headers, json={"role_id": role(db, papel).id})
+    assert r4.status_code == 422
+    for resposta in (r, r2, r3, r4):
+        assert "card do parceiro" in resposta.json()["detail"]
 
 
 def test_username_repetido_da_400(client, db, admin_headers, emails):

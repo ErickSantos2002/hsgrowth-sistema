@@ -22,7 +22,7 @@ security = HTTPBearer(auto_error=False)
 
 # Perfis presos ao Programa de Parceiros. Para eles o CRM é negado por padrão:
 # só os caminhos abaixo respondem. Rota nova fica trancada sozinha.
-PERFIS_TRANCADOS = ("partner", "partner_member", "finance")
+PERFIS_TRANCADOS = ("partner", "partner_member", "hunter", "finance")
 # Com a troca de senha pendente só respondem estes caminhos (comparação exata) e o link de senha.
 CAMINHOS_COM_SENHA_PENDENTE = (
     "/api/v1/users/me",
@@ -332,14 +332,14 @@ def require_service_access():
 def require_parcerias_access():
     """
     Dependency do Programa de Parceiros: admin, gerente, Financeiro, parceiro (dono
-    e vendedor da equipe dele) e vendedor da H&S (este só vê os parceiros dos quais
+    e vendedor da equipe dele), hunter e vendedor da H&S (este só vê os parceiros dos quais
     é o Responsável H&S).
     SDR, serviço e visualizador não acessam (403).
     """
     async def checker(
         current_user: User = Depends(get_current_active_user)
     ) -> User:
-        allowed_roles = ("admin", "manager", "finance", "partner", "partner_member", "salesperson")
+        allowed_roles = ("admin", "manager", "finance", "partner", "partner_member", "hunter", "salesperson")
         if not current_user.role or current_user.role.name not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -353,12 +353,12 @@ def require_parcerias_access():
 def require_consulta_cnpj():
     """
     Consulta de CNPJ (Parcerias, Entrega 2): parceiro (dono e vendedor da equipe),
-    vendedor, SDR, admin e gerente. O Financeiro, o serviço e o visualizador não consultam (403).
+    hunter, vendedor, SDR, admin e gerente. O Financeiro, o serviço e o visualizador não consultam (403).
     """
     async def checker(
         current_user: User = Depends(get_current_active_user)
     ) -> User:
-        allowed_roles = ("admin", "manager", "salesperson", "sdr", "partner", "partner_member")
+        allowed_roles = ("admin", "manager", "salesperson", "sdr", "partner", "partner_member", "hunter")
         if not current_user.role or current_user.role.name not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

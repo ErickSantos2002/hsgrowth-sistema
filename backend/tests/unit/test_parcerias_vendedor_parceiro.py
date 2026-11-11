@@ -117,8 +117,8 @@ def test_nao_ve_aquisicao_nem_equipe(client, db):
     assert client.put(f"{URL}/parceiros/{p.id}/mover", headers=h, json={"stage": "potencial"}).status_code == 404
     assert client.put(f"{URL}/parceiros/{p.id}", headers=h, json={"name": "X"}).status_code == 404
     assert client.get(f"{URL}/parceiros", headers=h).json() == []
-    # Acessos é só da gestão: 403 antes de olhar o parceiro (não revela nada).
-    assert client.get(f"{URL}/parceiros/{p.id}/acessos", headers=h).status_code == 403
+    # Acessos: o card vem antes da gestão; login de fora fora do próprio card é 404 (não revela nada).
+    assert client.get(f"{URL}/parceiros/{p.id}/acessos", headers=h).status_code == 404
 
 
 def test_nao_le_atividade_do_card_de_aquisicao(client, db):

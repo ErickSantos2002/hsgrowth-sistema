@@ -56,6 +56,8 @@ def listar(db: Session, partner_id: Optional[int] = None,
 def criar(db: Session, user: User, dados: AtividadeCreate, partner_id: Optional[int] = None,
           oportunidade: Optional[PartnerOpportunity] = None) -> PartnerActivity:
     acesso.exigir_escrita(user)
+    if oportunidade is not None:
+        acesso.exigir_oportunidade_propria(user, oportunidade)
     titulo = (dados.title or "").strip() or None
     texto = (dados.description or "").strip() or None
     if dados.category == "atividade" and not titulo:
@@ -88,13 +90,16 @@ def _buscar_visivel(db: Session, user: User, atividade_id: int) -> Tuple[Partner
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Atividade não encontrada.")
     if atividade.opportunity_id:
         return atividade, acesso.buscar_oportunidade(db, user, atividade.opportunity_id)
-    acesso.buscar_parceiro(db, user, atividade.partner_id)
+    # Atividades do card de Aquisição são só do próprio parceiro (a indicada é 404).
+    acesso.buscar_parceiro_proprio(db, user, atividade.partner_id)
     return atividade, None
 
 
 def _editavel(db: Session, user: User, atividade_id: int) -> Tuple[PartnerActivity, Optional[PartnerOpportunity]]:
     acesso.exigir_escrita(user)
     atividade, oportunidade = _buscar_visivel(db, user, atividade_id)
+    if oportunidade is not None:
+        acesso.exigir_oportunidade_propria(user, oportunidade)
     if atividade.category == "alteracao":
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Alteração do histórico não se edita nem se exclui.")
     # O parceiro mexe só no que a equipe dele lançou; o que a H&S lançou fica com a H&S.
@@ -161,6 +166,8 @@ def excluir(db: Session, user: User, atividade_id: int) -> None:
 async def anexar(db: Session, user: User, arquivo: UploadFile, partner_id: Optional[int] = None,
                  oportunidade: Optional[PartnerOpportunity] = None) -> PartnerActivity:
     acesso.exigir_escrita(user)
+    if oportunidade is not None:
+        acesso.exigir_oportunidade_propria(user, oportunidade)
     conteudo = await arquivo.read()
     if len(conteudo) > TAMANHO_MAXIMO:
         raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Arquivo muito grande. Máximo: 10MB")

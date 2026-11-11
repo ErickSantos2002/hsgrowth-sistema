@@ -54,6 +54,12 @@ def _conferir_vendedor(db: Session, partner_id: int, membro_id: Optional[int]) -
         raise _422("O vendedor escolhido não é da equipe deste parceiro.")
 
 
+def _sem_vendedor_no_hunter(membro_id: Optional[int]) -> None:
+    """O hunter é o próprio vendedor: a oportunidade dele não tem vendedor da equipe."""
+    if membro_id is not None:
+        raise _422("O hunter é o próprio vendedor: a oportunidade não leva vendedor da equipe.")
+
+
 def _conferir_valor_aberto(user: User, op: PartnerOpportunity) -> None:
     """Depois de Ganho ou Perdido, produtos e valores só a gestão corrige."""
     if op.stage in ("ganho", "perdido") and not acesso.eh_gestao(user):
@@ -100,6 +106,8 @@ def criar(db: Session, user: User, dados: OportunidadeCreate) -> PartnerOpportun
         if acesso.eh_vendedor_do_parceiro(user):
             # Oportunidade do vendedor do parceiro nasce com ele como vendedor.
             dados = dados.model_copy(update={"seller_member_id": acesso.membro_do_login(db, user).id})
+        elif acesso.eh_hunter(user):
+            _sem_vendedor_no_hunter(dados.seller_member_id)
     else:
         if not dados.partner_id:
             raise _422("Escolha o parceiro da oportunidade.")
@@ -134,7 +142,7 @@ def criar(db: Session, user: User, dados: OportunidadeCreate) -> PartnerOpportun
 
 def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeUpdate) -> PartnerOpportunity:
     acesso.exigir_escrita(user)
-    op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    op = acesso.buscar_oportunidade_para_escrever(db, user, opportunity_id)
     campos = dados.model_dump(exclude_unset=True)
     justificativa = campos.pop("cnpj_justificativa", None)
     if any(c in campos for c in CAMPOS_DE_VALOR):
@@ -154,6 +162,8 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
     if "seller_member_id" in campos and acesso.eh_vendedor_do_parceiro(user) \
             and campos["seller_member_id"] != op.seller_member_id:
         raise _422("Só o dono do parceiro ou a H&S trocam o vendedor da oportunidade.")
+    if "seller_member_id" in campos and acesso.eh_hunter(user):
+        _sem_vendedor_no_hunter(campos["seller_member_id"])
     if "seller_member_id" in campos:
         _conferir_vendedor(db, op.partner_id, campos["seller_member_id"])
     novo_cnpj = campos.get("cnpj")
@@ -175,7 +185,7 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
 
 def mover(db: Session, user: User, opportunity_id: int, req: MoverRequest) -> PartnerOpportunity:
     acesso.exigir_escrita(user)
-    op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    op = acesso.buscar_oportunidade_para_escrever(db, user, opportunity_id)
     origem = op.stage
     if req.expected_close_date:
         op.expected_close_date = req.expected_close_date
@@ -299,7 +309,7 @@ def listar_produtos(db: Session, user: User, opportunity_id: int) -> List[Partne
 def adicionar_produto(db: Session, user: User, opportunity_id: int,
                       dados: ProdutoItemCreate) -> PartnerOpportunityProduct:
     acesso.exigir_escrita(user)
-    op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    op = acesso.buscar_oportunidade_para_escrever(db, user, opportunity_id)
     _conferir_valor_aberto(user, op)
     produto = _produto_do_catalogo(db, dados.product_id)
     ja_tem = db.query(PartnerOpportunityProduct).filter(
@@ -322,7 +332,7 @@ def adicionar_produto(db: Session, user: User, opportunity_id: int,
 def atualizar_produto(db: Session, user: User, opportunity_id: int, item_id: int,
                       dados: ProdutoItemUpdate) -> PartnerOpportunityProduct:
     acesso.exigir_escrita(user)
-    op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    op = acesso.buscar_oportunidade_para_escrever(db, user, opportunity_id)
     _conferir_valor_aberto(user, op)
     item = _buscar_item(db, op, item_id)
     for campo, valor in dados.model_dump(exclude_unset=True).items():
@@ -338,7 +348,7 @@ def atualizar_produto(db: Session, user: User, opportunity_id: int, item_id: int
 
 def remover_produto(db: Session, user: User, opportunity_id: int, item_id: int) -> None:
     acesso.exigir_escrita(user)
-    op = acesso.buscar_oportunidade(db, user, opportunity_id)
+    op = acesso.buscar_oportunidade_para_escrever(db, user, opportunity_id)
     _conferir_valor_aberto(user, op)
     db.delete(_buscar_item(db, op, item_id))
     db.commit()

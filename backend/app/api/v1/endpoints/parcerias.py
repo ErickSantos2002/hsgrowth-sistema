@@ -244,21 +244,21 @@ def catalogo(busca: str = Query("", max_length=100), db: Session = Depends(get_d
 @router.get("/parceiros/{partner_id}/atividades", response_model=List[AtividadeResponse])
 def atividades_do_parceiro(partner_id: int, db: Session = Depends(get_db),
                            current_user: User = Depends(get_current_active_user)):
-    p = acesso.buscar_parceiro(db, current_user, partner_id)
+    p = acesso.buscar_parceiro_proprio(db, current_user, partner_id)
     return [respostas.atividade_out(a, current_user) for a in atividades.listar(db, partner_id=p.id)]
 
 
 @router.post("/parceiros/{partner_id}/atividades", response_model=AtividadeResponse, status_code=201)
 def criar_atividade_do_parceiro(partner_id: int, dados: AtividadeCreate, db: Session = Depends(get_db),
                                 current_user: User = Depends(get_current_active_user)):
-    p = acesso.buscar_parceiro(db, current_user, partner_id)
+    p = acesso.buscar_parceiro_proprio(db, current_user, partner_id)
     return respostas.atividade_out(atividades.criar(db, current_user, dados, partner_id=p.id))
 
 
 @router.post("/parceiros/{partner_id}/atividades/arquivos", response_model=AtividadeResponse, status_code=201)
 async def anexar_no_parceiro(partner_id: int, file: UploadFile = File(...), db: Session = Depends(get_db),
                              current_user: User = Depends(get_current_active_user)):
-    p = acesso.buscar_parceiro(db, current_user, partner_id)
+    p = acesso.buscar_parceiro_proprio(db, current_user, partner_id)
     return respostas.atividade_out(await atividades.anexar(db, current_user, file, partner_id=p.id))
 
 

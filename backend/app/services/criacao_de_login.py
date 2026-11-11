@@ -33,7 +33,7 @@ def criar_login(db: Session, autor: Optional[User], *, nome: str, email: str, pa
                 extras: Optional[Dict[str, Any]] = None) -> Resultado:
     email = email.strip().lower()
     dominio_interno = (settings.DAILY_INTERNAL_EMAIL_DOMAIN or "").strip().lower()
-    if papel in ("partner", "partner_member") and dominio_interno and email.endswith("@" + dominio_interno):
+    if papel in ("partner", "partner_member", "hunter") and dominio_interno and email.endswith("@" + dominio_interno):
         # O SSO da Microsoft casa por e-mail: a pessoa da H&S cairia na conta do parceiro.
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY,
                             "E-mail da Health & Safety não pode ser usado em login de parceiro.")
