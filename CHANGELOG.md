@@ -5,6 +5,37 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.19] — 11/11/2026
+
+### Adicionado
+- **Comissões do Programa de Parceiros:** geradas quando o Financeiro confirma o ganho da oportunidade.
+  - **Venda própria (Y%):** para a empresa parceira e para o hunter dono da venda.
+  - **Indicação (X%):** para quem indicou, por um prazo que conta da 1ª venda confirmada da empresa indicada.
+  - **Bônus fixo** na 1ª venda da empresa indicada.
+  - **Calibração (Z%):** lançada à mão pelo Financeiro, até 2 por aparelho.
+- **Tela Comissões:** "Minhas comissões" para empresa e hunter; "A pagar" por beneficiário, com PIX, marcar como pago e exportar CSV; e a lista de todos os lançamentos.
+- **Configuração** dos percentuais em Parcerias → Comissões.
+
+### Regras
+- Base de cálculo = produtos menos desconto, sem frete.
+- Só venda gera comissão (locação não).
+- Troca de indicador vale dali pra frente.
+- Ganho desfeito antes do pagamento cancela os lançamentos pendentes; lançamento pago nunca é desfeito.
+- Se a 1ª venda for desfeita, a âncora passa para a venda confirmada mais antiga que restar.
+
+### Alterado
+- Com o ganho confirmado, produtos, desconto e modalidade ficam travados (desfaça o ganho para alterar).
+- Não se confirma ganho de parceiro bloqueado.
+- Confirmar o ganho duas vezes agora dá aviso.
+
+### Banco
+- Migration `9d0e1f2a3b4c` (aditiva; pode ser aplicada antes do código). Cria a configuração de comissões zerada, com prazo de 24 meses.
+
+### Configuração
+- Preencher os percentuais em Parcerias → Comissões → Configuração. Enquanto estiverem zerados, nenhum lançamento é gerado.
+
+---
+
 ## [1.11.18] — 11/11/2026
 
 ### Adicionado

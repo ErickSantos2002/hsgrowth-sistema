@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.19",
+    date: "11/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Comissões do Programa de Parceiros: geradas quando o Financeiro confirma o ganho — venda própria, indicação (por prazo), bônus na 1ª venda e calibração lançada pelo Financeiro.",
+      },
+      {
+        type: "feature",
+        text: "Nova tela Comissões: Minhas comissões, A pagar (com PIX, marcar como pago e exportar CSV) e todos os lançamentos, além da configuração dos percentuais.",
+      },
+      {
+        type: "improvement",
+        text: "Com o ganho confirmado, produtos, desconto e modalidade ficam travados; desfaça o ganho para alterar. Parceiro bloqueado não tem ganho confirmado.",
+      },
+    ],
+  },
+  {
     version: "1.11.18",
     date: "11/11/2026",
     entries: [
