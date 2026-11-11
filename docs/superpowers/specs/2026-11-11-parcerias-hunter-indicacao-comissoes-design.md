@@ -109,8 +109,12 @@ A opção **locação some** para os perfis externos (`hunter`, `partner`, `part
 modalidade fica fixada em **venda** na tela e o backend recusa (422) locação vinda deles.
 Oportunidade de locação que exista (criada pela H&S) **não gera comissão**.
 
-**Base de cálculo:** o valor total da oportunidade (o `total_value` já calculado: produtos com
-desconto e frete). *(Decisão do builder se frete entra na base — ver seção 8.)*
+**Base de cálculo (Erick, 11/11):** produtos menos o desconto geral, **sem o frete** (frete é
+custo de entrega, não venda).
+
+**Troca de indicador (Erick, 11/11):** só vale dali pra frente. Lançamentos já gerados ficam com
+quem era o indicador na época; vendas confirmadas depois da troca geram para o novo indicador. O
+prazo de indicação continua contando da primeira venda confirmada da empresa.
 
 ### 4.2 Regras (valores editáveis pela H&S)
 
