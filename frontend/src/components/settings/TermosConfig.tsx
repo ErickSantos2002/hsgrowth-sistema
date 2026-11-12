@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
+import { Building2, Send, UserSearch } from "lucide-react";
+import { Button, FormField, Textarea } from "../common";
 import parceriasService, { mensagemDeErro, type AudienceTermos, type Termos } from "../../services/parceriasService";
 import { useConfirm } from "../../contexts/ConfirmContext";
 import { showError, showSuccess } from "../../utils/toast";
 
-const ABAS: { audience: AudienceTermos; rotulo: string }[] = [
-  { audience: "empresa", rotulo: "Empresa parceira" },
-  { audience: "hunter", rotulo: "Hunter" },
+const ABAS: { audience: AudienceTermos; rotulo: string; icone: typeof Building2 }[] = [
+  { audience: "empresa", rotulo: "Empresa parceira", icone: Building2 },
+  { audience: "hunter", rotulo: "Hunter", icone: UserSearch },
 ];
 
 // Aba Termos das Configurações (admin/gerente). Cada nova versão exige novo aceite.
@@ -64,57 +66,53 @@ export default function TermosConfig() {
         </p>
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200 dark:border-slate-700/50">
+      {/* Sub-abas no mesmo formato das abas de Configurações */}
+      <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-gray-200 dark:border-slate-700">
         {ABAS.map((a) => (
           <button
             key={a.audience}
             type="button"
             onClick={() => setAudience(a.audience)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
+            className={`flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors ${
               audience === a.audience
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400"
+                ? "bg-emerald-600 text-white"
+                : "text-slate-500 hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-white"
             }`}
           >
+            <a.icone size={16} />
             {a.rotulo}
           </button>
         ))}
       </div>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
           {vigente
             ? `Versão vigente: ${vigente.version} (publicada em ${new Date(vigente.published_at).toLocaleDateString("pt-BR")})`
             : carregando ? "Carregando..." : "Ainda não há termos publicados para este tipo."}
-        </h2>
+        </h3>
         {vigente && (
-          <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-300 bg-gray-50 p-4 text-sm text-slate-700 dark:border-slate-700/50 dark:bg-slate-800/50 dark:text-slate-300">
+          <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
             {vigente.text}
           </div>
         )}
       </section>
 
-      <section className="space-y-2">
-        <label htmlFor="novo-texto" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-          Nova versão
-        </label>
-        <textarea
-          id="novo-texto"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          rows={12}
-          disabled={salvando}
-          placeholder="Cole aqui o texto completo dos novos termos (mínimo 20 caracteres)."
-          className="w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-slate-900 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:border-slate-700/50 dark:bg-slate-800/50 dark:text-white"
-        />
-        <button
-          type="button"
-          onClick={publicar}
-          disabled={salvando || texto.trim().length < 20}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {salvando ? "Publicando..." : "Publicar nova versão"}
-        </button>
+      <section className="space-y-4">
+        <FormField label="Nova versão" hint="Cole aqui o texto completo dos novos termos (mínimo 20 caracteres).">
+          <Textarea
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            rows={12}
+            disabled={salvando}
+            className="text-sm"
+          />
+        </FormField>
+        <div className="flex justify-end">
+          <Button icon={<Send size={16} />} onClick={publicar} loading={salvando} disabled={texto.trim().length < 20}>
+            Publicar nova versão
+          </Button>
+        </div>
       </section>
     </div>
   );

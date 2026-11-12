@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { Calendar, Handshake, Hourglass, ShoppingCart, TrendingUp, Users, Wallet } from "lucide-react";
-import { Input, SelectMenu } from "../common";
+import { Calendar, CheckCircle2, Clock, Handshake, Hourglass, LayoutDashboard, ShoppingCart, TrendingUp, Users, Wallet } from "lucide-react";
+import { Pagination, SelectMenu } from "../common";
+import { PageHeader } from "../layout/PageHeader";
+import { usePagination } from "../../hooks";
 import KpiCard from "./KpiCard";
 import { useTheme } from "../../context/ThemeContext";
 import { getChartColors } from "../../constants/colors";
@@ -42,6 +44,21 @@ const periodoUltimos12 = () => {
   const h = hojeSP();
   return { de: iso(new Date(Date.UTC(h.getUTCFullYear(), h.getUTCMonth() - 11, 1))), ate: iso(h) };
 };
+
+const ATALHOS: Record<string, () => { de: string; ate: string }> = {
+  este_mes: periodoEsteMes,
+  mes_passado: periodoMesPassado,
+  ultimos_12: periodoUltimos12,
+};
+const OPCOES_PERIODO = [
+  { value: "este_mes", label: "Este Mês" },
+  { value: "mes_passado", label: "Mês Passado" },
+  { value: "ultimos_12", label: "Últimos 12 Meses" },
+  { value: "custom", label: "Personalizado" },
+];
+/** Data no mesmo formato compacto do Dashboard geral (38px, igual ao SelectMenu "sm"). */
+const CAMPO_DATA =
+  "flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white sm:flex-none";
 
 const rotuloMes = (mes: string) => `${mes.slice(5, 7)}/${mes.slice(0, 4)}`;
 const rotuloSituacao = (codigo: string) => ETAPAS_AQUISICAO.find((e) => e.codigo === codigo)?.nome ?? codigo;
@@ -86,6 +103,26 @@ function Tabela({ colunas, children }: { colunas: { rotulo: string; direita?: bo
   );
 }
 
+/** Tabela do painel paginada de 10 em 10 (a paginação só aparece quando há mais de uma página). */
+function TabelaPaginada<T>({ colunas, itens, rotulo, linha }: {
+  colunas: { rotulo: string; direita?: boolean }[];
+  itens: T[];
+  rotulo: string;
+  linha: (item: T, posicao: number) => React.ReactNode;
+}) {
+  const pagination = usePagination(itens, 10);
+  return (
+    <>
+      <Tabela colunas={colunas}>
+        {pagination.paginatedItems.map((item, i) => linha(item, pagination.startIndex + i + 1))}
+      </Tabela>
+      <div className="-mx-5 -mb-5">
+        <Pagination {...pagination} itemLabel={rotulo} />
+      </div>
+    </>
+  );
+}
+
 const celula = "px-2 py-2";
 const celulaNum = "whitespace-nowrap px-2 py-2 text-right tabular-nums";
 
@@ -106,23 +143,35 @@ function Parada({ item }: { item: DashCarteiraItem }) {
 function ComissoesResumo({ comissoes, link }: { comissoes: DashComissoes; link?: boolean }) {
   const tipos = Object.entries(comissoes.por_tipo);
   return (
-    <Bloco
-      titulo="Comissões"
-      icone={<Wallet size={16} className="text-emerald-500" />}
-      acao={link ? <Link to="/parcerias/comissoes" className="text-xs font-medium text-blue-500 hover:underline">Ver comissões</Link> : undefined}
-    >
+    <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg bg-amber-500/10 p-3">
-          <p className="text-xs text-slate-500 dark:text-slate-400">Pendente (a pagar)</p>
-          <p className="text-lg font-bold text-slate-900 dark:text-white">{dinheiro(comissoes.pendente)}</p>
-        </div>
-        <div className="rounded-lg bg-emerald-500/10 p-3">
-          <p className="text-xs text-slate-500 dark:text-slate-400">Pago</p>
-          <p className="text-lg font-bold text-slate-900 dark:text-white">{dinheiro(comissoes.pago)}</p>
-        </div>
+        <KpiCard
+          icon={<Clock size={20} />}
+          iconBg="bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+          label="Comissões pendentes"
+          value={Number(comissoes.pendente)}
+          format="currency"
+          sub="a pagar"
+          highlight="yellow"
+        />
+        <KpiCard
+          icon={<CheckCircle2 size={20} />}
+          iconBg="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+          label="Comissões pagas"
+          value={Number(comissoes.pago)}
+          format="currency"
+          sub="já pago"
+          highlight="green"
+        />
       </div>
-      {tipos.length > 0 && (
-        <div className="mt-4">
+      <Bloco
+        titulo="Comissões por tipo"
+        icone={<Wallet size={16} className="text-emerald-500" />}
+        acao={link ? <Link to="/parcerias/comissoes" className="text-xs font-medium text-blue-500 hover:underline">Ver comissões</Link> : undefined}
+      >
+        {tipos.length === 0 ? (
+          <Vazio texto="Nenhuma comissão no período." />
+        ) : (
           <Tabela colunas={[{ rotulo: "Tipo" }, { rotulo: "Pendente", direita: true }, { rotulo: "Pago", direita: true }]}>
             {tipos.map(([tipo, v]) => (
               <tr key={tipo}>
@@ -132,9 +181,9 @@ function ComissoesResumo({ comissoes, link }: { comissoes: DashComissoes; link?:
               </tr>
             ))}
           </Tabela>
-        </div>
-      )}
-    </Bloco>
+        )}
+      </Bloco>
+    </div>
   );
 }
 
@@ -171,6 +220,7 @@ interface Props {
 }
 
 const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
+  const [atalhoPeriodo, setAtalhoPeriodo] = useState("este_mes");
   const [periodo, setPeriodo] = useState(periodoEsteMes);
   const [hunterId, setHunterId] = useState("");
   const [partnerId, setPartnerId] = useState("");
@@ -215,42 +265,28 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
     [empresas],
   );
 
-  const atalho = (rotulo: string, p: { de: string; ate: string }) => (
-    <button
-      key={rotulo}
-      type="button"
-      onClick={() => setPeriodo(p)}
-      className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-        periodo.de === p.de && periodo.ate === p.ate
-          ? "border-emerald-500/40 bg-emerald-500/10 font-medium text-emerald-600 dark:text-emerald-400"
-          : "border-gray-200 bg-white text-slate-600 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-      }`}
-    >
-      {rotulo}
-    </button>
-  );
+  const mudarAtalho = (v: string) => {
+    setAtalhoPeriodo(v);
+    // "Personalizado" mantém as datas atuais para o usuário ajustar.
+    if (ATALHOS[v]) setPeriodo(ATALHOS[v]());
+  };
 
+  // Mesmo formato dos controles do Dashboard geral: seletores compactos e "[data] até [data]" no Personalizado.
   const filtros = (
-    <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
-      <div className="flex flex-wrap gap-2">
-        {atalho("Este mês", periodoEsteMes())}
-        {atalho("Mês passado", periodoMesPassado())}
-        {atalho("Últimos 12 meses", periodoUltimos12())}
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Calendar size={14} className="text-slate-400" />
-        <label className="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400">
-          De <Input type="date" fullWidth={false} value={periodo.de} max={periodo.ate || undefined} onChange={(e) => setPeriodo({ ...periodo, de: e.target.value })} />
-        </label>
-        <label className="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400">
-          até <Input type="date" fullWidth={false} value={periodo.ate} min={periodo.de || undefined} onChange={(e) => setPeriodo({ ...periodo, ate: e.target.value })} />
-        </label>
-      </div>
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       {ehHS && (
         <>
-          <SelectMenu value={hunterId} options={opcoesHunter} onChange={setHunterId} icon={<Users size={14} className="text-slate-400" />} className="w-full sm:w-auto" />
-          <SelectMenu value={partnerId} options={opcoesEmpresa} onChange={setPartnerId} icon={<Handshake size={14} className="text-slate-400" />} className="w-full sm:w-auto" />
+          <SelectMenu size="sm" value={hunterId} options={opcoesHunter} onChange={setHunterId} icon={<Users size={14} className="text-slate-400" />} className="w-full sm:w-auto" />
+          <SelectMenu size="sm" value={partnerId} options={opcoesEmpresa} onChange={setPartnerId} icon={<Handshake size={14} className="text-slate-400" />} className="w-full sm:w-auto" />
         </>
+      )}
+      <SelectMenu size="sm" value={atalhoPeriodo} options={OPCOES_PERIODO} onChange={mudarAtalho} icon={<Calendar size={14} className="text-slate-400" />} className="w-full sm:w-auto" />
+      {atalhoPeriodo === "custom" && (
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <input type="date" className={CAMPO_DATA} value={periodo.de} max={periodo.ate || undefined} onChange={(e) => setPeriodo({ ...periodo, de: e.target.value })} />
+          <span className="text-xs text-slate-400">até</span>
+          <input type="date" className={CAMPO_DATA} value={periodo.ate} min={periodo.de || undefined} onChange={(e) => setPeriodo({ ...periodo, ate: e.target.value })} />
+        </div>
       )}
     </div>
   );
@@ -260,13 +296,17 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
   const ticket = painel && painel.vendas.quantidade > 0 ? Number(painel.vendas.valor) / painel.vendas.quantidade : null;
 
   return (
+    <>
+    {!semTitulo && (
+      <PageHeader
+        title="Dashboard"
+        description="Vendas e comissões do Programa de Parceiros."
+        icon={LayoutDashboard}
+        actions={filtros}
+      />
+    )}
     <div className="space-y-6">
-      {!semTitulo && (
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
-          <Handshake size={20} /> Dashboard de Parcerias
-        </h2>
-      )}
-      {filtros}
+      {semTitulo && filtros}
 
       {erro && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-500">
@@ -275,7 +315,7 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
       )}
 
       {!painel && carregando && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-28 animate-pulse rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50" />
           ))}
@@ -324,11 +364,10 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
                 {painel.carteira.length === 0 ? (
                   <Vazio texto="Você ainda não indicou nenhuma empresa." />
                 ) : (
-                  <Tabela colunas={[
+                  <TabelaPaginada itens={painel.carteira} rotulo="empresas" colunas={[
                     { rotulo: "Empresa" }, { rotulo: "Situação" }, { rotulo: "Vendas", direita: true }, { rotulo: "Valor", direita: true },
                     { rotulo: "Última venda" }, { rotulo: "Atividade" }, { rotulo: "Prazo da indicação" },
-                  ]}>
-                    {painel.carteira.map((c) => (
+                  ]} linha={(c) => (
                       <tr key={c.partner_id}>
                         <td className={`${celula} font-medium`}>{c.nome}</td>
                         <td className={celula}>{rotuloSituacao(c.situacao)}</td>
@@ -338,8 +377,7 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
                         <td className={celula}><Parada item={c} /></td>
                         <td className={`${celula} whitespace-nowrap`}>{c.prazo_indicacao_ate ? dia(c.prazo_indicacao_ate) : "—"}</td>
                       </tr>
-                    ))}
-                  </Tabela>
+                  )} />
                 )}
               </Bloco>
               <ComissoesResumo comissoes={painel.comissoes} link />
@@ -353,23 +391,20 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
                   {painel.por_vendedor.length === 0 ? (
                     <Vazio texto="Nenhuma venda no período." />
                   ) : (
-                    <Tabela colunas={[{ rotulo: "Vendedor" }, { rotulo: "Vendas", direita: true }, { rotulo: "Valor", direita: true }]}>
-                      {painel.por_vendedor.map((v, i) => (
-                        <tr key={v.membro_id ?? `sem-${i}`}>
+                    <TabelaPaginada itens={painel.por_vendedor} rotulo="vendedores" colunas={[{ rotulo: "Vendedor" }, { rotulo: "Vendas", direita: true }, { rotulo: "Valor", direita: true }]} linha={(v, n) => (
+                        <tr key={v.membro_id ?? `sem-${n}`}>
                           <td className={`${celula} font-medium`}>{v.nome}</td>
                           <td className={celulaNum}>{v.quantidade}</td>
                           <td className={celulaNum}>{dinheiro(v.valor)}</td>
                         </tr>
-                      ))}
-                    </Tabela>
+                    )} />
                   )}
                 </Bloco>
                 <Bloco titulo="Unidades indicadas" icone={<Handshake size={16} className="text-purple-500" />}>
                   {painel.unidades.length === 0 ? (
                     <Vazio texto="Você ainda não indicou nenhuma unidade." />
                   ) : (
-                    <Tabela colunas={[{ rotulo: "Unidade" }, { rotulo: "Situação" }, { rotulo: "Vendas", direita: true }, { rotulo: "Valor", direita: true }, { rotulo: "Atividade" }]}>
-                      {painel.unidades.map((u) => (
+                    <TabelaPaginada itens={painel.unidades} rotulo="unidades" colunas={[{ rotulo: "Unidade" }, { rotulo: "Situação" }, { rotulo: "Vendas", direita: true }, { rotulo: "Valor", direita: true }, { rotulo: "Atividade" }]} linha={(u) => (
                         <tr key={u.partner_id}>
                           <td className={`${celula} font-medium`}>{u.nome}</td>
                           <td className={celula}>{rotuloSituacao(u.situacao)}</td>
@@ -377,8 +412,7 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
                           <td className={celulaNum}>{dinheiro(u.valor)}</td>
                           <td className={celula}><Parada item={u} /></td>
                         </tr>
-                      ))}
-                    </Tabela>
+                    )} />
                   )}
                 </Bloco>
               </div>
@@ -393,33 +427,29 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
                   {painel.ranking_empresas.length === 0 ? (
                     <Vazio texto="Nenhuma venda de empresa no período." />
                   ) : (
-                    <Tabela colunas={[{ rotulo: "#" }, { rotulo: "Empresa" }, { rotulo: "Vendas", direita: true }, { rotulo: "Valor", direita: true }]}>
-                      {painel.ranking_empresas.map((r, i) => (
+                    <TabelaPaginada itens={painel.ranking_empresas} rotulo="empresas" colunas={[{ rotulo: "#" }, { rotulo: "Empresa" }, { rotulo: "Vendas", direita: true }, { rotulo: "Valor", direita: true }]} linha={(r, n) => (
                         <tr key={r.partner_id}>
-                          <td className={`${celula} text-slate-400`}>{i + 1}</td>
+                          <td className={`${celula} text-slate-400`}>{n}</td>
                           <td className={`${celula} font-medium`}>{r.nome}</td>
                           <td className={celulaNum}>{r.quantidade}</td>
                           <td className={celulaNum}>{dinheiro(r.valor)}</td>
                         </tr>
-                      ))}
-                    </Tabela>
+                    )} />
                   )}
                 </Bloco>
                 <Bloco titulo="Ranking de hunters" icone={<Users size={16} className="text-purple-500" />}>
                   {painel.ranking_hunters.length === 0 ? (
                     <Vazio texto="Nenhuma venda de hunter no período." />
                   ) : (
-                    <Tabela colunas={[{ rotulo: "#" }, { rotulo: "Hunter" }, { rotulo: "Empresas", direita: true }, { rotulo: "Vendas", direita: true }, { rotulo: "Valor", direita: true }]}>
-                      {painel.ranking_hunters.map((r, i) => (
+                    <TabelaPaginada itens={painel.ranking_hunters} rotulo="hunters" colunas={[{ rotulo: "#" }, { rotulo: "Hunter" }, { rotulo: "Empresas", direita: true }, { rotulo: "Vendas", direita: true }, { rotulo: "Valor", direita: true }]} linha={(r, n) => (
                         <tr key={r.partner_id}>
-                          <td className={`${celula} text-slate-400`}>{i + 1}</td>
+                          <td className={`${celula} text-slate-400`}>{n}</td>
                           <td className={`${celula} font-medium`}>{r.nome}</td>
                           <td className={celulaNum}>{r.empresas}</td>
                           <td className={celulaNum}>{r.quantidade}</td>
                           <td className={celulaNum}>{dinheiro(r.valor)}</td>
                         </tr>
-                      ))}
-                    </Tabela>
+                    )} />
                   )}
                 </Bloco>
               </div>
@@ -428,16 +458,14 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
                 {painel.paradas.length === 0 ? (
                   <Vazio texto="Nenhuma empresa parada. Todas as empresas ativadas têm movimento recente." />
                 ) : (
-                  <Tabela colunas={[{ rotulo: "Empresa" }, { rotulo: "Última venda" }, { rotulo: "Última atividade" }, { rotulo: "Situação" }]}>
-                    {painel.paradas.map((p) => (
+                  <TabelaPaginada itens={painel.paradas} rotulo="empresas" colunas={[{ rotulo: "Empresa" }, { rotulo: "Última venda" }, { rotulo: "Última atividade" }, { rotulo: "Situação" }]} linha={(p) => (
                       <tr key={p.partner_id}>
                         <td className={`${celula} font-medium`}>{p.nome}</td>
                         <td className={`${celula} whitespace-nowrap`}>{p.ultima_venda_em ? dia(p.ultima_venda_em) : "—"}</td>
                         <td className={`${celula} whitespace-nowrap`}>{p.ultima_atividade_em ? dia(p.ultima_atividade_em) : "—"}</td>
                         <td className={celula}><Parada item={p} /></td>
                       </tr>
-                    ))}
-                  </Tabela>
+                  )} />
                 )}
               </Bloco>
 
@@ -447,6 +475,7 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

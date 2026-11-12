@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ChevronDown, ChevronRight, Copy, Download, Settings, Wallet } from "lucide-react";
-import { Button, EmptyState, Input, SelectMenu } from "../../components/common";
+import { Link, useNavigate } from "react-router-dom";
+import { CheckCircle2, ChevronDown, ChevronRight, Clock, Copy, Download, ListChecks, Settings, Users, Wallet } from "lucide-react";
+import { Button, EmptyState, Input, Pagination, SelectMenu } from "../../components/common";
+import KpiCard from "../../components/dashboard/KpiCard";
+import { PageHeader } from "../../components/layout/PageHeader";
 import { useAuth } from "../../hooks/useAuth";
+import { usePagination } from "../../hooks";
 import { useConfirm } from "../../contexts/ConfirmContext";
 import { showError, showSuccess, showWarning } from "../../utils/toast";
 import {
@@ -34,67 +37,79 @@ function Situacao({ status }: { status: string }) {
 const taxaOuBonus = (c: Comissao) =>
   c.kind === "bonus_primeira_venda" ? dinheiro(c.fixed_value ?? c.amount) : formatarPercentual(c.rate);
 
+/** Período "[data] até [data]"; o campo de data do navegador é mais alto que o SelectMenu (50px), então fixa a altura. */
 function Periodo({ de, ate, onDe, onAte }: { de: string; ate: string; onDe: (v: string) => void; onAte: (v: string) => void }) {
   return (
-    <>
-      <label className="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400">
-        De <Input type="date" fullWidth={false} value={de} onChange={(e) => onDe(e.target.value)} />
-      </label>
-      <label className="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400">
-        até <Input type="date" fullWidth={false} value={ate} onChange={(e) => onAte(e.target.value)} />
-      </label>
-    </>
+    <div className="flex items-center gap-2 sm:col-span-2">
+      <Input type="date" title="Desde" className="h-[50px] min-w-0 flex-1 !py-0" value={de} onChange={(e) => onDe(e.target.value)} />
+      <span className="text-sm text-slate-500 dark:text-slate-400">até</span>
+      <Input type="date" title="Até" className="h-[50px] min-w-0 flex-1 !py-0" value={ate} onChange={(e) => onAte(e.target.value)} />
+    </div>
   );
 }
+
+const TH = "px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300";
+const TD = "px-6 py-4 text-sm";
+
+/** "Carregando..." no mesmo formato das outras listas. */
+const Carregando = () => <div className="py-12 text-center text-slate-500 dark:text-slate-400">Carregando...</div>;
 
 function Tabela({ itens, mostrarBeneficiario, acao }: {
   itens: Comissao[];
   mostrarBeneficiario?: boolean;
   acao?: (c: Comissao) => React.ReactNode;
 }) {
+  const pagination = usePagination(itens, 10);
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700/50">
-      <table className="w-full text-left text-sm">
-        <thead className="bg-gray-50 text-xs uppercase text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
-          <tr>
-            <th className="px-4 py-3">Data</th>
-            {mostrarBeneficiario && <th className="px-4 py-3">Beneficiário</th>}
-            <th className="px-4 py-3">Oportunidade</th>
-            <th className="px-4 py-3">Empresa que vendeu</th>
-            <th className="px-4 py-3">Tipo</th>
-            <th className="px-4 py-3 text-right">Base</th>
-            <th className="px-4 py-3 text-right">% / bônus</th>
-            <th className="px-4 py-3 text-right">Valor</th>
-            <th className="px-4 py-3">Situação</th>
-            {acao && <th className="px-4 py-3" />}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200 text-slate-800 dark:divide-slate-700/50 dark:text-slate-200">
-          {itens.map((c) => (
-            <tr key={c.id}>
-              <td className="whitespace-nowrap px-4 py-3">{dia(c.created_at)}</td>
-              {mostrarBeneficiario && <td className="px-4 py-3">{c.beneficiary_name}</td>}
-              <td className="px-4 py-3">
-                <Link to={`/parcerias/oportunidades/${c.opportunity_id}`} className="text-blue-500 hover:underline">
-                  {c.opportunity_title || `#${c.opportunity_id}`}
-                </Link>
-              </td>
-              <td className="px-4 py-3">{c.source_name}</td>
-              <td className="px-4 py-3">{COMISSAO_TIPO_LABEL[c.kind] ?? c.kind}</td>
-              <td className="whitespace-nowrap px-4 py-3 text-right">{dinheiro(c.base_value)}</td>
-              <td className="whitespace-nowrap px-4 py-3 text-right">{taxaOuBonus(c)}</td>
-              <td className="whitespace-nowrap px-4 py-3 text-right font-medium">{dinheiro(c.amount)}</td>
-              <td className="px-4 py-3">
-                <Situacao status={c.status} />
-                {c.status === "cancelada" && c.cancel_reason && (
-                  <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">{c.cancel_reason}</p>
-                )}
-              </td>
-              {acao && <td className="px-4 py-3">{acao(c)}</td>}
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-800/30">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50">
+              <th className={TH}>Data</th>
+              {mostrarBeneficiario && <th className={TH}>Beneficiário</th>}
+              <th className={TH}>Oportunidade</th>
+              <th className={TH}>Empresa que vendeu</th>
+              <th className={TH}>Tipo</th>
+              <th className={`${TH} !text-right`}>Base</th>
+              <th className={`${TH} !text-right`}>% / bônus</th>
+              <th className={`${TH} !text-right`}>Valor</th>
+              <th className={TH}>Situação</th>
+              {acao && <th className={`${TH} !text-right`}>Ações</th>}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-200 text-slate-700 dark:divide-slate-700/50 dark:text-slate-300">
+            {pagination.paginatedItems.map((c) => (
+              <tr key={c.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                <td className={`${TD} whitespace-nowrap`}>{dia(c.created_at)}</td>
+                {mostrarBeneficiario && <td className={`${TD} font-medium text-slate-900 dark:text-white`}>{c.beneficiary_name}</td>}
+                <td className={TD}>
+                  <Link to={`/parcerias/oportunidades/${c.opportunity_id}`} className="font-medium text-slate-900 hover:text-emerald-500 hover:underline dark:text-white">
+                    {c.opportunity_title || `#${c.opportunity_id}`}
+                  </Link>
+                </td>
+                <td className={TD}>{c.source_name}</td>
+                <td className={TD}>{COMISSAO_TIPO_LABEL[c.kind] ?? c.kind}</td>
+                <td className={`${TD} whitespace-nowrap text-right`}>{dinheiro(c.base_value)}</td>
+                <td className={`${TD} whitespace-nowrap text-right`}>{taxaOuBonus(c)}</td>
+                <td className={`${TD} whitespace-nowrap text-right font-medium text-slate-900 dark:text-white`}>{dinheiro(c.amount)}</td>
+                <td className={TD}>
+                  <Situacao status={c.status} />
+                  {c.status === "cancelada" && c.cancel_reason && (
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{c.cancel_reason}</p>
+                  )}
+                </td>
+                {acao && (
+                  <td className={TD}>
+                    <div className="flex items-center justify-end gap-2">{acao(c)}</div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Pagination {...pagination} itemLabel="lançamentos" alwaysShow />
     </div>
   );
 }
@@ -123,25 +138,35 @@ function MinhasComissoes() {
   }, [status, de, ate]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-          <p className="text-xs uppercase text-amber-700 dark:text-amber-400">Pendente</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{dinheiro(resumo?.pendente ?? 0)}</p>
-        </div>
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-          <p className="text-xs uppercase text-emerald-700 dark:text-emerald-400">Pago</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{dinheiro(resumo?.pago ?? 0)}</p>
-        </div>
+        <KpiCard
+          icon={<Clock size={20} />}
+          iconBg="bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+          label="Pendente"
+          value={resumo ? Number(resumo.pendente) : null}
+          format="currency"
+          sub="a receber no período"
+          highlight="yellow"
+        />
+        <KpiCard
+          icon={<CheckCircle2 size={20} />}
+          iconBg="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+          label="Pago"
+          value={resumo ? Number(resumo.pago) : null}
+          format="currency"
+          sub="já recebido no período"
+          highlight="green"
+        />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="w-56"><SelectMenu size="sm" value={status} options={OPCOES_STATUS} onChange={setStatus} /></div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <SelectMenu value={status} options={OPCOES_STATUS} onChange={setStatus} />
         <Periodo de={de} ate={ate} onDe={setDe} onAte={setAte} />
       </div>
 
       {carregando && itens.length === 0 ? (
-        <p className="text-sm text-slate-500">Carregando...</p>
+        <Carregando />
       ) : itens.length === 0 ? (
         <EmptyState icon={Wallet} title="Nenhuma comissão" description="Quando uma venda sua for confirmada, a comissão aparece aqui." />
       ) : (
@@ -164,7 +189,7 @@ async function copiar(texto: string) {
 function BlocoBeneficiario({ b, onPagar }: { b: APagarBeneficiario; onPagar: (ids: number[], total: number, nome: string) => void }) {
   const [aberto, setAberto] = useState(false);
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-slate-700/50">
+    <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/30">
       <div className="flex flex-wrap items-center justify-between gap-3 p-4">
         <div className="min-w-0 space-y-1">
           <button type="button" onClick={() => setAberto(!aberto)} className="flex items-center gap-1 text-left font-semibold text-slate-900 dark:text-white">
@@ -189,14 +214,21 @@ function BlocoBeneficiario({ b, onPagar }: { b: APagarBeneficiario; onPagar: (id
         </div>
         <div className="flex items-center gap-4">
           <span className="text-lg font-bold text-slate-900 dark:text-white">{dinheiro(b.total)}</span>
-          <Button onClick={() => onPagar(b.lancamentos.map((l) => l.id), Number(b.total), b.nome)}>Marcar pago</Button>
+          <Button size="sm" icon={<CheckCircle2 size={16} />} onClick={() => onPagar(b.lancamentos.map((l) => l.id), Number(b.total), b.nome)}>
+            Marcar tudo pago
+          </Button>
         </div>
       </div>
       {aberto && (
         <div className="border-t border-gray-200 p-4 dark:border-slate-700/50">
           <Tabela itens={b.lancamentos} acao={(c) => (
-            <button type="button" className="whitespace-nowrap text-xs text-emerald-600 hover:underline" onClick={() => onPagar([c.id], Number(c.amount), b.nome)}>
-              Marcar pago
+            <button
+              type="button"
+              onClick={() => onPagar([c.id], Number(c.amount), b.nome)}
+              className="rounded-lg bg-emerald-600/20 p-2 text-slate-900 transition-colors hover:bg-emerald-600/30 dark:text-emerald-400"
+              title="Marcar pago"
+            >
+              <CheckCircle2 size={16} />
             </button>
           )} />
         </div>
@@ -263,26 +295,50 @@ function APagar() {
   };
 
   const totalGeral = grupos.reduce((s, g) => s + Number(g.total), 0);
+  const pagination = usePagination(grupos, 10);
+  const semDados = carregando && grupos.length === 0;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <KpiCard
+          icon={<Wallet size={20} />}
+          iconBg="bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+          label="Total a pagar"
+          value={semDados ? null : totalGeral}
+          format="currency"
+          sub="comissões pendentes no período"
+          highlight="yellow"
+        />
+        <KpiCard
+          icon={<Users size={20} />}
+          iconBg="bg-blue-500/20 text-blue-600 dark:text-blue-400"
+          label="Beneficiários"
+          value={semDados ? null : grupos.length}
+          sub="parceiros e hunters com valor a receber"
+          highlight="blue"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 items-center gap-3 sm:grid-cols-3">
         <Periodo de={de} ate={ate} onDe={setDe} onAte={setAte} />
-        <div className="ml-auto flex items-center gap-4">
-          <span className="text-sm text-slate-500 dark:text-gray-400">Total: <strong className="text-slate-900 dark:text-white">{formatarMoeda(totalGeral)}</strong></span>
+        <div className="flex justify-end">
           <Button variant="secondary" icon={<Download size={16} />} onClick={exportar} loading={baixando} disabled={grupos.length === 0}>
             Exportar CSV
           </Button>
         </div>
       </div>
 
-      {carregando && grupos.length === 0 ? (
-        <p className="text-sm text-slate-500">Carregando...</p>
+      {semDados ? (
+        <Carregando />
       ) : grupos.length === 0 ? (
         <EmptyState icon={Wallet} title="Nada a pagar" description="Não há comissões pendentes neste período." />
       ) : (
         <div className="space-y-3">
-          {grupos.map((g) => <BlocoBeneficiario key={g.beneficiary_partner_id} b={g} onPagar={pagar} />)}
+          {pagination.paginatedItems.map((g) => <BlocoBeneficiario key={g.beneficiary_partner_id} b={g} onPagar={pagar} />)}
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/30">
+            <Pagination {...pagination} itemLabel="beneficiários" alwaysShow />
+          </div>
         </div>
       )}
     </div>
@@ -325,14 +381,14 @@ function Todos() {
   }, [status, beneficiario, de, ate]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="w-56"><SelectMenu size="sm" value={status} options={OPCOES_STATUS} onChange={setStatus} /></div>
-        <div className="w-64"><SelectMenu size="sm" value={beneficiario} options={nomes} onChange={setBeneficiario} /></div>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <SelectMenu value={status} options={OPCOES_STATUS} onChange={setStatus} />
+        <SelectMenu value={beneficiario} options={nomes} onChange={setBeneficiario} />
         <Periodo de={de} ate={ate} onDe={setDe} onAte={setAte} />
       </div>
       {carregando && itens.length === 0 ? (
-        <p className="text-sm text-slate-500">Carregando...</p>
+        <Carregando />
       ) : itens.length === 0 ? (
         <EmptyState icon={Wallet} title="Nenhum lançamento" description="Nada encontrado com esses filtros." />
       ) : (
@@ -342,46 +398,52 @@ function Todos() {
   );
 }
 
+const ABAS = [
+  { id: "a-pagar" as const, label: "A pagar", icon: Wallet },
+  { id: "todos" as const, label: "Todos os lançamentos", icon: ListChecks },
+];
+
 export default function Comissoes() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const veTudo = PERFIS_COMISSOES_TUDO.includes(user?.role ?? "");
   const [aba, setAba] = useState<"a-pagar" | "todos">("a-pagar");
 
-  const botaoAba = (chave: "a-pagar" | "todos", rotulo: string) => (
-    <button
-      type="button"
-      onClick={() => setAba(chave)}
-      className={`rounded-lg px-4 py-1.5 text-sm font-medium ${
-        aba === chave ? "bg-emerald-600 text-white" : "bg-gray-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
-      }`}
-    >
-      {rotulo}
-    </button>
-  );
-
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
-            <Wallet size={32} /> {veTudo ? "Comissões" : "Minhas comissões"}
-          </h1>
-          <p className="mt-1 text-slate-500 dark:text-gray-400">
-            {veTudo ? "O que pagar aos parceiros e hunters e o histórico de lançamentos." : "O que você tem a receber e já recebeu."}
-          </p>
-        </div>
-        {veTudo && (
-          <Link to="/settings?aba=comissoes">
-            <Button variant="secondary" icon={<Settings size={16} />}>Config. comissões</Button>
-          </Link>
+    <div className="p-6">
+      <PageHeader
+        title={veTudo ? "Comissões" : "Minhas comissões"}
+        description={veTudo ? "O que pagar aos parceiros e hunters e o histórico de lançamentos." : "O que você tem a receber e já recebeu."}
+        icon={Wallet}
+        actions={veTudo && (
+          <Button variant="secondary" size="sm" icon={<Settings size={16} />} onClick={() => navigate("/settings?aba=comissoes")}>
+            Config. comissões
+          </Button>
         )}
-      </div>
+      />
 
       {veTudo ? (
-        <>
-          <div className="flex gap-2">{botaoAba("a-pagar", "A pagar")}{botaoAba("todos", "Todos os lançamentos")}</div>
-          {aba === "a-pagar" ? <APagar /> : <Todos />}
-        </>
+        // Abas no mesmo formato das de Configurações
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
+          <div className="grid grid-cols-2 border-b border-gray-200 dark:border-slate-700">
+            {ABAS.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => setAba(a.id)}
+                className={`flex min-w-0 items-center justify-center gap-2 px-3 py-3 font-medium transition-colors ${
+                  aba === a.id
+                    ? "bg-emerald-600 text-white"
+                    : "text-slate-500 hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-white"
+                }`}
+              >
+                <a.icon size={20} className="shrink-0" />
+                <span className="truncate">{a.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="p-6">{aba === "a-pagar" ? <APagar /> : <Todos />}</div>
+        </div>
       ) : (
         <MinhasComissoes />
       )}

@@ -242,7 +242,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/parcerias" element={<ParceriasGuard><ParceriasHome /></ParceriasGuard>} />
       {/* Termos e Config. comissões viraram abas de Configurações; links antigos continuam funcionando. */}
       <Route path="/parcerias/termos" element={<Navigate to="/settings?aba=termos" replace />} />
-      <Route path="/parcerias/dashboard" element={<DashboardParceriasGuard><div className="p-4 sm:p-6"><DashboardParcerias /></div></DashboardParceriasGuard>} />
+      <Route path="/parcerias/dashboard" element={<DashboardParceriasGuard><div className="p-6"><DashboardParcerias /></div></DashboardParceriasGuard>} />
       <Route path="/parcerias/comissoes" element={<ComissoesGuard><Comissoes /></ComissoesGuard>} />
       <Route path="/parcerias/comissoes/config" element={<Navigate to="/settings?aba=comissoes" replace />} />
       <Route path="/parcerias/indicacoes" element={<IndicacoesGuard><Indicacoes /></IndicacoesGuard>} />

@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Plus, Send, Trello } from "lucide-react";
-import { BaseModal, Button, EmptyState, FormField, Input } from "../../components/common";
+import { useNavigate } from "react-router-dom";
+import { Eye, Plus, Send, Trello } from "lucide-react";
+import { BaseModal, Button, EmptyState, FormField, Input, Pagination } from "../../components/common";
+import { PageHeader } from "../../components/layout/PageHeader";
+import { usePagination } from "../../hooks";
 import { errosDoForm, mascarar, limparCnpj } from "../../components/parcerias/campos";
 import { ETAPAS_AQUISICAO, corDaEtapa, formatarCnpj } from "../../constants/parcerias";
 import { formatDate } from "../../utils/formatters";
 import { showError, showSuccess, showWarning } from "../../utils/toast";
 import parceriasService, { mensagemDeErro, type Parceiro } from "../../services/parceriasService";
+
+const TH = "px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300";
 
 const VAZIO = { name: "", cnpj: "", main_contact_name: "", main_contact_email: "", main_contact_phone: "", pix_key: "" };
 
@@ -79,6 +83,8 @@ export default function Indicacoes() {
   const [lista, setLista] = useState<Parceiro[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [modalAberto, setModalAberto] = useState(false);
+  const navigate = useNavigate();
+  const pagination = usePagination(lista, 10);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -101,60 +107,69 @@ export default function Indicacoes() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
-            <Send size={32} /> Indicações
-          </h1>
-          <p className="mt-1 text-slate-500 dark:text-gray-400">As empresas que você indicou ao Programa de Parceiros.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            to="/parcerias/oportunidades"
-            className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-gray-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800/50"
-          >
-            <Trello size={16} /> Ver oportunidades
-          </Link>
-          <Button icon={<Plus size={16} />} onClick={() => setModalAberto(true)}>Indicar empresa</Button>
-        </div>
-      </div>
+    <div className="p-6">
+      <PageHeader
+        title="Indicações"
+        description="As empresas que você indicou ao Programa de Parceiros."
+        icon={Send}
+        actions={
+          <>
+            <Button variant="secondary" size="sm" icon={<Trello size={16} />} onClick={() => navigate("/parcerias/oportunidades")}>
+              Ver oportunidades
+            </Button>
+            <Button size="sm" icon={<Plus size={16} />} onClick={() => setModalAberto(true)}>Indicar empresa</Button>
+          </>
+        }
+      />
 
       {carregando && lista.length === 0 ? (
-        <p className="text-sm text-slate-500">Carregando...</p>
+        <div className="py-12 text-center text-slate-500 dark:text-slate-400">Carregando indicações...</div>
       ) : lista.length === 0 ? (
         <EmptyState icon={Send} title="Nenhuma indicação ainda" description="Indique a primeira empresa para acompanhá-la aqui." />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700/50">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-xs uppercase text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
-              <tr>
-                <th className="px-4 py-3">Empresa</th>
-                <th className="px-4 py-3">CNPJ</th>
-                <th className="px-4 py-3">Situação</th>
-                <th className="px-4 py-3">Ativada em</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 text-slate-800 dark:divide-slate-700/50 dark:text-slate-200">
-              {lista.map((p) => {
-                const cor = corDaEtapa(p.stage);
-                return (
-                  <tr key={p.id}>
-                    <td className="px-4 py-3 font-medium">
-                      <Link to={`/parcerias/aquisicao/${p.id}`} className="hover:text-emerald-500 hover:underline">{p.name}</Link>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3">{formatarCnpj(p.cnpj)}</td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium text-slate-900 dark:text-white" style={{ backgroundColor: `${cor}33` }}>
-                        {ETAPAS_AQUISICAO.find((e) => e.codigo === p.stage)?.nome ?? p.stage}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">{p.activated_at ? formatDate(p.activated_at) : "–"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-800/30">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-800/50">
+                  <th className={TH}>Empresa</th>
+                  <th className={TH}>CNPJ</th>
+                  <th className={TH}>Situação</th>
+                  <th className={TH}>Ativada em</th>
+                  <th className={`${TH} !text-right`}>Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-700/50">
+                {pagination.paginatedItems.map((p) => {
+                  const cor = corDaEtapa(p.stage);
+                  return (
+                    <tr key={p.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                      <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{p.name}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{formatarCnpj(p.cnpj)}</td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex rounded-full px-2 py-1 text-xs font-medium text-slate-900 dark:text-white" style={{ backgroundColor: `${cor}33` }}>
+                          {ETAPAS_AQUISICAO.find((e) => e.codigo === p.stage)?.nome ?? p.stage}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{p.activated_at ? formatDate(p.activated_at) : "–"}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => navigate(`/parcerias/aquisicao/${p.id}`)}
+                            className="rounded-lg bg-blue-600/20 p-2 text-slate-900 transition-colors hover:bg-blue-600/30 dark:text-blue-400"
+                            title="Ver"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <Pagination {...pagination} itemLabel="indicações" alwaysShow />
         </div>
       )}
 

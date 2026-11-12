@@ -15,6 +15,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Termos e Comissões viraram abas de Configurações.** "Termos" aparece para admin e gerente. "Comissões" aparece para admin e gerente, que editam, e para o Financeiro, que só lê. O botão "Config. comissões" da página de Comissões abre essa aba. Os endereços antigos redirecionam para as abas.
 - **Abas de Configurações em duas linhas** quando há mais de 6, para os nomes não ficarem espremidos.
 - **Seletor de Função da modal de usuário** abre por cima da modal, sem esticá-la.
+- **Parcerias no padrão visual do CRM:**
+  - **Comissões e Indicações:** cabeçalho e tabelas iguais aos de Clientes, com paginação de 10 em 10 e ações em botão de ícone ("Marcar pago", "Ver"). Os totais viraram cards de resumo, e as abas de Comissões têm o formato das abas de Configurações.
+  - **Dashboard de Parcerias:** cabeçalho padrão na página própria, filtro de período igual ao do Dashboard geral (Este Mês, Mês Passado, Últimos 12 Meses, Personalizado), comissões em cards de resumo e listas paginadas de 10 em 10.
+  - **Configurações → Termos:** sub-abas, campo de texto e botão no padrão do sistema.
 
 ### Removido
 - **Página Parcerias → Hunters** e o item do menu. O cadastro de hunter agora é só do admin, pela tela Usuários.
