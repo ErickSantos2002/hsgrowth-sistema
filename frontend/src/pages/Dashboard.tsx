@@ -20,6 +20,7 @@ import { User } from "../types";
 import DashboardSDR      from "../components/dashboard/DashboardSDR";
 import DashboardVendedor from "../components/dashboard/DashboardVendedor";
 import ServiceDashboard  from "../components/dashboard/ServiceDashboard";
+import DashboardParcerias from "../components/dashboard/DashboardParcerias";
 
 // ─── Tipos de visão ──────────────────────────────────────────────────────────
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -45,6 +46,8 @@ const Dashboard: React.FC = () => {
   // Modo Serviço (dashboard de serviços — paralelo ao SDR/Vendedor de vendas).
   // Para o role "service" a dashboard é sempre a de serviços (sem alternância).
   const [serviceMode, setServiceMode] = useState(isServiceRole);
+  // Visão "Parcerias" (admin/gerente): tem filtros e dados próprios, independente do contexto do dashboard.
+  const [parceriasMode, setParceriasMode] = useState(false);
   // Qual board de serviço a dashboard mostra: 1 = Serviço (funil), 2 = Cobrança.
   const [serviceBoard, setServiceBoard] = useState(1);
 
@@ -225,7 +228,7 @@ const Dashboard: React.FC = () => {
   };
 
   // ── Loading ─────────────────────────────────────────────────────────────
-  if (loading) {
+  if (loading && !parceriasMode) {
     return (
       <div className="space-y-6 p-6">
         <div className="flex items-center justify-between">
@@ -249,7 +252,7 @@ const Dashboard: React.FC = () => {
   }
 
   // ── Erro ────────────────────────────────────────────────────────────────
-  if (error) {
+  if (error && !parceriasMode) {
     return (
       <div className="p-6">
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center">
@@ -284,7 +287,7 @@ const Dashboard: React.FC = () => {
               Meu Dashboard — {user?.name}
             </p>
           )}
-          {isAdminOrManager && selectedUserId && (
+          {isAdminOrManager && !parceriasMode && selectedUserId && (
             <p className="mt-0.5 text-xs font-medium text-emerald-500">
               Visualizando: {allUsers.find((u) => u.id === selectedUserId)?.name}
             </p>
@@ -297,18 +300,21 @@ const Dashboard: React.FC = () => {
           {/* Select de dashboard — apenas admin/manager (padrão: SDR) */}
           {isAdminOrManager && (
             <SelectMenu
-              value={serviceMode ? (serviceBoard === 2 ? "cobranca" : "servico") : view}
+              value={parceriasMode ? "parcerias" : serviceMode ? (serviceBoard === 2 ? "cobranca" : "servico") : view}
               options={[
                 { value: "sdr", label: "SDR" },
                 { value: "vendedor", label: "Vendedor" },
                 { value: "servico", label: "Serviço" },
                 { value: "cobranca", label: "Serviço - Cobrança" },
+                { value: "parcerias", label: "Parcerias" },
               ]}
               onChange={(val) => {
+                setParceriasMode(val === "parcerias");
                 if (val === "sdr") { setServiceMode(false); handleViewChange("sdr"); }
                 else if (val === "vendedor") { setServiceMode(false); handleViewChange("vendedor"); }
                 else if (val === "servico") { setServiceMode(true); setServiceBoard(1); }
                 else if (val === "cobranca") { setServiceMode(true); setServiceBoard(2); }
+                else if (val === "parcerias") { setServiceMode(false); }
               }}
               icon={<Wrench size={14} className="text-slate-400" />}
             />
@@ -328,7 +334,7 @@ const Dashboard: React.FC = () => {
           )}
 
           {/* Seletor de usuário — filtrado pelo papel da visão (oculto no modo Serviço) */}
-          {isAdminOrManager && !serviceMode && filteredUsers.length > 0 && (
+          {isAdminOrManager && !serviceMode && !parceriasMode && filteredUsers.length > 0 && (
             <SelectMenu
               value={selectedUserId ? String(selectedUserId) : ""}
               options={[
@@ -375,6 +381,8 @@ const Dashboard: React.FC = () => {
             />
           )}
 
+          {!parceriasMode && (
+          <>
           {/* Período */}
           <SelectMenu
             value={period}
@@ -433,11 +441,15 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
+          </>
+          )}
         </div>
       </div>
 
       {/* ── CONTEÚDO DA VISÃO ───────────────────────────────────────── */}
-      {serviceMode ? (
+      {parceriasMode ? (
+        <DashboardParcerias semTitulo />
+      ) : serviceMode ? (
         <ServiceDashboard period={period} customStart={customStart} customEnd={customEnd} periodLabel={periodLabel[period]} board={serviceBoard} userId={serviceUserId} collectionType={serviceCollectionType || undefined} />
       ) : kpis ? (
         view === "sdr" || isSdr ? (

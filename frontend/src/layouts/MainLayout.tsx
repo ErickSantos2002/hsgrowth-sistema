@@ -48,6 +48,7 @@ const menuItems = [
     { path: "/boards", icon: Trello, label: "Boards (Vendas)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/servicos", icon: Wrench, label: "Boards (Serviços)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/parcerias", icon: Handshake, label: "Boards (Parcerias)", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
+    { path: "/parcerias/dashboard", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/parcerias/consulta-cnpj", icon: ShieldCheck, label: "Consulta de CNPJ", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/parcerias/indicacoes", icon: Send, label: "Indicações", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/parcerias/comissoes", icon: Wallet, label: "Comissões", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
@@ -237,7 +238,11 @@ export default function MainLayout() {
                                 if (["/parcerias/hunters", "/parcerias/termos"].includes(item.path) && !PERFIS_GESTAO.includes(user?.role ?? "")) {
                                     return null;
                                 }
-                                if (trancado && !["/parcerias", "/parcerias/consulta-cnpj", "/parcerias/indicacoes", "/parcerias/comissoes", "/settings"].includes(item.path)) {
+                                // Dashboard de Parcerias: só os perfis trancados (admin e gerente usam o Dashboard normal).
+                                if (item.path === "/parcerias/dashboard" && !trancado) {
+                                    return null;
+                                }
+                                if (trancado && !["/parcerias", "/parcerias/dashboard", "/parcerias/consulta-cnpj", "/parcerias/indicacoes", "/parcerias/comissoes", "/settings"].includes(item.path)) {
                                     return null;
                                 }
 
@@ -272,7 +277,7 @@ export default function MainLayout() {
                                      location.pathname.startsWith("/servicos/")) ||
                                     (item.path === "/parcerias" &&
                                      location.pathname.startsWith("/parcerias/") &&
-                                     !["/parcerias/consulta-cnpj", "/parcerias/indicacoes", "/parcerias/comissoes", "/parcerias/hunters", "/parcerias/termos"].some((r) =>
+                                     !["/parcerias/dashboard", "/parcerias/consulta-cnpj", "/parcerias/indicacoes", "/parcerias/comissoes", "/parcerias/hunters", "/parcerias/termos"].some((r) =>
                                          location.pathname.startsWith(r)
                                      ));
 

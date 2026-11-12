@@ -405,6 +405,44 @@ export interface CalibracaoForm {
   value: number;
 }
 
+// ─── Dashboard de Parcerias ──────────────────────────────────────────────────
+// Dinheiro chega como string ("1234.50"): Number() só para exibir.
+export interface DashVendas { quantidade: number; valor: string }
+export interface DashMes { mes: string; quantidade: number; valor: string }
+export interface DashPorVendedor { membro_id?: number | null; nome: string; quantidade: number; valor: string }
+export interface DashCarteiraItem {
+  partner_id: number;
+  nome: string;
+  situacao: string;
+  quantidade: number;
+  valor: string;
+  ultima_venda_em?: string | null;
+  ultima_atividade_em?: string | null;
+  dias_parada?: number | null;
+  parada: boolean;
+}
+export interface DashCarteiraHunterItem extends DashCarteiraItem { prazo_indicacao_ate?: string | null }
+export interface DashComissaoTipo { pendente: string; pago: string }
+export interface DashComissoes { pendente: string; pago: string; por_tipo: Record<string, DashComissaoTipo> }
+export interface DashVendedor { visao: "vendedor"; vendas: DashVendas; serie: DashMes[] }
+export interface DashEmpresa {
+  visao: "empresa"; vendas: DashVendas; serie: DashMes[];
+  por_vendedor: DashPorVendedor[]; unidades: DashCarteiraItem[]; comissoes: DashComissoes;
+}
+export interface DashHunter {
+  visao: "hunter"; vendas: DashVendas; serie: DashMes[];
+  carteira: DashCarteiraHunterItem[]; comissoes: DashComissoes;
+}
+export interface DashRankingEmpresa { partner_id: number; nome: string; situacao: string; quantidade: number; valor: string }
+export interface DashRankingHunter { partner_id: number; nome: string; empresas: number; quantidade: number; valor: string }
+export interface DashHS {
+  visao: "hs"; vendas: DashVendas; serie: DashMes[];
+  ranking_empresas: DashRankingEmpresa[]; ranking_hunters: DashRankingHunter[];
+  paradas: DashCarteiraItem[]; comissoes: DashComissoes;
+}
+export type DashboardParcerias = DashVendedor | DashEmpresa | DashHunter | DashHS;
+export interface FiltroDashboard { de?: string; ate?: string; hunter_id?: number; partner_id?: number }
+
 export function mensagemDeErro(err: any, padrao: string): string {
   const detail = err?.response?.data?.detail;
   if (typeof detail === "string") return detail;
@@ -491,6 +529,10 @@ const parceriasService = {
   },
   async criarHunter(dados: HunterForm) {
     return (await api.post<ConviteResposta>(`${BASE}/hunters`, dados)).data;
+  },
+  async painelParcerias(filtro: FiltroDashboard = {}) {
+    const params = Object.fromEntries(Object.entries(filtro).filter(([, v]) => v !== undefined && v !== ""));
+    return (await api.get<DashboardParcerias>(`${BASE}/dashboard`, { params })).data;
   },
   async listarHunters() {
     return (await api.get<Hunter[]>(`${BASE}/hunters`)).data;

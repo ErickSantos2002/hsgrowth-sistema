@@ -50,8 +50,9 @@ import ParceiroDetalhe from './pages/parcerias/ParceiroDetalhe';
 import OportunidadesKanban from './pages/parcerias/OportunidadesKanban';
 import OportunidadeDetalhe from './pages/parcerias/OportunidadeDetalhe';
 import Comissoes from './pages/parcerias/Comissoes';
+import DashboardParcerias from './components/dashboard/DashboardParcerias';
 import ConfigComissoes from './pages/parcerias/ConfigComissoes';
-import { PERFIS_COMISSOES, PERFIS_COMISSOES_TUDO, PERFIS_CONSULTA_CNPJ, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM } from './constants/parcerias';
+import { PERFIS_COMISSOES, PERFIS_TRANCADOS, PERFIS_COMISSOES_TUDO, PERFIS_CONSULTA_CNPJ, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM } from './constants/parcerias';
 // Módulo de Propostas descontinuado (migrado p/ sistema externo). Página e API
 // preservadas no repo (dormentes); rota removida da navegação.
 
@@ -138,6 +139,15 @@ const ComissoesGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =
     const { user } = useAuth();
     if (user && !PERFIS_COMISSOES.includes(user.role)) {
         return <Navigate to="/parcerias" replace />;
+    }
+    return <>{children}</>;
+};
+
+/** Dashboard de Parcerias fora do /dashboard: só os perfis presos à seção (admin e gerente usam o /dashboard). */
+const DashboardParceriasGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    if (user && !PERFIS_TRANCADOS.includes(user.role)) {
+        return <Navigate to="/" replace />;
     }
     return <>{children}</>;
 };
@@ -253,6 +263,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/parcerias" element={<ParceriasGuard><ParceriasHome /></ParceriasGuard>} />
       <Route path="/parcerias/termos" element={<GestaoParceriasGuard><TermosAdmin /></GestaoParceriasGuard>} />
       <Route path="/parcerias/hunters" element={<GestaoParceriasGuard><Hunters /></GestaoParceriasGuard>} />
+      <Route path="/parcerias/dashboard" element={<DashboardParceriasGuard><div className="p-4 sm:p-6"><DashboardParcerias /></div></DashboardParceriasGuard>} />
       <Route path="/parcerias/comissoes" element={<ComissoesGuard><Comissoes /></ComissoesGuard>} />
       <Route path="/parcerias/comissoes/config" element={<ConfigComissoesGuard><ConfigComissoes /></ConfigComissoesGuard>} />
       <Route path="/parcerias/indicacoes" element={<IndicacoesGuard><Indicacoes /></IndicacoesGuard>} />
