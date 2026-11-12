@@ -56,7 +56,7 @@ def test_empresa_ve_vendas_por_vendedor_e_unidades(client, db, admin_headers):
     assert r["visao"] == "empresa"
     assert r["vendas"] == {"quantidade": 2, "valor": "1300.00"}  # sem a unidade
     pv = {x["nome"]: x for x in r["por_vendedor"]}
-    assert pv["Ana"]["valor"] == "1000.00" and pv["Sem vendedor"]["valor"] == "300.00"
+    assert pv["Ana"]["valor"] == "1000.00" and pv["Direto (empresa)"]["valor"] == "300.00"
     assert [u["partner_id"] for u in r["unidades"]] == [b.id]
     assert r["unidades"][0]["valor"] == "200.00" and "prazo_indicacao_ate" not in r["unidades"][0]
     assert set(r["comissoes"]) == {"pendente", "pago", "por_tipo"}
@@ -159,3 +159,58 @@ def test_externo_ignora_filtros_hunter_e_parceiro(client, db, admin_headers):
     sem = _painel(client, uh)
     com = _painel(client, uh, hunter_id=outro.id, partner_id=outro.id)
     assert com == sem
+
+
+def test_hunter_sem_vendas_proprias_ve_carteira_e_serie(client, db, admin_headers):
+    config_comissoes(db)
+    ph, uh = hunter(db)
+    a = parceiro(db, "A", indicated_by_partner_id=ph.id)
+    _confirmar(client, oportunidade_ganha(db, a, 1000, modality="venda"), admin_headers)
+    r = _painel(client, uh)
+    assert r["vendas"] == {"quantidade": 0, "valor": "0.00"}
+    assert r["carteira_vendas"] == {"quantidade": 1, "valor": "1000.00"}
+    assert len(r["serie"]) == 1 and r["serie"][0]["valor"] == "1000.00"
+
+
+def test_parada_considera_ultima_atividade_da_oportunidade(client, db):
+    config_comissoes(db)
+    ph, uh = hunter(db)
+    a = parceiro(db, "A", indicated_by_partner_id=ph.id)
+    op = oportunidade(db, a)
+    op.created_at = datetime.utcnow() - timedelta(days=60)
+    op.last_activity_at = datetime.utcnow() - timedelta(days=3)
+    db.commit()
+    item = _painel(client, uh)["carteira"][0]
+    assert item["dias_parada"] == 3 and item["parada"] is False
+
+
+def test_parada_so_para_ativadas_nas_visoes_externas(client, db):
+    config_comissoes(db)
+    ph, uh = hunter(db)
+    a = parceiro(db, "A", indicated_by_partner_id=ph.id, stage="potencial")
+    op = oportunidade(db, a)
+    op.created_at = datetime.utcnow() - timedelta(days=60)
+    db.commit()
+    item = _painel(client, uh)["carteira"][0]
+    assert item["dias_parada"] == 60 and item["parada"] is False
+
+
+def test_empresa_unidade_nao_ativada_nao_e_parada(client, db):
+    config_comissoes(db)
+    a = parceiro(db, "A")
+    dono = usuario(db, "partner", "dono@a.com", a)
+    u = parceiro(db, "U", indicated_by_partner_id=a.id, stage="bloqueado")
+    op = oportunidade(db, u)
+    op.created_at = datetime.utcnow() - timedelta(days=60)
+    db.commit()
+    item = _painel(client, dono)["unidades"][0]
+    assert item["dias_parada"] == 60 and item["parada"] is False
+
+
+def test_vendedor_direto_rotulado(client, db, admin_headers):
+    config_comissoes(db)
+    a = parceiro(db, "A")
+    dono = usuario(db, "partner", "dono@a.com", a)
+    _confirmar(client, oportunidade_ganha(db, a, 500, modality="venda"), admin_headers)
+    r = _painel(client, dono)
+    assert [v["nome"] for v in r["por_vendedor"]] == ["Direto (empresa)"]

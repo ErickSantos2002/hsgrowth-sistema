@@ -9,7 +9,7 @@ parceiro e vendedor); quem vê o quê fica em app/services/parcerias/acesso.py.
 from datetime import date
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
@@ -24,6 +24,7 @@ from app.schemas.parcerias import (
     ComissaoResponse,
     ComissaoResumo,
     DashboardResponse,
+    DashFiltros,
     PagarRequest,
     PagarResponse,
     AcessoCreate,
@@ -461,6 +462,13 @@ def lancar_calibracao(opportunity_id: int, dados: CalibracaoCreate, db: Session 
 
 
 # ─── Dashboard ───────────────────────────────────────────────────────────────
+
+@router.get("/dashboard/filtros", response_model=DashFiltros)
+def filtros_dashboard(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    if acesso.perfil(current_user) not in comissoes.VEEM_TUDO:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Você não tem acesso aos filtros do painel.")
+    return dashboard.filtros(db)
+
 
 @router.get("/dashboard", response_model=DashboardResponse)
 def painel_dashboard(de: Optional[date] = None, ate: Optional[date] = None,

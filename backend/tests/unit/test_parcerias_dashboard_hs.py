@@ -117,3 +117,46 @@ def test_finance_ve_painel_hs(client, db):
     assert _painel(client, headers(fin))["visao"] == "hs"
     sp = usuario(db, "salesperson", "v@hs.com")
     assert client.get(f"{URL}/dashboard", headers=headers(sp)).status_code == 403
+
+
+def test_filtros_do_dashboard(client, db):
+    ph, _ = hunter(db, "zeta")
+    hunter_b, _ = hunter(db, "Alfa", email="b@hunter.com")
+    parceiro(db, "Empresa B")
+    parceiro(db, "empresa a")
+    parceiro(db, "Apagada", is_deleted=True)
+    fin = usuario(db, "finance", "f@hs.com")
+    r = client.get(f"{URL}/dashboard/filtros", headers=headers(fin))
+    assert r.status_code == 200, r.text
+    corpo = r.json()
+    assert [h["nome"] for h in corpo["hunters"]] == ["Alfa", "zeta"]
+    assert [e["nome"] for e in corpo["empresas"]] == ["empresa a", "Empresa B"]
+    assert set(corpo["hunters"][0]) == {"id", "nome"}
+
+
+def test_filtros_do_dashboard_negado_a_parceiro(client, db):
+    ph, uh = hunter(db)
+    assert client.get(f"{URL}/dashboard/filtros", headers=headers(uh)).status_code == 403
+
+
+def test_finance_filtra_por_hunter(client, db, admin_headers):
+    config_comissoes(db)
+    ph, _ = hunter(db)
+    a = parceiro(db, "A", indicated_by_partner_id=ph.id)
+    b = parceiro(db, "B")
+    _venda(client, db, a, 1000, admin_headers)
+    _venda(client, db, b, 300, admin_headers)
+    fin = usuario(db, "finance", "f@hs.com")
+    r = _painel(client, headers(fin), hunter_id=ph.id)
+    assert r["vendas"]["valor"] == "1000.00"
+
+
+def test_ranking_desempate_sem_diferenciar_caixa(client, db, admin_headers):
+    config_comissoes(db)
+    b = parceiro(db, "bravo")
+    a = parceiro(db, "Charlie")
+    c = parceiro(db, "alfa")
+    for p in (b, a, c):
+        _venda(client, db, p, 100, admin_headers)
+    r = _painel(client, admin_headers)
+    assert [x["nome"] for x in r["ranking_empresas"]] == ["alfa", "bravo", "Charlie"]

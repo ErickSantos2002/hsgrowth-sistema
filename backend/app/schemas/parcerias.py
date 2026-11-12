@@ -928,6 +928,7 @@ class DashEmpresa(BaseModel):
 class DashHunter(BaseModel):
     visao: Literal["hunter"]
     vendas: DashVendas
+    carteira_vendas: DashVendas
     serie: List[DashMes]
     carteira: List[DashCarteiraHunterItem]
     comissoes: DashComissoes
@@ -957,6 +958,16 @@ class DashHS(BaseModel):
     ranking_hunters: List[DashRankingHunter]
     paradas: List[DashCarteiraItem]
     comissoes: DashComissoes
+
+
+class DashFiltroItem(BaseModel):
+    id: int
+    nome: str
+
+
+class DashFiltros(BaseModel):
+    hunters: List[DashFiltroItem]
+    empresas: List[DashFiltroItem]
 
 
 DashboardResponse = Annotated[Union[DashVendedor, DashEmpresa, DashHunter, DashHS], Field(discriminator="visao")]

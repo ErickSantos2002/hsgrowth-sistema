@@ -23,7 +23,7 @@ from app.services.parcerias import acesso, comissoes, respostas
 
 ZERO = Decimal("0.00")
 DIAS_PARADA = 30
-SEM_VENDEDOR = "Sem vendedor"
+SEM_VENDEDOR = "Direto (empresa)"
 
 
 def _txt(valor) -> str:
@@ -93,16 +93,35 @@ def _bloco_vendas(vendas) -> dict:
 
 
 def _ultimas_datas(db: Session, partner_ids: List[int]) -> Tuple[Dict[int, datetime], Dict[int, datetime]]:
-    """Última venda confirmada (sempre, sem período) e última oportunidade criada, por parceiro."""
+    """Última venda confirmada (sempre, sem período) e última atividade da empresa, por parceiro.
+
+    Atividade = a mais recente entre a oportunidade criada e a última atividade
+    registrada em cada oportunidade (spec §5).
+    """
     if not partner_ids:
         return {}, {}
     vendas = dict(_filtro_venda(db.query(PartnerOpportunity.partner_id, func.max(PartnerOpportunity.won_confirmed_at)))
                   .filter(PartnerOpportunity.partner_id.in_(partner_ids))
                   .group_by(PartnerOpportunity.partner_id).all())
-    criadas = dict(db.query(PartnerOpportunity.partner_id, func.max(PartnerOpportunity.created_at))
-                   .filter(PartnerOpportunity.partner_id.in_(partner_ids), PartnerOpportunity.is_deleted.is_(False))
-                   .group_by(PartnerOpportunity.partner_id).all())
-    return vendas, criadas
+    atividade = {}
+    for pid, criada, ativ in (db.query(PartnerOpportunity.partner_id, func.max(PartnerOpportunity.created_at),
+                                       func.max(PartnerOpportunity.last_activity_at))
+                              .filter(PartnerOpportunity.partner_id.in_(partner_ids),
+                                      PartnerOpportunity.is_deleted.is_(False))
+                              .group_by(PartnerOpportunity.partner_id).all()):
+        atividade[pid] = max((d for d in (criada, ativ) if d is not None), default=None)
+    return vendas, atividade
+
+
+def _situacao_parada(p: Partner, venda: Optional[datetime], atividade: Optional[datetime],
+                     agora: datetime) -> Tuple[Optional[datetime], Optional[int], bool]:
+    """(última atividade, dias parada, parada?). Só empresa ativada conta como parada."""
+    ultima = max((d for d in (venda, atividade) if d is not None), default=None)
+    if ultima is None:
+        # Sem oportunidade nem venda: conta desde a ativação (ou o cadastro).
+        ultima = p.activated_at or p.created_at
+    dias = (agora - ultima).days if ultima is not None else None
+    return ultima, dias, p.stage == "ativado" and dias is not None and dias >= DIAS_PARADA
 
 
 def _carteira(db: Session, indicados: List[Partner], de, ate, com_prazo: bool,
@@ -117,17 +136,13 @@ def _carteira(db: Session, indicados: List[Partner], de, ate, com_prazo: bool,
     meses = int(comissoes._config(db).indication_months or comissoes.MESES_PADRAO)
     itens = []
     for p in indicados:
-        v, c = ult_venda.get(p.id), ult_criada.get(p.id)
-        ultima = max((d for d in (v, c) if d is not None), default=None)
-        if ultima is None:
-            # Sem oportunidade nem venda: conta desde a ativação (ou o cadastro).
-            ultima = p.activated_at or p.created_at
-        dias = (agora - ultima).days if ultima is not None else None
+        v = ult_venda.get(p.id)
+        ultima, dias, parada = _situacao_parada(p, v, ult_criada.get(p.id), agora)
         item = {
             "partner_id": p.id, "nome": p.name, "situacao": p.stage,
             **_bloco_vendas(por_parceiro.get(p.id, [])),
             "ultima_venda_em": v, "ultima_atividade_em": ultima,
-            "dias_parada": dias, "parada": dias is not None and dias >= DIAS_PARADA,
+            "dias_parada": dias, "parada": parada,
         }
         if com_prazo:
             item["prazo_indicacao_ate"] = (p.first_sale_at + relativedelta(months=meses)
@@ -202,15 +217,15 @@ def painel_hunter(db: Session, user: User, de, ate, agora: Optional[datetime] = 
     proprio = acesso.parceiro_do_login(user)
     proprias = _vendas(db, [proprio], de, ate)
     carteira, da_carteira = _carteira(db, _indicados(db, proprio), de, ate, True, agora)
-    return {"visao": "hunter", "vendas": _bloco_vendas(proprias), "serie": _serie(proprias + da_carteira),
-            "carteira": carteira, "comissoes": _comissoes(db, user, de, ate)}
+    return {"visao": "hunter", "vendas": _bloco_vendas(proprias), "carteira_vendas": _bloco_vendas(da_carteira),
+            "serie": _serie(proprias + da_carteira), "carteira": carteira, "comissoes": _comissoes(db, user, de, ate)}
 
 
 MAX_RANKING = 20
 
 
 def _ordem_ranking(item: dict):
-    return (-Decimal(item["valor"]), -item["quantidade"], item["nome"])
+    return (-Decimal(item["valor"]), -item["quantidade"], item["nome"].casefold())
 
 
 def painel_hs(db: Session, user: User, de, ate, hunter_id: Optional[int] = None,
@@ -262,8 +277,16 @@ def painel_hs(db: Session, user: User, de, ate, hunter_id: Optional[int] = None,
     ranking_hunters.sort(key=_ordem_ranking)
 
     candidatas = [p for p in escopo.values() if p.kind == "empresa" and p.stage == "ativado"]
-    itens, _ = _carteira(db, candidatas, de, ate, False, agora)
-    paradas = sorted((i for i in itens if i["parada"]), key=lambda i: (-i["dias_parada"], i["nome"]))
+    ult_venda, ult_ativ = _ultimas_datas(db, [p.id for p in candidatas])
+    itens = []
+    for p in candidatas:
+        v = ult_venda.get(p.id)
+        ultima, dias, parada = _situacao_parada(p, v, ult_ativ.get(p.id), agora)
+        if parada:
+            itens.append({"partner_id": p.id, "nome": p.name, "situacao": p.stage, "quantidade": 0,
+                          "valor": _txt(ZERO), "ultima_venda_em": v, "ultima_atividade_em": ultima,
+                          "dias_parada": dias, "parada": True})
+    paradas = sorted(itens, key=lambda i: (-i["dias_parada"], i["nome"].casefold()))
 
     filtrado = hunter_id is not None or partner_id is not None
     return {
@@ -272,6 +295,15 @@ def painel_hs(db: Session, user: User, de, ate, hunter_id: Optional[int] = None,
         "paradas": paradas[:MAX_RANKING],
         "comissoes": _comissoes(db, user, de, ate, list(escopo) if filtrado else None),
     }
+
+
+def filtros(db: Session) -> dict:
+    """Opções dos filtros da visão da H&S: só id e nome, em ordem alfabética."""
+    def lista(kind):
+        linhas = db.query(Partner.id, Partner.name).filter(
+            Partner.is_deleted.is_(False), Partner.kind == kind).all()
+        return [{"id": i, "nome": n} for i, n in sorted(linhas, key=lambda x: (x[1].casefold(), x[0]))]
+    return {"hunters": lista("hunter"), "empresas": lista("empresa")}
 
 
 def painel(db: Session, user: User, de: Optional[date] = None, ate: Optional[date] = None,
