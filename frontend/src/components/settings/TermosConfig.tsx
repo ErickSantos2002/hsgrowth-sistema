@@ -8,8 +8,8 @@ const ABAS: { audience: AudienceTermos; rotulo: string }[] = [
   { audience: "hunter", rotulo: "Hunter" },
 ];
 
-// Publicação dos termos do Programa (admin/gerente). Cada nova versão exige novo aceite.
-export default function TermosAdmin() {
+// Aba Termos das Configurações (admin/gerente). Cada nova versão exige novo aceite.
+export default function TermosConfig() {
   const { confirm } = useConfirm();
   const [audience, setAudience] = useState<AudienceTermos>("empresa");
   const [versoes, setVersoes] = useState<Termos[]>([]);
@@ -56,9 +56,9 @@ export default function TermosAdmin() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
+    <div className="max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Termos do Programa de Parceiros</h1>
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Termos do Programa de Parceiros</h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Cada publicação cria uma nova versão; quem ainda não aceitou ela é barrado até aceitar.
         </p>

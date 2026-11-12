@@ -12,9 +12,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   - **Hunter:** Pessoa (CPF) ou Empresa (CNPJ), Chave PIX opcional, convite por e-mail ou senha inicial.
   - **Parceiro:** escolhe a empresa do board de Aquisição (as bloqueadas não aparecem). Convite ou senha inicial, igual ao acesso criado no card.
   - **Bloquear/Desbloquear o hunter** foi para a edição do usuário, junto com a contagem de empresas indicadas.
+- **Termos e Comissões viraram abas de Configurações.** "Termos" aparece para admin e gerente. "Comissões" aparece para admin e gerente, que editam, e para o Financeiro, que só lê. O botão "Config. comissões" da página de Comissões abre essa aba. Os endereços antigos redirecionam para as abas.
+- **Abas de Configurações em duas linhas** quando há mais de 6, para os nomes não ficarem espremidos.
+- **Seletor de Função da modal de usuário** abre por cima da modal, sem esticá-la.
 
 ### Removido
 - **Página Parcerias → Hunters** e o item do menu. O cadastro de hunter agora é só do admin, pela tela Usuários.
+- **Item "Termos" do menu de Parcerias** (agora é uma aba de Configurações).
 
 ### Banco de dados
 - Sem migration.

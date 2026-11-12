@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Settings } from "lucide-react";
 import { Alert, Button, FormField, Input, LoadingSpinner } from "../../components/common";
 import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
@@ -22,8 +20,8 @@ const dosCampos = (c: ComissaoConfig): Campos => ({
   cal: paraCampo(c.calibration_pct),
 });
 
-// Configuração das comissões: admin e gerente editam; o Financeiro só lê.
-export default function ConfigComissoes() {
+// Aba Comissões das Configurações: admin e gerente editam; o Financeiro só lê.
+export default function ComissoesConfig() {
   const { user } = useAuth();
   const podeEditar = PERFIS_GESTAO.includes(user?.role ?? "");
   const [campos, setCampos] = useState<Campos | null>(null);
@@ -76,14 +74,9 @@ export default function ConfigComissoes() {
   );
 
   return (
-    <div className="max-w-2xl space-y-6 p-6">
+    <div className="max-w-2xl space-y-6">
       <div>
-        <Link to="/parcerias/comissoes" className="mb-2 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 dark:text-gray-400">
-          <ArrowLeft size={14} /> Comissões
-        </Link>
-        <h1 className="flex items-center gap-3 text-3xl font-bold text-slate-900 dark:text-white">
-          <Settings size={32} /> Configuração das comissões
-        </h1>
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Configuração das comissões</h2>
         {!podeEditar && <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">Somente leitura: só admin e gerente alteram.</p>}
       </div>
 

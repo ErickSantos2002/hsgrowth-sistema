@@ -371,7 +371,7 @@ export default function Comissoes() {
           </p>
         </div>
         {veTudo && (
-          <Link to="/parcerias/comissoes/config">
+          <Link to="/settings?aba=comissoes">
             <Button variant="secondary" icon={<Settings size={16} />}>Config. comissões</Button>
           </Link>
         )}

@@ -25,7 +25,6 @@ import {
     Handshake,
     ShieldCheck,
     Send,
-    ScrollText,
     Wallet,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -37,7 +36,7 @@ import GlobalSearch from "../components/GlobalSearch";
 import { UserAvatar } from "../components/common";
 import ChangelogModal from "../components/common/ChangelogModal";
 import { AgentGrowthWidget } from "../components/agentGrowth";
-import { PERFIS_COMISSOES, PERFIS_CONSULTA_CNPJ, PERFIS_DO_PARCEIRO, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM, PERFIS_TRANCADOS } from "../constants/parcerias";
+import { PERFIS_COMISSOES, PERFIS_CONSULTA_CNPJ, PERFIS_DO_PARCEIRO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM, PERFIS_TRANCADOS } from "../constants/parcerias";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -51,7 +50,6 @@ const menuItems = [
     { path: "/parcerias/consulta-cnpj", icon: ShieldCheck, label: "Consulta de CNPJ", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/parcerias/indicacoes", icon: Send, label: "Indicações", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/parcerias/comissoes", icon: Wallet, label: "Comissões", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
-    { path: "/parcerias/termos", icon: ScrollText, label: "Termos", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: false },
     { path: "/clients", icon: Users, label: "Clientes", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/persons", icon: Contact, label: "Pessoas", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
     { path: "/products", icon: Package, label: "Produtos", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -226,14 +224,11 @@ export default function MainLayout() {
                                 if (item.path === "/parcerias/consulta-cnpj" && !PERFIS_CONSULTA_CNPJ.includes(user?.role ?? "")) {
                                     return null;
                                 }
-                                // Indicações: dono do parceiro e hunter. Termos: admin e gerente.
+                                // Indicações: dono do parceiro e hunter.
                                 if (item.path === "/parcerias/indicacoes" && !PERFIS_QUE_INDICAM.includes(user?.role ?? "")) {
                                     return null;
                                 }
                                 if (item.path === "/parcerias/comissoes" && !PERFIS_COMISSOES.includes(user?.role ?? "")) {
-                                    return null;
-                                }
-                                if (item.path === "/parcerias/termos" && !PERFIS_GESTAO.includes(user?.role ?? "")) {
                                     return null;
                                 }
                                 // Dashboard de Parcerias: só os perfis trancados (admin e gerente usam o Dashboard normal).
@@ -275,7 +270,7 @@ export default function MainLayout() {
                                      location.pathname.startsWith("/servicos/")) ||
                                     (item.path === "/parcerias" &&
                                      location.pathname.startsWith("/parcerias/") &&
-                                     !["/parcerias/dashboard", "/parcerias/consulta-cnpj", "/parcerias/indicacoes", "/parcerias/comissoes", "/parcerias/termos"].some((r) =>
+                                     !["/parcerias/dashboard", "/parcerias/consulta-cnpj", "/parcerias/indicacoes", "/parcerias/comissoes"].some((r) =>
                                          location.pathname.startsWith(r)
                                      ));
 

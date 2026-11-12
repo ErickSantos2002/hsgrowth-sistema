@@ -12,7 +12,6 @@ import DefinirSenha from './pages/DefinirSenha';
 import EsqueciSenha from './pages/EsqueciSenha';
 import TrocarSenha from './pages/TrocarSenha';
 import AceiteTermos from './pages/AceiteTermos';
-import TermosAdmin from './pages/parcerias/TermosAdmin';
 import Indicacoes from './pages/parcerias/Indicacoes';
 import Dashboard from './pages/Dashboard';
 import Boards from './pages/Boards';
@@ -50,8 +49,7 @@ import OportunidadesKanban from './pages/parcerias/OportunidadesKanban';
 import OportunidadeDetalhe from './pages/parcerias/OportunidadeDetalhe';
 import Comissoes from './pages/parcerias/Comissoes';
 import DashboardParcerias from './components/dashboard/DashboardParcerias';
-import ConfigComissoes from './pages/parcerias/ConfigComissoes';
-import { PERFIS_COMISSOES, PERFIS_TRANCADOS, PERFIS_COMISSOES_TUDO, PERFIS_CONSULTA_CNPJ, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM } from './constants/parcerias';
+import { PERFIS_COMISSOES, PERFIS_TRANCADOS, PERFIS_CONSULTA_CNPJ, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM } from './constants/parcerias';
 // Módulo de Propostas descontinuado (migrado p/ sistema externo). Página e API
 // preservadas no repo (dormentes); rota removida da navegação.
 
@@ -124,15 +122,6 @@ const AquisicaoGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <>{children}</>;
 };
 
-/** Só admin e gerente publicam os termos do Programa. */
-const GestaoParceriasGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user } = useAuth();
-    if (user && !PERFIS_GESTAO.includes(user.role)) {
-        return <Navigate to="/parcerias" replace />;
-    }
-    return <>{children}</>;
-};
-
 /** Comissões: parceiro, hunter, admin, gerente e Financeiro (o vendedor do parceiro não vê). */
 const ComissoesGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
@@ -147,15 +136,6 @@ const DashboardParceriasGuard: React.FC<{ children: React.ReactNode }> = ({ chil
     const { user } = useAuth();
     if (user && !PERFIS_TRANCADOS.includes(user.role)) {
         return <Navigate to="/" replace />;
-    }
-    return <>{children}</>;
-};
-
-/** Configuração das comissões: admin e gerente editam; o Financeiro só lê. */
-const ConfigComissoesGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user } = useAuth();
-    if (user && !PERFIS_COMISSOES_TUDO.includes(user.role)) {
-        return <Navigate to="/parcerias" replace />;
     }
     return <>{children}</>;
 };
@@ -260,10 +240,11 @@ const AppRoutes: React.FC = () => (
       <Route path="/servicos/:boardId" element={<ServiceTeamGuard><ServiceKanban /></ServiceTeamGuard>} />
       <Route path="/servicos/:boardId/cards/:cardId" element={<ServiceTeamGuard><ServiceCardDetails /></ServiceTeamGuard>} />
       <Route path="/parcerias" element={<ParceriasGuard><ParceriasHome /></ParceriasGuard>} />
-      <Route path="/parcerias/termos" element={<GestaoParceriasGuard><TermosAdmin /></GestaoParceriasGuard>} />
+      {/* Termos e Config. comissões viraram abas de Configurações; links antigos continuam funcionando. */}
+      <Route path="/parcerias/termos" element={<Navigate to="/settings?aba=termos" replace />} />
       <Route path="/parcerias/dashboard" element={<DashboardParceriasGuard><div className="p-4 sm:p-6"><DashboardParcerias /></div></DashboardParceriasGuard>} />
       <Route path="/parcerias/comissoes" element={<ComissoesGuard><Comissoes /></ComissoesGuard>} />
-      <Route path="/parcerias/comissoes/config" element={<ConfigComissoesGuard><ConfigComissoes /></ConfigComissoesGuard>} />
+      <Route path="/parcerias/comissoes/config" element={<Navigate to="/settings?aba=comissoes" replace />} />
       <Route path="/parcerias/indicacoes" element={<IndicacoesGuard><Indicacoes /></IndicacoesGuard>} />
       <Route path="/parcerias/consulta-cnpj" element={<ConsultaCnpjGuard><ConsultaCnpj /></ConsultaCnpjGuard>} />
       <Route path="/parcerias/aquisicao" element={<ParceriasGuard><AquisicaoGuard><AquisicaoKanban /></AquisicaoGuard></ParceriasGuard>} />

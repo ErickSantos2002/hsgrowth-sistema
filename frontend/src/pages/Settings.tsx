@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { User as UserIcon, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe, FileText, Filter, Calendar, RefreshCw, Wifi, Mail, X, ChevronRight, Loader2 } from "lucide-react";
-import { ListOrdered } from "lucide-react";
+import { ListOrdered, ScrollText, Wallet } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
 import authService from "../services/authService";
@@ -18,13 +19,22 @@ import avatarService from "../services/avatarService";
 import emailTemplateService, { EmailTemplate } from "../services/emailTemplateService";
 import CadenceTemplateManager from "../components/settings/CadenceTemplateManager";
 import NotificacoesConfig from "../components/settings/NotificacoesConfig";
+import TermosConfig from "../components/settings/TermosConfig";
+import ComissoesConfig from "../components/settings/ComissoesConfig";
+import { PERFIS_COMISSOES_TUDO, PERFIS_GESTAO } from "../constants/parcerias";
 
-type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs" | "email_templates" | "cadence_templates";
+type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs" | "email_templates" | "cadence_templates" | "termos" | "comissoes";
 
 const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
   const { confirm } = useConfirm();
-  const [activeTab, setActiveTab] = useState<Tab>("profile");
+  // A aba pode vir no link (?aba=comissoes), por exemplo do botão da página de Comissões.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTabState] = useState<Tab>(() => (searchParams.get("aba") as Tab) || "profile");
+  const setActiveTab = (tab: Tab) => {
+    setActiveTabState(tab);
+    setSearchParams(tab === "profile" ? {} : { aba: tab }, { replace: true });
+  };
   const [loading, setLoading] = useState(false);
 
   // Estados do Perfil
@@ -1006,6 +1016,19 @@ const Settings: React.FC = () => {
     tabs.push({ id: "cadence_templates" as Tab, label: "Cadências", icon: ListOrdered });
   }
 
+  // Programa de Parceiros: Termos (admin e gerente) e Comissões (admin e gerente editam; Financeiro lê)
+  if (PERFIS_GESTAO.includes(user?.role ?? "")) {
+    tabs.push({ id: "termos" as Tab, label: "Termos", icon: ScrollText });
+  }
+  if (PERFIS_COMISSOES_TUDO.includes(user?.role ?? "")) {
+    tabs.push({ id: "comissoes" as Tab, label: "Comissões", icon: Wallet });
+  }
+
+  // Aba do link que este perfil não tem: volta para Perfil.
+  const abaVisivel = tabs.some((t) => t.id === activeTab) ? activeTab : "profile";
+  // Muitas abas: duas linhas para os nomes não ficarem espremidos.
+  const colunasDasAbas = tabs.length > 6 ? Math.ceil(tabs.length / 2) : tabs.length;
+
   const loginItemsPerPage = 5;
   const loginMaxItems = 25;
   const limitedLoginHistory = loginHistory.slice(0, loginMaxItems);
@@ -1104,21 +1127,25 @@ const Settings: React.FC = () => {
 
         {/* Tabs */}
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white backdrop-blur dark:border-slate-700 dark:bg-slate-800/50">
-          <div className="flex overflow-x-auto whitespace-nowrap border-b border-gray-200 dark:border-slate-700">
+          <div
+            className="grid border-b border-gray-200 dark:border-slate-700"
+            style={{ gridTemplateColumns: `repeat(${colunasDasAbas}, minmax(0, 1fr))` }}
+          >
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex min-w-max flex-shrink-0 items-center justify-center gap-2 px-4 py-3 font-medium transition-colors sm:min-w-0 sm:flex-1 ${
-                    activeTab === tab.id
+                  title={tab.label}
+                  className={`flex min-w-0 items-center justify-center gap-2 px-3 py-3 font-medium transition-colors ${
+                    abaVisivel === tab.id
                       ? "bg-emerald-600 text-white"
                       : "text-slate-500 hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-white"
                   }`}
                 >
-                  <Icon size={20} />
-                  <span className="hidden sm:inline">{tab.label}</span>
+                  <Icon size={20} className="shrink-0" />
+                  <span className="hidden truncate sm:inline">{tab.label}</span>
                 </button>
               );
             })}
@@ -1126,7 +1153,7 @@ const Settings: React.FC = () => {
 
           <div className="p-8">
             {/* Tab: Perfil */}
-            {activeTab === "profile" && (
+            {abaVisivel === "profile" && (
               <div className="space-y-6">
                 <h2 className="mb-6 text-xl font-semibold text-slate-900 dark:text-white">Informações do Perfil</h2>
 
@@ -3165,6 +3192,12 @@ const Settings: React.FC = () => {
             {activeTab === "cadence_templates" && isManagerOrAdmin && (
               <CadenceTemplateManager />
             )}
+
+            {/* Tab: Termos do Programa de Parceiros */}
+            {abaVisivel === "termos" && <TermosConfig />}
+
+            {/* Tab: Configuração das comissões */}
+            {abaVisivel === "comissoes" && <ComissoesConfig />}
 
           </div>
         </div>
