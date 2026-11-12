@@ -9,14 +9,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ### Adicionado
 - **Dashboard de Parcerias:**
-  - **Carteira do hunter:** empresas indicadas, vendas, valor, última venda, "parada há X dias" a partir de 30 dias, prazo de indicação, quanto vai ganhar e recebido.
+  - **Carteira do hunter:** empresas indicadas, vendas, valor, última venda, "parada há X dias" a partir de 30 dias, prazo de indicação, comissões "Pendente (a pagar)" e "Pago". Mostra também as vendas da carteira, mesmo sem vendas próprias.
   - **Visão da empresa:** vendas por vendedor, unidades indicadas e comissões.
   - **Visão do vendedor do parceiro:** só as próprias vendas, sem comissão.
-  - **Visão da H&S:** filtros por período, hunter e empresa, ranking de empresas e de hunters, empresas paradas e totais de comissão.
+  - **Visão da H&S:** filtros por período, hunter e empresa, ranking de empresas e de hunters, empresas paradas e totais de comissão. Os filtros também funcionam para o Financeiro. Com filtro de hunter ou empresa, as comissões mostradas são as recebidas pelos parceiros filtrados.
 - **Onde fica:** admin e gerente em Dashboard → Parcerias; hunter, empresa, vendedor e Financeiro em Parcerias → Dashboard.
 
 ### Regras
-- Valor vendido = base da comissão (produtos menos desconto, sem frete); só vendas com ganho confirmado.
+- Valor vendido = base da comissão (produtos menos desconto, sem frete); só vendas com ganho confirmado. Locação não conta.
+- "Parada há X dias" (a partir de 30, só empresa ativada) conta a última venda, a oportunidade criada e a última atividade nas oportunidades.
+- Vendas sem vendedor da equipe aparecem como "Direto (empresa)".
 
 ### Banco de dados
 - Sem migration.
