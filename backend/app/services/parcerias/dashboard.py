@@ -261,7 +261,7 @@ def painel_hs(db: Session, user: User, de, ate, hunter_id: Optional[int] = None,
                                     **_bloco_vendas(pares)})
     ranking_hunters.sort(key=_ordem_ranking)
 
-    candidatas = [p for p in escopo.values() if p.kind == "empresa" and p.stage != "bloqueado"]
+    candidatas = [p for p in escopo.values() if p.kind == "empresa" and p.stage == "ativado"]
     itens, _ = _carteira(db, candidatas, de, ate, False, agora)
     paradas = sorted((i for i in itens if i["parada"]), key=lambda i: (-i["dias_parada"], i["nome"]))
 

@@ -147,3 +147,15 @@ def test_comissoes_pendente_e_pago(client, db, admin_headers):
 def test_salesperson_403(client, db):
     u = usuario(db, "salesperson", "v@hs.com")
     assert client.get(f"{URL}/dashboard", headers=headers(u)).status_code == 403
+
+
+def test_externo_ignora_filtros_hunter_e_parceiro(client, db, admin_headers):
+    config_comissoes(db)
+    ph, uh = hunter(db)
+    a = parceiro(db, "A", indicated_by_partner_id=ph.id)
+    outro = parceiro(db, "Z")
+    _confirmar(client, oportunidade_ganha(db, a, 1000, modality="venda"), admin_headers)
+    _confirmar(client, oportunidade_ganha(db, outro, 300, modality="venda"), admin_headers)
+    sem = _painel(client, uh)
+    com = _painel(client, uh, hunter_id=outro.id, partner_id=outro.id)
+    assert com == sem

@@ -97,12 +97,13 @@ def test_periodo_no_fuso_de_sao_paulo(client, db, admin_headers):
     assert _painel(client, admin_headers, ate="2026-10-31")["vendas"]["quantidade"] == 0
 
 
-def test_paradas_ordenadas_e_sem_bloqueadas(client, db, admin_headers):
+def test_paradas_ordenadas_e_so_ativadas(client, db, admin_headers):
     config_comissoes(db)
     a = parceiro(db, "A")
     b = parceiro(db, "B")
     d = parceiro(db, "D", stage="bloqueado")
-    for p, dias in ((a, 40), (b, 90), (d, 100)):
+    e = parceiro(db, "F", stage="potencial")
+    for p, dias in ((a, 40), (b, 90), (d, 100), (e, 120)):
         op = oportunidade(db, p)
         op.created_at = datetime.utcnow() - timedelta(days=dias)
     oportunidade(db, parceiro(db, "E"))  # ativa
