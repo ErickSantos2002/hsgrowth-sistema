@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Save } from "lucide-react";
 import { Alert, Button, FormField, Input, LoadingSpinner } from "../../components/common";
 import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
@@ -74,7 +75,7 @@ export default function ComissoesConfig() {
   );
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Configuração das comissões</h2>
         {!podeEditar && <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">Somente leitura: só admin e gerente alteram.</p>}
@@ -82,7 +83,7 @@ export default function ComissoesConfig() {
 
       <Alert type="info">Mudanças valem para as próximas vendas confirmadas; lançamentos já gerados não mudam.</Alert>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {campo("Venda própria (%)", "own", "Do parceiro/hunter sobre a venda que ele mesmo indicou.")}
         {campo("Indicação (%)", "ind", "Do hunter sobre as vendas das empresas que ele indicou.")}
         {campo("Bônus de primeira venda (R$)", "bonus", "Valor fixo, pago uma vez ao indicador.")}
@@ -90,7 +91,11 @@ export default function ComissoesConfig() {
         {campo("Calibração (%)", "cal", "Sobre o valor de cada calibração (até 2 por aparelho).")}
       </div>
 
-      {podeEditar && <Button onClick={salvar} loading={salvando} disabled={!valido}>Salvar</Button>}
+      {podeEditar && (
+        <div className="mt-8 flex justify-end">
+          <Button icon={<Save size={16} />} onClick={salvar} loading={salvando} disabled={!valido}>Salvar Alterações</Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -323,7 +323,8 @@ function APagar() {
       <div className="grid grid-cols-1 items-center gap-3 sm:grid-cols-3">
         <Periodo de={de} ate={ate} onDe={setDe} onAte={setAte} />
         <div className="flex justify-end">
-          <Button variant="secondary" icon={<Download size={16} />} onClick={exportar} loading={baixando} disabled={grupos.length === 0}>
+          {/* Mesmo padding e borda dos campos de data, para ficarem da mesma altura */}
+          <Button variant="secondary" icon={<Download size={16} />} onClick={exportar} loading={baixando} disabled={grupos.length === 0} className="border border-transparent py-3">
             Exportar CSV
           </Button>
         </div>

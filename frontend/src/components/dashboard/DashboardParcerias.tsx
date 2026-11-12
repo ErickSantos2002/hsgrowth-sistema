@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -140,30 +141,9 @@ function Parada({ item }: { item: DashCarteiraItem }) {
   );
 }
 
-function ComissoesResumo({ comissoes, link }: { comissoes: DashComissoes; link?: boolean }) {
+function ComissoesPorTipo({ comissoes, link }: { comissoes: DashComissoes; link?: boolean }) {
   const tipos = Object.entries(comissoes.por_tipo);
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <KpiCard
-          icon={<Clock size={20} />}
-          iconBg="bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
-          label="Comissões pendentes"
-          value={Number(comissoes.pendente)}
-          format="currency"
-          sub="a pagar"
-          highlight="yellow"
-        />
-        <KpiCard
-          icon={<CheckCircle2 size={20} />}
-          iconBg="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-          label="Comissões pagas"
-          value={Number(comissoes.pago)}
-          format="currency"
-          sub="já pago"
-          highlight="green"
-        />
-      </div>
       <Bloco
         titulo="Comissões por tipo"
         icone={<Wallet size={16} className="text-emerald-500" />}
@@ -183,7 +163,6 @@ function ComissoesResumo({ comissoes, link }: { comissoes: DashComissoes; link?:
           </Tabela>
         )}
       </Bloco>
-    </div>
   );
 }
 
@@ -217,9 +196,11 @@ function GraficoMensal({ serie }: { serie: DashMes[] }) {
 interface Props {
   /** Se a página já tem título, o componente não repete. */
   semTitulo?: boolean;
+  /** Lugar no cabeçalho do Dashboard geral onde os filtros são desenhados (junto dos das outras visões). */
+  filtrosEm?: HTMLElement | null;
 }
 
-const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
+const DashboardParcerias: React.FC<Props> = ({ semTitulo, filtrosEm }) => {
   const [atalhoPeriodo, setAtalhoPeriodo] = useState("este_mes");
   const [periodo, setPeriodo] = useState(periodoEsteMes);
   const [hunterId, setHunterId] = useState("");
@@ -306,7 +287,7 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
       />
     )}
     <div className="space-y-6">
-      {semTitulo && filtros}
+      {semTitulo && (filtrosEm ? createPortal(filtros, filtrosEm) : filtros)}
 
       {erro && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-500">
@@ -324,7 +305,9 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
 
       {painel && (
         <div className={`space-y-6 transition-opacity ${carregando || erro ? "opacity-60" : ""}`}>
-          <div className={`grid grid-cols-1 gap-4 sm:grid-cols-3 ${painel.visao === "hunter" ? "lg:grid-cols-4" : ""}`}>
+          <div className={`grid grid-cols-1 gap-4 sm:grid-cols-3 ${
+            painel.visao === "hunter" ? "xl:grid-cols-6" : painel.visao === "vendedor" ? "" : "lg:grid-cols-5"
+          }`}>
             <KpiCard
               icon={<ShoppingCart size={18} className="text-emerald-500" />} iconBg="bg-emerald-500/20"
               label={painel.visao === "hunter" ? "Minhas vendas" : "Vendas no período"} value={painel.vendas.quantidade} format="number"
@@ -346,6 +329,20 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
               icon={<Wallet size={18} className="text-purple-500" />} iconBg="bg-purple-500/20"
               label="Ticket médio" value={ticket} format="currency"
             />
+            {painel.visao !== "vendedor" && (
+              <>
+                <KpiCard
+                  icon={<Clock size={18} />} iconBg="bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                  label="Comissões pendentes" value={Number(painel.comissoes.pendente)} format="currency" highlight="yellow"
+                  info="Lançamentos de comissão ainda não pagos no período."
+                />
+                <KpiCard
+                  icon={<CheckCircle2 size={18} />} iconBg="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                  label="Comissões pagas" value={Number(painel.comissoes.pago)} format="currency" highlight="green"
+                  info="Lançamentos de comissão já pagos no período."
+                />
+              </>
+            )}
           </div>
 
           {semVendas ? (
@@ -380,7 +377,7 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
                   )} />
                 )}
               </Bloco>
-              <ComissoesResumo comissoes={painel.comissoes} link />
+              <ComissoesPorTipo comissoes={painel.comissoes} link />
             </>
           )}
 
@@ -416,7 +413,7 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
                   )}
                 </Bloco>
               </div>
-              <ComissoesResumo comissoes={painel.comissoes} link />
+              <ComissoesPorTipo comissoes={painel.comissoes} link />
             </>
           )}
 
@@ -454,6 +451,7 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
                 </Bloco>
               </div>
 
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Bloco titulo="Empresas paradas" icone={<Hourglass size={16} className="text-amber-500" />}>
                 {painel.paradas.length === 0 ? (
                   <Vazio texto="Nenhuma empresa parada. Todas as empresas ativadas têm movimento recente." />
@@ -468,8 +466,8 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
                   )} />
                 )}
               </Bloco>
-
-              <ComissoesResumo comissoes={painel.comissoes} link />
+              <ComissoesPorTipo comissoes={painel.comissoes} link />
+              </div>
             </>
           )}
         </div>

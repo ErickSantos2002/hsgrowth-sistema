@@ -48,6 +48,8 @@ const Dashboard: React.FC = () => {
   const [serviceMode, setServiceMode] = useState(isServiceRole);
   // Visão "Parcerias" (admin/gerente): tem filtros e dados próprios, independente do contexto do dashboard.
   const [parceriasMode, setParceriasMode] = useState(false);
+  // Lugar no cabeçalho onde o Dashboard de Parcerias desenha os filtros dele.
+  const [filtrosParcerias, setFiltrosParcerias] = useState<HTMLDivElement | null>(null);
   // Qual board de serviço a dashboard mostra: 1 = Serviço (funil), 2 = Cobrança.
   const [serviceBoard, setServiceBoard] = useState(1);
 
@@ -322,6 +324,9 @@ const Dashboard: React.FC = () => {
             />
           )}
 
+          {/* Filtros do Dashboard de Parcerias (o componente desenha aqui, via portal) */}
+          {parceriasMode && <div ref={setFiltrosParcerias} className="contents" />}
+
           {/* Select de dashboard de serviço — apenas role "service" (Serviço × Cobrança) */}
           {isServiceRole && (
             <SelectMenu
@@ -450,7 +455,7 @@ const Dashboard: React.FC = () => {
 
       {/* ── CONTEÚDO DA VISÃO ───────────────────────────────────────── */}
       {parceriasMode ? (
-        <DashboardParcerias semTitulo />
+        <DashboardParcerias semTitulo filtrosEm={filtrosParcerias} />
       ) : serviceMode ? (
         <ServiceDashboard period={period} customStart={customStart} customEnd={customEnd} periodLabel={periodLabel[period]} board={serviceBoard} userId={serviceUserId} collectionType={serviceCollectionType || undefined} />
       ) : kpis ? (
