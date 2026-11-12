@@ -50,6 +50,20 @@ def test_gestao_cadastra_hunter_por_convite(client, db, manager_headers, emails)
     assert len(lista) == 2 and {"stage", "empresas_indicadas", "status_acesso"} <= set(lista[0])
 
 
+def test_gestao_cadastra_hunter_com_senha(client, db, manager_headers, emails):
+    role(db, "hunter")
+    r = client.post(f"{URL}/hunters", headers=manager_headers,
+                    json=_hunter(modo="senha", password="senha-forte-1"))
+    assert r.status_code == 201, r.text
+    assert r.json()["email_enviado"] is False and emails == []
+    login = db.query(User).filter(User.email == "joao@hunter.com").one()
+    assert login.role.name == "hunter" and login.must_change_password and login.partner_id
+    # senha obrigatória no modo senha
+    r = client.post(f"{URL}/hunters", headers=manager_headers,
+                    json=_hunter(cpf="111.444.777-35", email="outro@hunter.com", modo="senha"))
+    assert r.status_code == 422
+
+
 @pytest.mark.parametrize("extra", [
     {"cpf": None}, {"cnpj": CNPJ_A}, {"cpf": "52998224724"}, {"cpf": "11111111111"}, {"cpf": None, "cnpj": "123"},
 ])

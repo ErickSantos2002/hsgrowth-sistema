@@ -13,7 +13,6 @@ import EsqueciSenha from './pages/EsqueciSenha';
 import TrocarSenha from './pages/TrocarSenha';
 import AceiteTermos from './pages/AceiteTermos';
 import TermosAdmin from './pages/parcerias/TermosAdmin';
-import Hunters from './pages/parcerias/Hunters';
 import Indicacoes from './pages/parcerias/Indicacoes';
 import Dashboard from './pages/Dashboard';
 import Boards from './pages/Boards';
@@ -262,7 +261,6 @@ const AppRoutes: React.FC = () => (
       <Route path="/servicos/:boardId/cards/:cardId" element={<ServiceTeamGuard><ServiceCardDetails /></ServiceTeamGuard>} />
       <Route path="/parcerias" element={<ParceriasGuard><ParceriasHome /></ParceriasGuard>} />
       <Route path="/parcerias/termos" element={<GestaoParceriasGuard><TermosAdmin /></GestaoParceriasGuard>} />
-      <Route path="/parcerias/hunters" element={<GestaoParceriasGuard><Hunters /></GestaoParceriasGuard>} />
       <Route path="/parcerias/dashboard" element={<DashboardParceriasGuard><div className="p-4 sm:p-6"><DashboardParcerias /></div></DashboardParceriasGuard>} />
       <Route path="/parcerias/comissoes" element={<ComissoesGuard><Comissoes /></ComissoesGuard>} />
       <Route path="/parcerias/comissoes/config" element={<ConfigComissoesGuard><ConfigComissoes /></ConfigComissoesGuard>} />

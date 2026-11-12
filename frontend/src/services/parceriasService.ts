@@ -298,6 +298,8 @@ export interface HunterForm {
   email: string;
   phone?: string;
   pix_key?: string;
+  modo?: ModoAcesso;
+  password?: string;
 }
 
 export interface Hunter {

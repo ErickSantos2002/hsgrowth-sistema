@@ -243,8 +243,8 @@ class IndicacaoCreate(BaseModel):
         return email
 
 
-class HunterCreate(BaseModel):
-    """Hunter cadastrado pela H&S: pessoa (CPF) ou empresa (CNPJ), sempre por convite."""
+class HunterCreate(ModoDeAcesso):
+    """Hunter cadastrado pela H&S: pessoa (CPF) ou empresa (CNPJ), por convite ou com senha inicial."""
     name: str = Field(..., min_length=1, max_length=255)
     cpf: Optional[str] = None
     cnpj: Optional[str] = None

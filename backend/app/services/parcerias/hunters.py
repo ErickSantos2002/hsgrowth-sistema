@@ -1,4 +1,4 @@
-"""Hunters cadastrados pela H&S (pessoa por CPF ou empresa por CNPJ): sempre por convite."""
+"""Hunters cadastrados pela H&S (pessoa por CPF ou empresa por CNPJ): por convite ou com senha inicial."""
 from typing import List
 
 from fastapi import HTTPException, status
@@ -35,7 +35,8 @@ def criar(db: Session, user: User, dados: HunterCreate) -> criacao_de_login.Resu
     db.flush()  # sem commit: se o login for recusado, nada fica gravado
     try:
         resultado = criacao_de_login.criar_login(
-            db, user, nome=dados.name, email=dados.email, papel="hunter", modo="convite", partner_id=p.id,
+            db, user, nome=dados.name, email=dados.email, papel="hunter",
+            modo=dados.modo, senha=dados.password, partner_id=p.id,
         )
     except Exception:
         db.rollback()

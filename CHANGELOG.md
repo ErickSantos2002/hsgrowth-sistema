@@ -5,6 +5,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [Não lançado]
+
+### Alterado
+- **Hunter e Parceiro nascem em Usuários:** a modal "Novo Usuário" ganhou os perfis **Hunter** e **Parceiro**. A lista de Usuários, com o filtro por perfil, mostra os dois.
+  - **Hunter:** Pessoa (CPF) ou Empresa (CNPJ), Chave PIX opcional, convite por e-mail ou senha inicial.
+  - **Parceiro:** escolhe a empresa do board de Aquisição (as bloqueadas não aparecem). Convite ou senha inicial, igual ao acesso criado no card.
+  - **Bloquear/Desbloquear o hunter** foi para a edição do usuário, junto com a contagem de empresas indicadas.
+
+### Removido
+- **Página Parcerias → Hunters** e o item do menu. O cadastro de hunter agora é só do admin, pela tela Usuários.
+
+### Banco de dados
+- Sem migration.
+
+---
+
 ## [1.11.20] — 12/11/2026
 
 ### Adicionado

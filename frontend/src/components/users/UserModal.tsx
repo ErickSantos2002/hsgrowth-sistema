@@ -7,6 +7,10 @@ import avatarService from "../../services/avatarService";
 import { User, CreateUserRequest, UpdateUserRequest } from "../../types";
 import FormularioDeAcesso from "../acessos/FormularioDeAcesso";
 import type { ModoAcesso } from "../../services/acessosService";
+import parceriasService, { mensagemDeErro, type Hunter, type HunterForm, type Parceiro } from "../../services/parceriasService";
+import { erroDoCampo, mascarar } from "../parcerias/campos";
+import { maskCPF, limparDocumento } from "../../utils/formatters";
+import { useConfirm } from "../../contexts/ConfirmContext";
 import { showSuccess, showError, showWarning } from "../../utils/toast";
 
 interface UserModalProps {
@@ -37,16 +41,87 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
 
   const isEditing = !!user;
 
-  // O id da role Financeiro depende do banco; vem da API.
-  const [idFinanceiro, setIdFinanceiro] = useState<number | null>(null);
+  const { confirm } = useConfirm();
+
+  // Os ids de Financeiro, Parceiro e Hunter dependem do banco; vêm da API.
+  const [perfis, setPerfis] = useState<{ id: number; name: string }[]>([]);
+  const idDoPerfil = (nome: string) => perfis.find((p) => p.name === nome)?.id ?? null;
+  const idFinanceiro = idDoPerfil("finance");
+  const idParceiro = idDoPerfil("partner");
+  const idHunter = idDoPerfil("hunter");
+
+  // Hunter: ficha no Programa de Parceiros (CPF ou CNPJ e PIX).
+  const [tipoHunter, setTipoHunter] = useState<"pessoa" | "empresa">("pessoa");
+  const [documento, setDocumento] = useState("");
+  const [pixKey, setPixKey] = useState("");
+  // Parceiro: o login fica preso a uma empresa do board de Aquisição.
+  const [empresas, setEmpresas] = useState<Parceiro[]>([]);
+  const [empresaId, setEmpresaId] = useState("");
+  // Edição de hunter: a ficha dele, para bloquear/desbloquear.
+  const [fichaHunter, setFichaHunter] = useState<Hunter | null>(null);
+  const [bloqueando, setBloqueando] = useState(false);
+
+  const criandoHunter = !isEditing && idHunter !== null && roleId === idHunter;
+  const criandoParceiro = !isEditing && idParceiro !== null && roleId === idParceiro;
+  const criandoExterno = criandoHunter || criandoParceiro;
 
   useEffect(() => {
     if (!isOpen) return;
     userService
       .listarPerfis()
-      .then((perfis) => setIdFinanceiro(perfis.find((p) => p.name === "finance")?.id ?? null))
-      .catch(() => setIdFinanceiro(null));
+      .then(setPerfis)
+      .catch(() => setPerfis([]));
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!criandoParceiro) return;
+    parceriasService
+      .listarParceiros()
+      .then((lista) => setEmpresas(lista.filter((p) => p.kind !== "hunter" && p.stage !== "bloqueado")))
+      .catch(() => setEmpresas([]));
+  }, [criandoParceiro]);
+
+  const carregarFichaHunter = async () => {
+    if (!user?.partner_id) return;
+    try {
+      const hunters = await parceriasService.listarHunters();
+      setFichaHunter(hunters.find((h) => h.id === user.partner_id) ?? null);
+    } catch {
+      setFichaHunter(null);
+    }
+  };
+
+  useEffect(() => {
+    setFichaHunter(null);
+    if (isOpen && isEditing && user?.role === "hunter") carregarFichaHunter();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isEditing, user?.id, user?.role]);
+
+  const alternarBloqueioHunter = async () => {
+    if (!fichaHunter) return;
+    const bloqueado = fichaHunter.stage === "bloqueado";
+    if (!bloqueado) {
+      const ok = await confirm({
+        title: "Bloquear hunter",
+        message: "Os acessos deste hunter serão desativados. As empresas que ele indicou continuam funcionando.",
+        confirmText: "Bloquear",
+        isDanger: true,
+      });
+      if (!ok) return;
+    }
+    setBloqueando(true);
+    try {
+      if (bloqueado) await parceriasService.desbloquear(fichaHunter.id);
+      else await parceriasService.bloquear(fichaHunter.id);
+      showSuccess(bloqueado ? "Hunter desbloqueado." : "Hunter bloqueado.");
+      await carregarFichaHunter();
+      onSave();
+    } catch (err) {
+      showError(mensagemDeErro(err, bloqueado ? "Erro ao desbloquear o hunter." : "Erro ao bloquear o hunter."));
+    } finally {
+      setBloqueando(false);
+    }
+  };
 
   useEffect(() => {
     if (isEditing && user) {
@@ -73,7 +148,14 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
     setAvatarFile(null);
     setAvatarPreview(null);
     setErrors({});
+    setTipoHunter("pessoa");
+    setDocumento("");
+    setPixKey("");
+    setEmpresaId("");
   };
+
+  const limparErro = (campo: string) =>
+    setErrors((p) => { const n = { ...p }; delete n[campo]; return n; });
 
   /**
    * Manipula seleção de arquivo de avatar
@@ -149,6 +231,23 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
       if (password.length < 8) next.password = "Senha deve ter pelo menos 8 caracteres";
     }
 
+    if (criandoHunter) {
+      if (!documento.trim()) {
+        next.documento = tipoHunter === "pessoa" ? "CPF é obrigatório" : "CNPJ é obrigatório";
+      } else if (tipoHunter === "pessoa" && limparDocumento(documento).length !== 11) {
+        next.documento = "CPF com 11 números";
+      } else if (tipoHunter === "empresa") {
+        const erro = erroDoCampo("cnpj", documento);
+        if (erro) next.documento = erro;
+      }
+      const erroTel = erroDoCampo("phone", phone);
+      if (erroTel) next.phone = erroTel;
+    }
+
+    if (criandoParceiro && !empresaId) {
+      next.empresa = "Escolha a empresa parceira";
+    }
+
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -175,6 +274,26 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
 
         await userService.update(user.id, data);
         showSuccess("Usuário atualizado com sucesso!");
+      } else if (criandoHunter) {
+        const dados: HunterForm = {
+          name: name.trim(),
+          email: email.trim(),
+          [tipoHunter === "pessoa" ? "cpf" : "cnpj"]: limparDocumento(documento),
+          modo,
+          password: modo === "senha" ? password : undefined,
+        };
+        if (phone.trim()) dados.phone = phone.trim();
+        if (pixKey.trim()) dados.pix_key = pixKey.trim();
+        const r = await parceriasService.criarHunter(dados);
+        avisarCriado(r.email_enviado, "Hunter");
+      } else if (criandoParceiro) {
+        const r = await parceriasService.criarAcesso(Number(empresaId), {
+          name: name.trim(),
+          email: email.trim(),
+          modo,
+          password: modo === "senha" ? password : undefined,
+        });
+        avisarCriado(r.email_enviado, "Parceiro");
       } else {
         const data: CreateUserRequest = {
           email: email.trim(),
@@ -199,10 +318,17 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
       onSave();
     } catch (error: any) {
       console.error("Erro ao salvar usuário:", error);
-      const message = error?.response?.data?.detail || "Erro ao salvar usuário";
-      showError(message);
+      showError(mensagemDeErro(error, "Erro ao salvar usuário"));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const avisarCriado = (emailEnviado: boolean | undefined, perfil: string) => {
+    if (modo === "convite" && !emailEnviado) {
+      showWarning(`${perfil} criado, mas não conseguimos enviar o e-mail. Use Copiar link na lista.`);
+    } else {
+      showSuccess(modo === "convite" ? `${perfil} criado. Convite enviado por e-mail.` : `${perfil} criado com sucesso!`);
     }
   };
 
@@ -313,6 +439,157 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
         )}
 
         <div>
+          <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Permissões</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField
+              label={
+                <span>
+                  Função <span className="text-red-400">*</span>
+                </span>
+              }
+              className={criandoExterno ? "md:col-span-2" : undefined}
+            >
+              <SelectMenu
+                value={String(roleId)}
+                options={[
+                  { value: "1", label: "Administrador" },
+                  { value: "2", label: "Gerente" },
+                  { value: "3", label: "Vendedor" },
+                  { value: "4", label: "SDR" },
+                  { value: "5", label: "Visualizador" },
+                  { value: "6", label: "Serviço" },
+                  ...(idFinanceiro ? [{ value: String(idFinanceiro), label: "Financeiro" }] : []),
+                  // Parceiro e Hunter: na criação quando o perfil existe; na edição só no próprio usuário.
+                  ...(!isEditing && idParceiro ? [{ value: String(idParceiro), label: "Parceiro" }] : []),
+                  ...(!isEditing && idHunter ? [{ value: String(idHunter), label: "Hunter" }] : []),
+                  ...(user?.role === "partner" ? [{ value: String(user.role_id), label: "Parceiro" }] : []),
+                  ...(user?.role === "hunter" ? [{ value: String(user.role_id), label: "Hunter" }] : []),
+                ]}
+                onChange={(value) => { setRoleId(Number(value)); setErrors({}); }}
+              />
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {roleId === 1 && "Acesso total ao sistema"}
+                {roleId === 2 && "Gerencia equipes e relatórios"}
+                {roleId === 3 && "Gerencia apenas seus próprios cards"}
+                {roleId === 4 && "Gerencia prospecção e qualificação de leads"}
+                {roleId === 5 && "Acesso somente leitura a boards, clientes, pessoas e produtos"}
+                {roleId === 6 && "Acesso ao módulo de serviços (boards, atividades, clientes, pessoas e produtos)"}
+                {idFinanceiro !== null && roleId === idFinanceiro && "Acompanha Parcerias e valida a elegibilidade das oportunidades"}
+                {idParceiro !== null && roleId === idParceiro && "Dono da empresa parceira: acesso só à seção Parcerias"}
+                {idHunter !== null && roleId === idHunter && "Indica empresas ao Programa de Parceiros: acesso só à seção Parcerias"}
+              </p>
+            </FormField>
+
+            {!criandoExterno && (
+              <FormField label="Status">
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 transition-colors hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-600 focus:ring-emerald-500"
+                    disabled={saving}
+                  />
+                  <span className="text-slate-900 dark:text-white">Usuário Ativo</span>
+                </label>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Usuários inativos não podem fazer login
+                </p>
+              </FormField>
+            )}
+
+            {isEditing && user?.role === "hunter" && fichaHunter && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 md:col-span-2 dark:border-slate-700 dark:bg-slate-800">
+                <div className="text-sm">
+                  <p className="font-medium text-slate-900 dark:text-white">
+                    Ficha do hunter {fichaHunter.stage === "bloqueado" ? "bloqueada" : "liberada"}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {fichaHunter.empresas_indicadas} empresa{fichaHunter.empresas_indicadas !== 1 ? "s" : ""} indicada
+                    {fichaHunter.empresas_indicadas !== 1 ? "s" : ""}. Bloquear desativa os acessos; as indicadas continuam funcionando.
+                  </p>
+                </div>
+                <Button
+                  variant={fichaHunter.stage === "bloqueado" ? "secondary" : "danger"}
+                  onClick={alternarBloqueioHunter}
+                  loading={bloqueando}
+                  disabled={saving}
+                >
+                  {fichaHunter.stage === "bloqueado" ? "Desbloquear" : "Bloquear"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {criandoParceiro && (
+          <div>
+            <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Empresa parceira</h3>
+            <FormField
+              label={
+                <span>
+                  Empresa <span className="text-red-400">*</span>
+                </span>
+              }
+              error={errors.empresa}
+              hint="Empresas do board de Aquisição, menos as bloqueadas. Empresa nova nasce no board."
+            >
+              <SelectMenu
+                value={empresaId}
+                placeholder={empresas.length ? "Escolha a empresa" : "Nenhuma empresa disponível"}
+                options={empresas.map((p) => ({ value: String(p.id), label: p.name }))}
+                onChange={(v) => { setEmpresaId(v); limparErro("empresa"); }}
+              />
+            </FormField>
+          </div>
+        )}
+
+        {criandoHunter && (
+          <div>
+            <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Dados do hunter</h3>
+            <div className="mb-4 flex gap-2">
+              {(["pessoa", "empresa"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => { setTipoHunter(t); setDocumento(""); limparErro("documento"); }}
+                  className={`rounded-lg px-4 py-1.5 text-sm font-medium ${
+                    tipoHunter === t ? "bg-emerald-600 text-white" : "bg-gray-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                  }`}
+                >
+                  {t === "pessoa" ? "Pessoa" : "Empresa"}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField
+                label={
+                  <span>
+                    {tipoHunter === "pessoa" ? "CPF" : "CNPJ"} <span className="text-red-400">*</span>
+                  </span>
+                }
+                error={errors.documento}
+              >
+                <Input
+                  value={documento}
+                  inputMode="numeric"
+                  placeholder={tipoHunter === "pessoa" ? "000.000.000-00" : "00.000.000/0000-00"}
+                  onChange={(e) => {
+                    setDocumento(tipoHunter === "pessoa" ? maskCPF(e.target.value) : mascarar("cnpj", e.target.value));
+                    limparErro("documento");
+                  }}
+                  disabled={saving}
+                  error={!!errors.documento}
+                />
+              </FormField>
+              <FormField label="Chave PIX">
+                <Input value={pixKey} maxLength={140} onChange={(e) => setPixKey(e.target.value)} disabled={saving} />
+              </FormField>
+            </div>
+          </div>
+        )}
+
+        <div>
           <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Dados de Acesso</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
@@ -327,7 +604,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); setErrors((p) => { const n = {...p}; delete n.email; return n; }); }}
+                onChange={(e) => { setEmail(e.target.value); limparErro("email"); }}
                 placeholder="usuario@exemplo.com"
                 required
                 disabled={saving}
@@ -341,7 +618,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                   pedirNomeEmail={false}
                   semBotao
                   onEnviar={() => undefined}
-                  onMudar={(d) => { setModo(d.modo); setPassword(d.password); setErrors((p) => { const n = { ...p }; delete n.password; return n; }); }}
+                  onMudar={(d) => { setModo(d.modo); setPassword(d.password); limparErro("password"); }}
                 />
                 {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
               </div>
@@ -355,7 +632,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
             <FormField
               label={
                 <span>
-                  Nome Completo <span className="text-red-400">*</span>
+                  {criandoHunter && tipoHunter === "empresa" ? "Razão social / nome" : "Nome Completo"} <span className="text-red-400">*</span>
                 </span>
               }
               className="md:col-span-2"
@@ -364,7 +641,8 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
               <Input
                 type="text"
                 value={name}
-                onChange={(e) => { setName(e.target.value); setErrors((p) => { const n = {...p}; delete n.name; return n; }); }}
+                maxLength={255}
+                onChange={(e) => { setName(e.target.value); limparErro("name"); }}
                 placeholder="João Silva"
                 required
                 disabled={saving}
@@ -372,80 +650,33 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
               />
             </FormField>
 
-            <FormField label="Username">
-              <Input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="joaosilva"
-                disabled={saving}
-              />
-            </FormField>
-
-            <FormField label="Telefone">
-              <Input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(11) 98765-4321"
-                disabled={saving}
-              />
-            </FormField>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Permissões</h3>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormField
-              label={
-                <span>
-                  Função <span className="text-red-400">*</span>
-                </span>
-              }
-            >
-              <SelectMenu
-                value={String(roleId)}
-                options={[
-                  { value: "1", label: "Administrador" },
-                  { value: "2", label: "Gerente" },
-                  { value: "3", label: "Vendedor" },
-                  { value: "4", label: "SDR" },
-                  { value: "5", label: "Visualizador" },
-                  { value: "6", label: "Serviço" },
-                  ...(idFinanceiro ? [{ value: String(idFinanceiro), label: "Financeiro" }] : []),
-                  // Login de parceiro nasce no card do parceiro; aqui só aparece na edição.
-                  ...(user?.role === "partner" ? [{ value: String(user.role_id), label: "Parceiro" }] : []),
-                ]}
-                onChange={(value) => setRoleId(Number(value))}
-              />
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                {roleId === 1 && "Acesso total ao sistema"}
-                {roleId === 2 && "Gerencia equipes e relatórios"}
-                {roleId === 3 && "Gerencia apenas seus próprios cards"}
-                {roleId === 4 && "Gerencia prospecção e qualificação de leads"}
-                {roleId === 5 && "Acesso somente leitura a boards, clientes, pessoas e produtos"}
-                {roleId === 6 && "Acesso ao módulo de serviços (boards, atividades, clientes, pessoas e produtos)"}
-                {idFinanceiro !== null && roleId === idFinanceiro && "Acompanha Parcerias e valida a elegibilidade das oportunidades"}
-                {user?.role === "partner" && roleId === user.role_id && "Acesso só à seção Parcerias (login criado no card do parceiro)"}
-              </p>
-            </FormField>
-
-            <FormField label="Status">
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 transition-colors hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">
-                <input
-                  type="checkbox"
-                  checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-600 focus:ring-emerald-500"
+            {!criandoExterno && (
+              <FormField label="Username">
+                <Input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="joaosilva"
                   disabled={saving}
                 />
-                <span className="text-slate-900 dark:text-white">Usuário Ativo</span>
-              </label>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Usuários inativos não podem fazer login
-              </p>
-            </FormField>
+              </FormField>
+            )}
+
+            {!criandoParceiro && (
+              <FormField label="Telefone" error={errors.phone}>
+                <Input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(criandoHunter ? mascarar("phone", e.target.value) : e.target.value);
+                    limparErro("phone");
+                  }}
+                  placeholder="(11) 98765-4321"
+                  disabled={saving}
+                  error={!!errors.phone}
+                />
+              </FormField>
+            )}
           </div>
         </div>
 
