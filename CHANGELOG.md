@@ -19,6 +19,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   - **Comissões e Indicações:** cabeçalho e tabelas iguais aos de Clientes, com paginação de 10 em 10 e ações em botão de ícone ("Marcar pago", "Ver"). Os totais viraram cards de resumo, e as abas de Comissões têm o formato das abas de Configurações.
   - **Dashboard de Parcerias:** cabeçalho padrão na página própria, filtro de período igual ao do Dashboard geral (Este Mês, Mês Passado, Últimos 12 Meses, Personalizado), comissões em cards de resumo e listas paginadas de 10 em 10.
   - **Configurações → Termos:** sub-abas, campo de texto e botão no padrão do sistema.
+  - **Consulta de CNPJ:** cabeçalho igual ao das outras páginas.
+  - **Convite:** "Reenviar" e "Copiar link" viraram botões de ícone (Usuários e card do parceiro).
+  - **Modal de usuário:** seletor de Função na mesma altura dos campos, Pessoa/Empresa do hunter no formato de abas e a caixinha "Usuário Ativo" clara no modo claro.
+  - **Telas de login, senha e aceite dos termos:** mensagem de erro legível no modo claro e caixinha do "Li e aceito" no padrão.
+  - **Calibrações da oportunidade:** erro ao lançar aparece em aviso, como no resto do sistema.
+- **Calibrações por aparelho, com as recorrências:** a seção agrupa as calibrações por número de série e mostra quantas das 2 recorrências com comissão o aparelho já usou ("1 de 2 recorrências", "2 de 2 · limite atingido"). Cada calibração mostra a ordem (1ª, 2ª), a data, o valor, a comissão e a situação ("Pendente" ou "Paga em dd/mm/aaaa"). A API das calibrações passou a devolver `recorrencia`, `commission_status` e `commission_paid_at`.
 
 ### Removido
 - **Página Parcerias → Hunters** e o item do menu. O cadastro de hunter agora é só do admin, pela tela Usuários.

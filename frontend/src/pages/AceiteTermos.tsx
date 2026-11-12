@@ -72,7 +72,7 @@ export default function AceiteTermos() {
         <AuthCard subtitulo="Leia e aceite os termos para continuar">
             <div className="space-y-5">
                 {erro && (
-                    <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                    <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
                         {erro}
                     </div>
                 )}
@@ -83,7 +83,8 @@ export default function AceiteTermos() {
                 )}
                 <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
                     <input type="checkbox" checked={aceito} onChange={(e) => setAceito(e.target.checked)}
-                        disabled={enviando || !termos} className="mt-0.5 h-4 w-4" />
+                        disabled={enviando || !termos}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-300 bg-white text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700" />
                     <span>Li e aceito os termos do Programa de Parceiros</span>
                 </label>
                 <button type="button" onClick={handleAceitar} disabled={enviando || !aceito || !termos} className={botaoAuthClasse}>

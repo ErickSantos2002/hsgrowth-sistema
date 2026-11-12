@@ -441,16 +441,35 @@ def _op_para_calibracao(db: Session, user: User, opportunity_id: int, escrever: 
     return op
 
 
+def _calibracao_out(cal: PartnerCalibration, comissao: Optional[PartnerCommission],
+                    recorrencia: Optional[int]) -> dict:
+    """Calibração com a comissão dela: valor, situação (pendente/paga) e qual recorrência do aparelho é."""
+    return {"id": cal.id, "opportunity_id": cal.opportunity_id, "serial_number": cal.serial_number,
+            "calibration_date": cal.calibration_date, "value": cal.value, "created_at": cal.created_at,
+            "commission_amount": comissao.amount if comissao else None,
+            "commission_status": comissao.status if comissao else None,
+            "commission_paid_at": comissao.paid_at if comissao else None,
+            "recorrencia": recorrencia}
+
+
 def listar_calibracoes(db: Session, user: User, opportunity_id: int) -> list:
     op = _op_para_calibracao(db, user, opportunity_id, escrever=False)
     cals = db.query(PartnerCalibration).filter(PartnerCalibration.opportunity_id == op.id) \
         .order_by(PartnerCalibration.id).all()
-    valores = dict(db.query(PartnerCommission.calibration_id, PartnerCommission.amount).filter(
+    comissoes = {c.calibration_id: c for c in db.query(PartnerCommission).filter(
         PartnerCommission.opportunity_id == op.id, PartnerCommission.kind == "calibracao",
-        PartnerCommission.status != "cancelada").all())
-    return [{"id": c.id, "opportunity_id": c.opportunity_id, "serial_number": c.serial_number,
-             "calibration_date": c.calibration_date, "value": c.value, "created_at": c.created_at,
-             "commission_amount": valores.get(c.id)} for c in cals]
+        PartnerCommission.status.in_(ATIVOS)).all()}
+    # Recorrência = ordem do lançamento entre as calibrações do aparelho que geraram comissão
+    # (as mesmas que contam no limite de LIMITE_CALIBRACOES).
+    usadas: dict = {}
+    saida = []
+    for c in cals:
+        comissao = comissoes.get(c.id)
+        recorrencia = None
+        if comissao is not None:
+            usadas[c.serial_number] = recorrencia = usadas.get(c.serial_number, 0) + 1
+        saida.append(_calibracao_out(c, comissao, recorrencia))
+    return saida
 
 
 def lancar_calibracao(db: Session, user: User, opportunity_id: int, dados) -> dict:
@@ -497,6 +516,4 @@ def lancar_calibracao(db: Session, user: User, opportunity_id: int, dados) -> di
             db.add(comissao)
     db.commit()
     db.refresh(cal)
-    return {"id": cal.id, "opportunity_id": cal.opportunity_id, "serial_number": cal.serial_number,
-            "calibration_date": cal.calibration_date, "value": cal.value, "created_at": cal.created_at,
-            "commission_amount": comissao.amount if comissao else None}
+    return _calibracao_out(cal, comissao, existentes + 1 if comissao else None)

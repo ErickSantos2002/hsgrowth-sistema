@@ -857,6 +857,11 @@ class CalibracaoResponse(BaseModel):
     value: Decimal
     created_at: datetime
     commission_amount: Optional[Decimal] = None
+    # Situação da comissão (pendente/paga) e qual recorrência do aparelho ela é (1 ou 2);
+    # vazios quando a calibração não gerou comissão.
+    commission_status: Optional[str] = None
+    commission_paid_at: Optional[datetime] = None
+    recorrencia: Optional[int] = None
 
     model_config = {"from_attributes": True}
 

@@ -488,7 +488,7 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
                     type="checkbox"
                     checked={isActive}
                     onChange={(e) => setIsActive(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-600 focus:ring-emerald-500"
+                    className="h-4 w-4 rounded border-gray-300 bg-white text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-700"
                     disabled={saving}
                   />
                   <span className="text-slate-900 dark:text-white">Usuário Ativo</span>
@@ -548,14 +548,17 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, user }) 
         {criandoHunter && (
           <div>
             <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Dados do hunter</h3>
-            <div className="mb-4 flex gap-2">
+            {/* Pessoa/Empresa no mesmo formato das abas de Configurações */}
+            <div className="mb-4 grid grid-cols-2 overflow-hidden rounded-lg border border-gray-200 dark:border-slate-700">
               {(["pessoa", "empresa"] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => { setTipoHunter(t); setDocumento(""); limparErro("documento"); }}
-                  className={`rounded-lg px-4 py-1.5 text-sm font-medium ${
-                    tipoHunter === t ? "bg-emerald-600 text-white" : "bg-gray-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                  className={`px-3 py-2.5 text-sm font-medium transition-colors ${
+                    tipoHunter === t
+                      ? "bg-emerald-600 text-white"
+                      : "text-slate-500 hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-white"
                   }`}
                 >
                   {t === "pessoa" ? "Pessoa" : "Empresa"}
@@ -760,7 +763,7 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
         ref={botaoRef}
         type="button"
         onClick={() => (isOpen ? setIsOpen(false) : abrir())}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+        className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >

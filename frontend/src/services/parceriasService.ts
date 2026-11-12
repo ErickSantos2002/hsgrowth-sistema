@@ -399,6 +399,10 @@ export interface Calibracao {
   value: string;
   created_at: string;
   commission_amount?: string | null;
+  /** Situação da comissão e qual recorrência do aparelho ela é (1 ou 2); vazios se não gerou comissão. */
+  commission_status?: "pendente" | "paga" | null;
+  commission_paid_at?: string | null;
+  recorrencia?: number | null;
 }
 
 export interface CalibracaoForm {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link2, Send } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import { Button, Input } from "../common";
 import { convite, type StatusAcesso } from "../../services/acessosService";
@@ -12,7 +13,8 @@ interface Props {
   onFeito?: () => void;
 }
 
-const botao = "text-xs text-slate-500 hover:text-emerald-500 disabled:opacity-50";
+// Botões de ícone no mesmo formato das ações das listas (Ver, Editar...), em tamanho compacto.
+const botao = "rounded-lg p-1.5 text-slate-900 transition-colors disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Reenviar convite e Copiar link — só aparecem enquanto o convite não foi aceito. */
 export default function AcoesDoConvite({ url, status, onFeito }: Props) {
@@ -57,8 +59,12 @@ export default function AcoesDoConvite({ url, status, onFeito }: Props) {
 
   return (
     <>
-      <button type="button" className={botao} onClick={reenviar} disabled={ocupado}>Reenviar</button>
-      <button type="button" className={botao} onClick={copiar} disabled={ocupado}>Copiar link</button>
+      <button type="button" title="Reenviar convite" className={`${botao} bg-emerald-600/20 hover:bg-emerald-600/30 dark:text-emerald-400`} onClick={reenviar} disabled={ocupado}>
+        <Send size={14} />
+      </button>
+      <button type="button" title="Copiar link do convite" className={`${botao} bg-blue-600/20 hover:bg-blue-600/30 dark:text-blue-400`} onClick={copiar} disabled={ocupado}>
+        <Link2 size={14} />
+      </button>
       <BaseModal
         isOpen={linkManual !== null}
         onClose={() => setLinkManual(null)}

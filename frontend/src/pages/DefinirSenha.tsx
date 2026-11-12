@@ -72,7 +72,7 @@ export default function DefinirSenha() {
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <p className="text-slate-700 dark:text-slate-300">Olá, {conferencia.nome}</p>
                     {erro && (
-                        <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                        <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
                             {erro}
                         </div>
                     )}

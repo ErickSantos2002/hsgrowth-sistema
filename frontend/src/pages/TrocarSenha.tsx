@@ -50,7 +50,7 @@ export default function TrocarSenha() {
         <AuthCard subtitulo="Troque a sua senha para continuar">
             <form onSubmit={handleSubmit} className="space-y-5">
                 {erro && (
-                    <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                    <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
                         {erro}
                     </div>
                 )}

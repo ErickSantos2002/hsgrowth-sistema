@@ -123,6 +123,9 @@ export const COMISSAO_STATUS_LABEL: Record<string, string> = {
   pendente: "Pendente", paga: "Paga", cancelada: "Cancelada",
 };
 
+/** Calibrações com comissão por aparelho (nº de série); igual a LIMITE_CALIBRACOES no backend. */
+export const LIMITE_CALIBRACOES = 2;
+
 export const COMISSAO_STATUS_COR: Record<string, string> = {
   pendente: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
   paga: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",

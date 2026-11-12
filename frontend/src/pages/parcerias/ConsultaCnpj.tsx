@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle2, Search, ShieldAlert, ShieldCheck, TrendingUp } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { CheckCircle2, Search, ShieldAlert, ShieldCheck, TrendingUp } from "lucide-react";
 import { Button, FormField, Input, Pagination, SelectMenu } from "../../components/common";
 import KpiCard from "../../components/dashboard/KpiCard";
+import { PageHeader } from "../../components/layout/PageHeader";
 import ResultadoSemaforo from "../../components/parcerias/ResultadoSemaforo";
 import { cnpjValido, limparCnpj, mascarar } from "../../components/parcerias/campos";
 import { MOTIVO_SEMAFORO, PERFIS_GESTAO, SEMAFORO_COR, SEMAFORO_LABEL } from "../../constants/parcerias";
@@ -21,7 +21,6 @@ const rotuloDoResultado = (resultado: string, motivo: string) =>
 
 export default function ConsultaCnpj() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
 
   const [cnpj, setCnpj] = useState("");
@@ -89,23 +88,14 @@ export default function ConsultaCnpj() {
   const deQuem = gestao ? "de todo o time e dos parceiros" : "suas";
 
   return (
-    <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      <div className="flex-shrink-0 border-b border-gray-200 bg-white px-6 py-4 dark:border-slate-700/50 dark:bg-slate-900/95">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50" title="Voltar">
-            <ArrowLeft size={20} className="text-slate-500 dark:text-slate-400" />
-          </button>
-          <ShieldCheck size={28} className="text-blue-500" />
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Consulta de CNPJ</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Antes de trabalhar uma empresa, veja se ela já está com a H&amp;S ou com outro parceiro.
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="p-6">
+      <PageHeader
+        title="Consulta de CNPJ"
+        description="Antes de trabalhar uma empresa, veja se ela já está com a H&S ou com outro parceiro."
+        icon={ShieldCheck}
+      />
 
-      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-6">
+      <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard
             icon={<Search size={20} />}

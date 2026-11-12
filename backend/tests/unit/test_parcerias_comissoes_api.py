@@ -215,6 +215,29 @@ def test_calibracao_limite_de_duas_por_serie(client, db, admin_headers):
     assert db.query(PartnerCommission).filter_by(kind="calibracao").count() == 3
 
 
+def test_calibracao_mostra_recorrencia_e_situacao_da_comissao(client, db, admin_headers):
+    _, _, _, a_user, op_a, _ = _cenario(client, db, admin_headers)
+    corpo = {"serial_number": "SN1", "calibration_date": "2026-11-01", "value": "100"}
+    r1 = client.post(f"{URL}/oportunidades/{op_a.id}/calibracoes", json=corpo, headers=admin_headers).json()
+    assert (r1["recorrencia"], r1["commission_status"], r1["commission_paid_at"]) == (1, "pendente", None)
+    r2 = client.post(f"{URL}/oportunidades/{op_a.id}/calibracoes", json={**corpo, "calibration_date": "2026-11-05"},
+                     headers=admin_headers).json()
+    assert (r2["recorrencia"], r2["commission_status"]) == (2, "pendente")
+    # Paga a comissão da 1ª calibração
+    c1 = db.query(PartnerCommission).filter_by(calibration_id=r1["id"]).one()
+    assert client.post(f"{URL}/comissoes/pagar", json={"ids": [c1.id]}, headers=admin_headers).status_code == 200
+    lista = client.get(f"{URL}/oportunidades/{op_a.id}/calibracoes", headers=headers(a_user)).json()
+    assert [(c["recorrencia"], c["commission_status"]) for c in lista] == [(1, "paga"), (2, "pendente")]
+    assert lista[0]["commission_paid_at"] is not None and lista[1]["commission_paid_at"] is None
+
+
+def test_calibracao_sem_comissao_nao_tem_recorrencia(client, db, admin_headers):
+    _, _, _, _, _, op_h = _cenario(client, db, admin_headers)
+    r = client.post(f"{URL}/oportunidades/{op_h.id}/calibracoes", headers=admin_headers,
+                    json={"serial_number": "SN1", "calibration_date": "2026-11-01", "value": "200"}).json()
+    assert (r["recorrencia"], r["commission_status"]) == (None, None)
+
+
 def test_calibracao_sem_ganho_confirmado(client, db, admin_headers):
     config_comissoes(db)
     a = parceiro(db, "Dmap")
