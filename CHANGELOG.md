@@ -21,6 +21,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   - **Configurações → Termos:** sub-abas, campo de texto e botão no padrão do sistema.
   - **Consulta de CNPJ:** cabeçalho igual ao das outras páginas.
   - **Convite:** "Reenviar" e "Copiar link" viraram botões de ícone (Usuários e card do parceiro).
+  - **Card do parceiro (Equipe e Acessos):** "Dar acesso" (chave) e "Desativar"/"Reativar" também viraram botões de ícone.
   - **Modal de usuário:** seletor de Função na mesma altura dos campos, Pessoa/Empresa do hunter no formato de abas e a caixinha "Usuário Ativo" clara no modo claro.
   - **Telas de login, senha e aceite dos termos:** mensagem de erro legível no modo claro e caixinha do "Li e aceito" no padrão.
   - **Calibrações da oportunidade:** erro ao lançar aparece em aviso, como no resto do sistema.

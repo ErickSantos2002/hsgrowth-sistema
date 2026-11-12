@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Ban, Building2, CheckCircle2, ClipboardCheck, FileSignature, KeyRound, ShieldCheck, Trello, Users, XCircle,
+  ArrowLeft, Ban, Building2, CheckCircle2, ClipboardCheck, FileSignature, KeyRound, ShieldCheck, Trello, UserCheck, UserX, Users, XCircle,
 } from "lucide-react";
 import { Button, FormField, Input, LoadingSpinner, SelectMenu } from "../../components/common";
 import ExpandableSection from "../../components/cardDetails/ExpandableSection";
@@ -226,6 +226,10 @@ export default function ParceiroDetalhe() {
   const temErro = (e: Record<string, string>) => Object.keys(e).length > 0;
 
   const linhaLista = "flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50/30 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/30";
+  // Ações das linhas em botão de ícone compacto (mesmo formato do Reenviar/Copiar link do convite).
+  const acaoIcone = "rounded-lg p-1.5 text-slate-900 transition-colors";
+  const acaoVerde = `${acaoIcone} bg-emerald-600/20 hover:bg-emerald-600/30 dark:text-emerald-400`;
+  const acaoVermelha = `${acaoIcone} bg-red-600/20 hover:bg-red-600/30 dark:text-red-400`;
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Cabeçalho */}
@@ -387,13 +391,13 @@ export default function ParceiroDetalhe() {
                           />
                         )}
                         {podeGerirLogin && !m.user_id && m.email && m.is_active && (
-                          <button onClick={() => setDarAcessoA(darAcessoA === m.id ? null : m.id)} className="text-xs text-slate-500 hover:text-emerald-500">
-                            Dar acesso
+                          <button onClick={() => setDarAcessoA(darAcessoA === m.id ? null : m.id)} className={acaoVerde} title="Dar acesso ao CRM">
+                            <KeyRound size={14} />
                           </button>
                         )}
                         {podeEditar && (!m.user_id || podeGerirLogin) && (
-                          <button onClick={() => alternarMembro(m)} className="text-xs text-slate-500 hover:text-emerald-500">
-                            {m.is_active ? "Desativar" : "Reativar"}
+                          <button onClick={() => alternarMembro(m)} className={m.is_active ? acaoVermelha : acaoVerde} title={m.is_active ? "Desativar" : "Reativar"}>
+                            {m.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
                           </button>
                         )}
                       </span>
@@ -445,8 +449,8 @@ export default function ParceiroDetalhe() {
                           status={a.status_acesso}
                           onFeito={async () => setAcessos(await parceriasService.listarAcessos(id))}
                         />
-                        <button onClick={() => alternarAcesso(a)} className="text-xs text-slate-500 hover:text-emerald-500">
-                          {a.is_active ? "Desativar" : "Reativar"}
+                        <button onClick={() => alternarAcesso(a)} className={a.is_active ? acaoVermelha : acaoVerde} title={a.is_active ? "Desativar" : "Reativar"}>
+                          {a.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
                         </button>
                       </span>
                     </div>
