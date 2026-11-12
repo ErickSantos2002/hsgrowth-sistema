@@ -9,7 +9,7 @@ import KpiCard from "./KpiCard";
 import { useTheme } from "../../context/ThemeContext";
 import { getChartColors } from "../../constants/colors";
 import { ETAPAS_AQUISICAO, COMISSAO_TIPO_LABEL, formatarMoeda } from "../../constants/parcerias";
-import { dia } from "../../pages/parcerias/Comissoes";
+import { dia } from "../../utils/formatters";
 import parceriasService, {
   mensagemDeErro,
   type DashboardParcerias as Painel,

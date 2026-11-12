@@ -144,3 +144,8 @@ export const formatCurrency = (value: number): string => {
 export const unmask = (value: string): string => {
   return value.replace(/\D/g, "");
 };
+
+// O backend manda datetime sem fuso (UTC): sem o "Z" o navegador leria como hora local e o dia poderia mudar.
+// O dia é o de São Paulo, o mesmo dos filtros De/até.
+export const dia = (iso: string) =>
+  new Date(/(Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : `${iso}Z`).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });

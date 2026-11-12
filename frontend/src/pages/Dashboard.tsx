@@ -278,9 +278,11 @@ const Dashboard: React.FC = () => {
             <LayoutDashboard size={26} />
             Dashboard
           </h1>
-          <p className="mt-0.5 text-xs text-slate-400">
-            Última atualização: {lastUpdate ? lastUpdate.toLocaleTimeString("pt-BR") : "—"}
-          </p>
+          {!parceriasMode && (
+            <p className="mt-0.5 text-xs text-slate-400">
+              Última atualização: {lastUpdate ? lastUpdate.toLocaleTimeString("pt-BR") : "—"}
+            </p>
+          )}
           {/* Quem está sendo visto */}
           {(isSdr || isSalesperson) && (
             <p className="mt-0.5 text-xs font-medium text-emerald-500">
