@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.20",
+    date: "12/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Dashboard de Parcerias: o hunter vê a carteira de empresas indicadas (vendas, valor, última venda, empresas paradas, prazo de indicação, quanto vai ganhar e recebido); a empresa vê as vendas por vendedor, as unidades indicadas e as comissões; o vendedor do parceiro vê só as próprias vendas.",
+      },
+      {
+        type: "feature",
+        text: "Visão da H&S com filtros por período, hunter e empresa, ranking de empresas e de hunters, empresas paradas e totais de comissão. Admin e gerente em Dashboard → Parcerias; os demais em Parcerias → Dashboard.",
+      },
+      {
+        type: "improvement",
+        text: "Valor vendido considera produtos menos desconto, sem frete, e só vendas com ganho confirmado.",
+      },
+    ],
+  },
+  {
     version: "1.11.19",
     date: "11/11/2026",
     entries: [

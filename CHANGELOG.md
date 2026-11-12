@@ -5,6 +5,24 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.20] — 12/11/2026
+
+### Adicionado
+- **Dashboard de Parcerias:**
+  - **Carteira do hunter:** empresas indicadas, vendas, valor, última venda, "parada há X dias" a partir de 30 dias, prazo de indicação, quanto vai ganhar e recebido.
+  - **Visão da empresa:** vendas por vendedor, unidades indicadas e comissões.
+  - **Visão do vendedor do parceiro:** só as próprias vendas, sem comissão.
+  - **Visão da H&S:** filtros por período, hunter e empresa, ranking de empresas e de hunters, empresas paradas e totais de comissão.
+- **Onde fica:** admin e gerente em Dashboard → Parcerias; hunter, empresa, vendedor e Financeiro em Parcerias → Dashboard.
+
+### Regras
+- Valor vendido = base da comissão (produtos menos desconto, sem frete); só vendas com ganho confirmado.
+
+### Banco de dados
+- Sem migration.
+
+---
+
 ## [1.11.19] — 11/11/2026
 
 ### Adicionado
