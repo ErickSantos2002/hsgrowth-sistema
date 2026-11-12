@@ -20,6 +20,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Página Parcerias → Hunters** e o item do menu. O cadastro de hunter agora é só do admin, pela tela Usuários.
 - **Item "Termos" do menu de Parcerias** (agora é uma aba de Configurações).
 
+### Documentação
+- **`docs/programa-de-parceiros.md`:** guia do módulo de Parcerias, com perfis, regras, telas, mapa do código, migrations, pendências e a lista de specs e planos.
+
 ### Banco de dados
 - Sem migration.
 

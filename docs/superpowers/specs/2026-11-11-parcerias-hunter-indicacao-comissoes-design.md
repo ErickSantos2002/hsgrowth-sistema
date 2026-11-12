@@ -248,3 +248,15 @@ Demais decisões:
 - Prazo de indicação: 2 ou 3 anos (Nicholson).
 - Texto dos termos do hunter e da empresa parceira.
 - Regras da calibração e integração com o GestorHS (Welton).
+
+## 10. Ajustes depois da entrega (12/11/2026, testes do Erick no homo)
+
+- **A página Parcerias → Hunters saiu.** O hunter é cadastrado em **Usuários → Novo Usuário**
+  (perfil Hunter: CPF ou CNPJ, PIX, convite **ou senha inicial**). O bloqueio fica na edição do
+  usuário. Só o admin acessa Usuários, então **o gerente não cadastra mais hunter**.
+- **O login de parceiro** também pode ser criado em Usuários (perfil Parceiro), escolhendo uma
+  empresa do board de Aquisição. Continua possível criar pelo card.
+- **Termos e a configuração das comissões** viraram abas de **Configurações**. A página
+  Comissões continua em Parcerias para consulta e pagamento.
+- O guia geral do módulo está em `docs/programa-de-parceiros.md`.
+

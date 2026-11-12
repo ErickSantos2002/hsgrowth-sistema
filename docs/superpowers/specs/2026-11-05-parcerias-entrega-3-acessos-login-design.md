@@ -152,6 +152,11 @@ nunca entrou) · **Convite expirado** · **Desativado**.
 Respostas de criação/convite: `{acesso: {...status...}, link: str | null, email_enviado: bool}`
 (`link` só volta quando a tela pediu "Copiar link").
 
+> **Nota (12/11/2026):** o código ficou com respostas **planas**, não aninhadas em `acesso`.
+> O convite devolve `{status_acesso, convite_expira_em, link, email_enviado}` (`ConviteResponse`).
+> A criação de acesso devolve os campos do acesso no mesmo nível, mais `email_enviado`
+> (`AcessoCriadoResponse`). Veja `app/schemas/acessos.py` e `app/schemas/parcerias.py`.
+
 ## 10. Fora do escopo
 
 - Login Microsoft para quem é de fora da H&S.

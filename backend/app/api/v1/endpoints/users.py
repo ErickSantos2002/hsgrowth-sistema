@@ -488,7 +488,7 @@ def _recusar_login_de_parceiro(db: Session, role_id: Optional[int], role_atual: 
     if papel and papel.name in ("partner", "partner_member", "hunter"):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Login de parceiro se cria no card do parceiro, em Parcerias > Aquisição de Parceiros.",
+            detail="Login de parceiro ou hunter se cria em Novo Usuário (perfil Parceiro ou Hunter) ou no card do parceiro.",
         )
 
 
