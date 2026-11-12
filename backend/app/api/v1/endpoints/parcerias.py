@@ -463,6 +463,7 @@ def lancar_calibracao(opportunity_id: int, dados: CalibracaoCreate, db: Session 
 # ─── Dashboard ───────────────────────────────────────────────────────────────
 
 @router.get("/dashboard", response_model=DashboardResponse)
-def painel_dashboard(de: Optional[date] = None, ate: Optional[date] = None, db: Session = Depends(get_db),
+def painel_dashboard(de: Optional[date] = None, ate: Optional[date] = None,
+                     hunter_id: Optional[int] = None, partner_id: Optional[int] = None, db: Session = Depends(get_db),
                      current_user: User = Depends(get_current_active_user)):
-    return dashboard.painel(db, current_user, de, ate)
+    return dashboard.painel(db, current_user, de, ate, hunter_id, partner_id)

@@ -119,6 +119,9 @@ def _carteira(db: Session, indicados: List[Partner], de, ate, com_prazo: bool,
     for p in indicados:
         v, c = ult_venda.get(p.id), ult_criada.get(p.id)
         ultima = max((d for d in (v, c) if d is not None), default=None)
+        if ultima is None:
+            # Sem oportunidade nem venda: conta desde a ativação (ou o cadastro).
+            ultima = p.activated_at or p.created_at
         dias = (agora - ultima).days if ultima is not None else None
         item = {
             "partner_id": p.id, "nome": p.name, "situacao": p.stage,
@@ -133,9 +136,12 @@ def _carteira(db: Session, indicados: List[Partner], de, ate, com_prazo: bool,
     return itens, vendas
 
 
-def _comissoes(db: Session, user: User, de, ate) -> dict:
+def _comissoes(db: Session, user: User, de, ate, beneficiarios: Optional[List[int]] = None) -> dict:
     """"Vai ganhar" = pendente; "recebido" = paga; cancelada fica de fora."""
-    q = comissoes._filtrar(comissoes._escopo(db, user, None), de, ate)
+    q = comissoes._escopo(db, user, None)
+    if beneficiarios is not None:
+        q = q.filter(PartnerCommission.beneficiary_partner_id.in_(beneficiarios or [-1]))
+    q = comissoes._filtrar(q, de, ate)
     linhas = q.filter(PartnerCommission.status.in_(("pendente", "paga"))).with_entities(
         PartnerCommission.kind, PartnerCommission.status, func.sum(PartnerCommission.amount),
     ).group_by(PartnerCommission.kind, PartnerCommission.status).all()
@@ -200,8 +206,79 @@ def painel_hunter(db: Session, user: User, de, ate, agora: Optional[datetime] = 
             "carteira": carteira, "comissoes": _comissoes(db, user, de, ate)}
 
 
-def painel(db: Session, user: User, de: Optional[date] = None, ate: Optional[date] = None) -> dict:
+MAX_RANKING = 20
+
+
+def _ordem_ranking(item: dict):
+    return (-Decimal(item["valor"]), -item["quantidade"], item["nome"])
+
+
+def painel_hs(db: Session, user: User, de, ate, hunter_id: Optional[int] = None,
+              partner_id: Optional[int] = None, agora: Optional[datetime] = None) -> dict:
+    agora = agora or datetime.utcnow()
+    if hunter_id is not None:
+        h = db.query(Partner).filter(Partner.id == hunter_id, Partner.is_deleted.is_(False)).first()
+        if h is None or h.kind != "hunter":
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Hunter inválido.")
+    if partner_id is not None:
+        if db.query(Partner.id).filter(Partner.id == partner_id, Partner.is_deleted.is_(False)).first() is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Parceiro não encontrado.")
+
+    parceiros = db.query(Partner).filter(Partner.is_deleted.is_(False)).all()
+    escopo = {p.id: p for p in parceiros}
+    if hunter_id is not None:
+        escopo = {i: p for i, p in escopo.items() if i == hunter_id or p.indicated_by_partner_id == hunter_id}
+    if partner_id is not None:
+        escopo = {i: p for i, p in escopo.items() if i == partner_id}
+
+    vendas = _vendas(db, escopo.keys(), de, ate)
+    por_parceiro: Dict[int, list] = {}
+    for par in vendas:
+        por_parceiro.setdefault(par[0].partner_id, []).append(par)
+
+    ranking_empresas = []
+    for pid, pares in por_parceiro.items():
+        p = escopo[pid]
+        if p.kind == "empresa":
+            ranking_empresas.append({"partner_id": pid, "nome": p.name, "situacao": p.stage,
+                                     **_bloco_vendas(pares)})
+    ranking_empresas.sort(key=_ordem_ranking)
+
+    indicadas: Dict[int, int] = {}
+    for p in parceiros:
+        if p.indicated_by_partner_id is not None:
+            indicadas[p.indicated_by_partner_id] = indicadas.get(p.indicated_by_partner_id, 0) + 1
+    ranking_hunters = []
+    for p in parceiros:
+        if p.kind != "hunter":
+            continue
+        pares = list(por_parceiro.get(p.id, []))
+        for pid, lista in por_parceiro.items():
+            if pid != p.id and escopo[pid].indicated_by_partner_id == p.id:
+                pares += lista
+        if pares:
+            ranking_hunters.append({"partner_id": p.id, "nome": p.name, "empresas": indicadas.get(p.id, 0),
+                                    **_bloco_vendas(pares)})
+    ranking_hunters.sort(key=_ordem_ranking)
+
+    candidatas = [p for p in escopo.values() if p.kind == "empresa" and p.stage != "bloqueado"]
+    itens, _ = _carteira(db, candidatas, de, ate, False, agora)
+    paradas = sorted((i for i in itens if i["parada"]), key=lambda i: (-i["dias_parada"], i["nome"]))
+
+    filtrado = hunter_id is not None or partner_id is not None
+    return {
+        "visao": "hs", "vendas": _bloco_vendas(vendas), "serie": _serie(vendas),
+        "ranking_empresas": ranking_empresas[:MAX_RANKING], "ranking_hunters": ranking_hunters[:MAX_RANKING],
+        "paradas": paradas[:MAX_RANKING],
+        "comissoes": _comissoes(db, user, de, ate, list(escopo) if filtrado else None),
+    }
+
+
+def painel(db: Session, user: User, de: Optional[date] = None, ate: Optional[date] = None,
+           hunter_id: Optional[int] = None, partner_id: Optional[int] = None) -> dict:
     perfil = acesso.perfil(user)
+    if perfil in comissoes.VEEM_TUDO:
+        return painel_hs(db, user, de, ate, hunter_id, partner_id)
     if perfil == acesso.PARCEIRO_VENDEDOR:
         return painel_vendedor(db, user, de, ate)
     if perfil == acesso.PARCEIRO_DONO:

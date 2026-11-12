@@ -110,6 +110,18 @@ def test_parada_e_prazo(client, db):
     assert item[b.id]["prazo_indicacao_ate"] is None
 
 
+def test_parada_sem_oportunidade_conta_da_ativacao(client, db):
+    config_comissoes(db)
+    ph, uh = hunter(db)
+    a = parceiro(db, "A", indicated_by_partner_id=ph.id, activated_at=datetime.utcnow() - timedelta(days=50))
+    b = parceiro(db, "B", indicated_by_partner_id=ph.id, activated_at=None)
+    b.created_at = datetime.utcnow() - timedelta(days=10)
+    db.commit()
+    item = {c["partner_id"]: c for c in _painel(client, uh)["carteira"]}
+    assert item[a.id]["dias_parada"] == 50 and item[a.id]["parada"] is True
+    assert item[b.id]["dias_parada"] == 10 and item[b.id]["parada"] is False
+
+
 def test_comissoes_pendente_e_pago(client, db, admin_headers):
     config_comissoes(db, y=10, x=5, bonus=100)
     ph, uh = hunter(db)

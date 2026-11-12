@@ -933,4 +933,30 @@ class DashHunter(BaseModel):
     comissoes: DashComissoes
 
 
-DashboardResponse = Annotated[Union[DashVendedor, DashEmpresa, DashHunter], Field(discriminator="visao")]
+class DashRankingEmpresa(BaseModel):
+    partner_id: int
+    nome: str
+    situacao: str
+    quantidade: int
+    valor: str
+
+
+class DashRankingHunter(BaseModel):
+    partner_id: int
+    nome: str
+    empresas: int
+    quantidade: int
+    valor: str
+
+
+class DashHS(BaseModel):
+    visao: Literal["hs"]
+    vendas: DashVendas
+    serie: List[DashMes]
+    ranking_empresas: List[DashRankingEmpresa]
+    ranking_hunters: List[DashRankingHunter]
+    paradas: List[DashCarteiraItem]
+    comissoes: DashComissoes
+
+
+DashboardResponse = Annotated[Union[DashVendedor, DashEmpresa, DashHunter, DashHS], Field(discriminator="visao")]
