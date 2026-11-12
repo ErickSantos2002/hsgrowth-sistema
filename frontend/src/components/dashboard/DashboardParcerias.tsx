@@ -16,8 +16,7 @@ import parceriasService, {
   type DashCarteiraItem,
   type DashComissoes,
   type DashMes,
-  type Hunter,
-  type Parceiro,
+  type DashFiltroItem,
 } from "../../services/parceriasService";
 
 const dinheiro = (v: string | number) => formatarMoeda(Number(v));
@@ -178,18 +177,17 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
   const [painel, setPainel] = useState<Painel | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-  const [hunters, setHunters] = useState<Hunter[]>([]);
-  const [empresas, setEmpresas] = useState<Parceiro[]>([]);
+  const [hunters, setHunters] = useState<DashFiltroItem[]>([]);
+  const [empresas, setEmpresas] = useState<DashFiltroItem[]>([]);
   const pedido = useRef(0);
 
   // Os filtros de hunter/empresa só existem na visão da H&S; a lista falha em silêncio para os outros perfis.
   const ehHS = painel?.visao === "hs";
   useEffect(() => {
     if (!ehHS) return;
-    parceriasService.listarHunters().then(setHunters).catch(() => setHunters([]));
-    parceriasService.listarParceiros()
-      .then((l) => setEmpresas(l.filter((p) => p.kind !== "hunter")))
-      .catch(() => setEmpresas([]));
+    parceriasService.filtrosDashboard()
+      .then((f) => { setHunters(f.hunters); setEmpresas(f.empresas); })
+      .catch(() => { setHunters([]); setEmpresas([]); });
   }, [ehHS]);
 
   useEffect(() => {
@@ -209,11 +207,11 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
   }, [periodo, hunterId, partnerId]);
 
   const opcoesHunter = useMemo(
-    () => [{ value: "", label: "Todos os hunters" }, ...hunters.map((h) => ({ value: String(h.id), label: h.name }))],
+    () => [{ value: "", label: "Todos os hunters" }, ...hunters.map((h) => ({ value: String(h.id), label: h.nome }))],
     [hunters],
   );
   const opcoesEmpresa = useMemo(
-    () => [{ value: "", label: "Todas as empresas" }, ...empresas.map((p) => ({ value: String(p.id), label: p.name }))],
+    () => [{ value: "", label: "Todas as empresas" }, ...empresas.map((p) => ({ value: String(p.id), label: p.nome }))],
     [empresas],
   );
 
@@ -257,7 +255,8 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
     </div>
   );
 
-  const semVendas = painel != null && painel.vendas.quantidade === 0;
+  const semVendas = painel != null && painel.serie.length === 0;
+  const tituloGrafico = painel?.visao === "hunter" ? "Valor vendido (minhas + carteira)" : "Valor vendido por mês";
   const ticket = painel && painel.vendas.quantidade > 0 ? Number(painel.vendas.valor) / painel.vendas.quantidade : null;
 
   return (
@@ -270,7 +269,9 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
       {filtros}
 
       {erro && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-500">{erro}</div>
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-500">
+          {erro}{painel ? " (mostrando os dados do filtro anterior)" : ""}
+        </div>
       )}
 
       {!painel && carregando && (
@@ -282,16 +283,23 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
       )}
 
       {painel && (
-        <div className={`space-y-6 transition-opacity ${carregando ? "opacity-60" : ""}`}>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className={`space-y-6 transition-opacity ${carregando || erro ? "opacity-60" : ""}`}>
+          <div className={`grid grid-cols-1 gap-4 sm:grid-cols-3 ${painel.visao === "hunter" ? "lg:grid-cols-4" : ""}`}>
             <KpiCard
               icon={<ShoppingCart size={18} className="text-emerald-500" />} iconBg="bg-emerald-500/20"
-              label="Vendas no período" value={painel.vendas.quantidade} format="number"
+              label={painel.visao === "hunter" ? "Minhas vendas" : "Vendas no período"} value={painel.vendas.quantidade} format="number"
               info="Oportunidades com ganho confirmado no período (locação não conta)."
             />
+            {painel.visao === "hunter" && (
+              <KpiCard
+                icon={<Handshake size={18} className="text-amber-500" />} iconBg="bg-amber-500/20"
+                label="Vendas da carteira" value={painel.carteira_vendas.quantidade} format="number"
+                info={`Vendas das empresas que você indicou no período: ${dinheiro(painel.carteira_vendas.valor)}.`}
+              />
+            )}
             <KpiCard
               icon={<TrendingUp size={18} className="text-blue-500" />} iconBg="bg-blue-500/20"
-              label="Valor vendido" value={Number(painel.vendas.valor)} format="currency"
+              label={painel.visao === "hunter" ? "Meu valor vendido" : "Valor vendido"} value={Number(painel.vendas.valor)} format="currency"
               info="Produtos menos o desconto geral, sem frete (a mesma base da comissão)."
             />
             <KpiCard
@@ -301,11 +309,11 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo }) => {
           </div>
 
           {semVendas ? (
-            <Bloco titulo="Valor vendido por mês" icone={<TrendingUp size={16} className="text-emerald-500" />}>
+            <Bloco titulo={tituloGrafico} icone={<TrendingUp size={16} className="text-emerald-500" />}>
               <Vazio texto="Nenhuma venda confirmada neste período. Ajuste as datas para ver mais resultados." />
             </Bloco>
           ) : (
-            <Bloco titulo="Valor vendido por mês" icone={<TrendingUp size={16} className="text-emerald-500" />}>
+            <Bloco titulo={tituloGrafico} icone={<TrendingUp size={16} className="text-emerald-500" />}>
               <GraficoMensal serie={painel.serie} />
             </Bloco>
           )}

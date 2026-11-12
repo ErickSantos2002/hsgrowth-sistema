@@ -430,7 +430,7 @@ export interface DashEmpresa {
   por_vendedor: DashPorVendedor[]; unidades: DashCarteiraItem[]; comissoes: DashComissoes;
 }
 export interface DashHunter {
-  visao: "hunter"; vendas: DashVendas; serie: DashMes[];
+  visao: "hunter"; vendas: DashVendas; carteira_vendas: DashVendas; serie: DashMes[];
   carteira: DashCarteiraHunterItem[]; comissoes: DashComissoes;
 }
 export interface DashRankingEmpresa { partner_id: number; nome: string; situacao: string; quantidade: number; valor: string }
@@ -441,6 +441,8 @@ export interface DashHS {
   paradas: DashCarteiraItem[]; comissoes: DashComissoes;
 }
 export type DashboardParcerias = DashVendedor | DashEmpresa | DashHunter | DashHS;
+export interface DashFiltroItem { id: number; nome: string }
+export interface DashFiltros { hunters: DashFiltroItem[]; empresas: DashFiltroItem[] }
 export interface FiltroDashboard { de?: string; ate?: string; hunter_id?: number; partner_id?: number }
 
 export function mensagemDeErro(err: any, padrao: string): string {
@@ -533,6 +535,9 @@ const parceriasService = {
   async painelParcerias(filtro: FiltroDashboard = {}) {
     const params = Object.fromEntries(Object.entries(filtro).filter(([, v]) => v !== undefined && v !== ""));
     return (await api.get<DashboardParcerias>(`${BASE}/dashboard`, { params })).data;
+  },
+  async filtrosDashboard() {
+    return (await api.get<DashFiltros>(`${BASE}/dashboard/filtros`)).data;
   },
   async listarHunters() {
     return (await api.get<Hunter[]>(`${BASE}/hunters`)).data;
