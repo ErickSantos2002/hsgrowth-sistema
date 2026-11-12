@@ -23,6 +23,7 @@ from app.schemas.parcerias import (
     ComissaoConfigUpdate,
     ComissaoResponse,
     ComissaoResumo,
+    DashboardResponse,
     PagarRequest,
     PagarResponse,
     AcessoCreate,
@@ -63,7 +64,7 @@ from app.schemas.parcerias import (
 )
 from app.schemas.acessos import ConviteRequest, ConviteResponse
 from app.services import tokens_de_acesso
-from app.services.parcerias import acesso, atividades, bloqueio, comissoes, hunters, indicacoes, oportunidades, parceiros, respostas, termos
+from app.services.parcerias import acesso, atividades, bloqueio, comissoes, dashboard, hunters, indicacoes, oportunidades, parceiros, respostas, termos
 from app.services.parcerias.etapas import ETAPAS_AQUISICAO, ETAPAS_OPORTUNIDADE
 
 router = APIRouter()
@@ -457,3 +458,11 @@ def listar_calibracoes(opportunity_id: int, db: Session = Depends(get_db),
 def lancar_calibracao(opportunity_id: int, dados: CalibracaoCreate, db: Session = Depends(get_db),
                       current_user: User = Depends(get_current_active_user)):
     return comissoes.lancar_calibracao(db, current_user, opportunity_id, dados)
+
+
+# ─── Dashboard ───────────────────────────────────────────────────────────────
+
+@router.get("/dashboard", response_model=DashboardResponse)
+def painel_dashboard(de: Optional[date] = None, ate: Optional[date] = None, db: Session = Depends(get_db),
+                     current_user: User = Depends(get_current_active_user)):
+    return dashboard.painel(db, current_user, de, ate)

@@ -1,7 +1,7 @@
 """Schemas Pydantic do Programa de Parceiros (boards Aquisição e Pipeline)."""
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated, Any, Dict, List, Literal, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 import re
 
@@ -859,3 +859,78 @@ class CalibracaoResponse(BaseModel):
     commission_amount: Optional[Decimal] = None
 
     model_config = {"from_attributes": True}
+
+
+# ─── Dashboard ───────────────────────────────────────────────────────────────
+
+class DashVendas(BaseModel):
+    quantidade: int
+    valor: str
+
+
+class DashMes(BaseModel):
+    mes: str
+    quantidade: int
+    valor: str
+
+
+class DashPorVendedor(BaseModel):
+    membro_id: Optional[int] = None
+    nome: str
+    quantidade: int
+    valor: str
+
+
+class DashCarteiraItem(BaseModel):
+    partner_id: int
+    nome: str
+    situacao: str
+    quantidade: int
+    valor: str
+    ultima_venda_em: Optional[datetime] = None
+    ultima_atividade_em: Optional[datetime] = None
+    dias_parada: Optional[int] = None
+    parada: bool = False
+
+
+class DashCarteiraHunterItem(DashCarteiraItem):
+    # O prazo da indicação é do hunter.
+    prazo_indicacao_ate: Optional[datetime] = None
+
+
+class DashComissaoTipo(BaseModel):
+    pendente: str
+    pago: str
+
+
+class DashComissoes(BaseModel):
+    pendente: str
+    pago: str
+    por_tipo: Dict[str, DashComissaoTipo]
+
+
+class DashVendedor(BaseModel):
+    """Vendedor da equipe: nenhum campo de comissão."""
+    visao: Literal["vendedor"]
+    vendas: DashVendas
+    serie: List[DashMes]
+
+
+class DashEmpresa(BaseModel):
+    visao: Literal["empresa"]
+    vendas: DashVendas
+    serie: List[DashMes]
+    por_vendedor: List[DashPorVendedor]
+    unidades: List[DashCarteiraItem]
+    comissoes: DashComissoes
+
+
+class DashHunter(BaseModel):
+    visao: Literal["hunter"]
+    vendas: DashVendas
+    serie: List[DashMes]
+    carteira: List[DashCarteiraHunterItem]
+    comissoes: DashComissoes
+
+
+DashboardResponse = Annotated[Union[DashVendedor, DashEmpresa, DashHunter], Field(discriminator="visao")]
