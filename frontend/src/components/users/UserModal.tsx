@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Upload, X, User as UserIcon } from "lucide-react";
 import BaseModal from "../common/BaseModal";
 import { FormField, Input, Button } from "../common";
@@ -710,29 +711,58 @@ interface SelectMenuProps {
 
 const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [posicao, setPosicao] = useState<React.CSSProperties>({});
+  const botaoRef = useRef<HTMLButtonElement | null>(null);
+  const listaRef = useRef<HTMLDivElement | null>(null);
+
+  // A lista abre num portal, por cima da modal: não aumenta nem rola o corpo dela.
+  const abrir = () => {
+    const r = botaoRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const altura = 240; // max-h-60
+    const abaixo = window.innerHeight - r.bottom;
+    const paraCima = abaixo < altura + 8 && r.top > abaixo;
+    setPosicao({
+      left: r.left,
+      width: r.width,
+      ...(paraCima ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }),
+    });
+    setIsOpen(true);
+  };
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+    if (!isOpen) return;
+    const foraDoMenu = (alvo: EventTarget | null) =>
+      !botaoRef.current?.contains(alvo as Node) && !listaRef.current?.contains(alvo as Node);
+    const clique = (e: MouseEvent) => { if (foraDoMenu(e.target)) setIsOpen(false); };
+    // Rolar a modal ou a página tiraria a lista do lugar: fecha.
+    const rolagem = (e: Event) => { if (foraDoMenu(e.target)) setIsOpen(false); };
+    const fechar = () => setIsOpen(false);
+    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); setIsOpen(false); } };
+    document.addEventListener("mousedown", clique);
+    document.addEventListener("scroll", rolagem, true);
+    document.addEventListener("keydown", tecla, true);
+    window.addEventListener("resize", fechar);
+    return () => {
+      document.removeEventListener("mousedown", clique);
+      document.removeEventListener("scroll", rolagem, true);
+      document.removeEventListener("keydown", tecla, true);
+      window.removeEventListener("resize", fechar);
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
   const selectedOption = options.find((option) => option.value === value);
   const selectedLabel = selectedOption?.label || placeholder || "Selecione";
 
   return (
-    <div ref={menuRef} className="relative">
+    <div className="relative">
       <button
+        ref={botaoRef}
         type="button"
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={() => (isOpen ? setIsOpen(false) : abrir())}
         className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
       >
         <span className={`truncate ${selectedOption ? "" : "text-slate-500 dark:text-slate-400"}`}>
           {selectedLabel}
@@ -742,25 +772,38 @@ const SelectMenu: React.FC<SelectMenuProps> = ({ value, options, placeholder, on
           className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
-      {isOpen && (
-        <div className="absolute z-20 mt-2 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-          {options.map((option) => (
-            <button
-              key={option.value || option.label}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
-                option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
-              }`}
-            >
-              <span className="truncate">{option.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      {isOpen &&
+        createPortal(
+          <div
+            ref={listaRef}
+            role="listbox"
+            style={posicao}
+            className="fixed z-[3100] max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
+          >
+            {options.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-slate-400">Nenhuma opção disponível</div>
+            ) : (
+              options.map((option) => (
+                <button
+                  key={option.value || option.label}
+                  type="button"
+                  role="option"
+                  aria-selected={option.value === value}
+                  onClick={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm text-slate-900 hover:bg-gray-100 dark:text-white dark:hover:bg-slate-800 ${
+                    option.value === value ? "bg-gray-100 dark:bg-slate-800/70" : ""
+                  }`}
+                >
+                  <span className="block truncate">{option.label}</span>
+                </button>
+              ))
+            )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
