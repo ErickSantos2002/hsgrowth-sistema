@@ -6,7 +6,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user, require_not_viewer
+from app.api.deps import get_db, get_current_active_user, require_not_viewer, exigir_card_aberto_do_dono_se_agente
 from app.services.person_service import PersonService
 from app.schemas.person import PersonCreate, PersonUpdate, PersonResponse, PersonListResponse
 from app.models.user import User
@@ -260,6 +260,7 @@ async def update_person(
     """
     Atualiza uma pessoa existente.
     """
+    exigir_card_aberto_do_dono_se_agente(db, current_user, person_id=person_id)
     # Foto do cadastro ANTES de atualizar (o histórico mostra o que mudou)
     person_before_obj = db.query(Person).filter(Person.id == person_id).first()
     data_before = historico_cadastro.foto(person_before_obj, "Person") if person_before_obj else None

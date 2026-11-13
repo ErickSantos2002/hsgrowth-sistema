@@ -6,7 +6,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user, require_not_viewer
+from app.api.deps import get_db, get_current_active_user, require_not_viewer, exigir_card_aberto_do_dono_se_agente
 from app.services.client_service import ClientService
 from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse, ClientListResponse
 from app.models.user import User
@@ -248,6 +248,7 @@ async def update_client(
     """
     Atualiza um cliente existente.
     """
+    exigir_card_aberto_do_dono_se_agente(db, current_user, client_id=client_id)
     # Foto do cadastro ANTES de atualizar (o histórico mostra o que mudou)
     client_before_obj = db.query(Client).filter(Client.id == client_id).first()
     data_before = historico_cadastro.foto(client_before_obj, "Client") if client_before_obj else None

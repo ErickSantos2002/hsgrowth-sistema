@@ -195,7 +195,10 @@ def _ultimo(db, modelo, **filtros):
 def test_historico_do_agente_traz_via_e_o_do_login_normal_nao(
     client, db, test_admin_user, test_card, admin_headers, agente,
 ):
-    corpo = {"title": "Pelo Guardi", "due_date": "2026-12-01T12:00:00"}
+    # O agente só escreve em card do dono (T2): o card passa a ser do admin.
+    test_card.assigned_to_id = test_admin_user.id
+    db.commit()
+    corpo ={"title": "Pelo Guardi", "due_date": "2026-12-01T12:00:00"}
     resp = client.put(f"/api/v1/cards/{test_card.id}", json=corpo, headers=_h(agente("admin@test.com")))
     assert resp.status_code == 200, resp.text
     audit = _ultimo(db, AuditLog, entity_type="Card", entity_id=test_card.id, action="UPDATE")

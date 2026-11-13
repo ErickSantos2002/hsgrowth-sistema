@@ -5,11 +5,13 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from app.db.session import get_db
+# get_db de app.api.deps (mesma implementação de app.db.session): é o que a suíte
+# de testes substitui pelo banco de teste (ver card_tasks.py).
+from app.api.deps import get_db
 from app.services.card_note_service import CardNoteService
 from app.schemas.card_note import CardNoteCreate, CardNoteUpdate, CardNoteResponse
 from app.models.user import User
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, exigir_card_do_dono_se_agente
 
 router = APIRouter()
 
@@ -77,6 +79,7 @@ def create_note(
 
     Também registra automaticamente no histórico do card.
     """
+    exigir_card_do_dono_se_agente(db, current_user, note_data.card_id)
     service = CardNoteService(db)
     return service.create_note(note_data, current_user)
 

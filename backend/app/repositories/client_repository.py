@@ -16,6 +16,15 @@ def _termo_documento(termo: str) -> str:
     return normalizar_cnpj(termo) if any(c.isdigit() for c in termo) else ""
 
 
+def _doc_digits_sql(col):
+    """Documento sem pontuação e em maiúsculas, em SQL portável (Postgres e SQLite).
+    Mesma expressão de app/services/global_search_service.py (busca geral)."""
+    expr = func.upper(col)
+    for ch in (".", "/", "-", " "):
+        expr = func.replace(expr, ch, "")
+    return expr
+
+
 class ClientRepository:
     """
     Repository para operações de banco de dados relacionadas a clientes.
@@ -117,6 +126,8 @@ class ClientRepository:
             ]
             if digits_only:
                 conditions.append(Client.document.ilike(f"%{digits_only}%"))
+                # Documento gravado com máscara ("12.345.678/0001-90") achado pelos dígitos.
+                conditions.append(_doc_digits_sql(Client.document).like(f"%{digits_only}%"))
             query = query.filter(or_(*conditions))
 
         # Ordenação: mais recentes primeiro
@@ -166,6 +177,8 @@ class ClientRepository:
             ]
             if digits_only:
                 conditions.append(Client.document.ilike(f"%{digits_only}%"))
+                # Documento gravado com máscara ("12.345.678/0001-90") achado pelos dígitos.
+                conditions.append(_doc_digits_sql(Client.document).like(f"%{digits_only}%"))
             query = query.filter(or_(*conditions))
 
         return query.scalar()

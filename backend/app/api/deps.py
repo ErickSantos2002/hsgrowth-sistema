@@ -140,7 +140,12 @@ def _usuario_do_agente(request: Request, token: str, db: Session) -> User:
             detail=_MSG_AGENTE_401,
             headers={"WWW-Authenticate": "Bearer"},
         )
-    caminho = request.url.path
+    # O caminho que o ROTEADOR casou (scope["path"], já decodificado), não o
+    # request.url.path remontado da URL: com %3F/%23 no caminho os dois divergem.
+    caminho = request.scope.get("path", "")
+    root_path = request.scope.get("root_path", "")
+    if root_path and caminho.startswith(root_path):
+        caminho = caminho[len(root_path):]
     if not agente_pode(request.method, caminho):
         logger.warning("token de agente fora da allowlist: %s %s via %s", request.method, caminho, bot)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=MSG_AGENTE_403)
@@ -161,6 +166,59 @@ def via_agente(user: Optional[User]) -> Optional[str]:
 def eh_agente(request: Request) -> bool:
     """A requisição veio com token de agente do HS.OS (só depois de get_current_user)."""
     return getattr(request.state, "agente", None) is not None
+
+
+# --- Vendas: o agente só escreve no que é do dono -------------------------------
+# Valem também para admin/gerente via agente: o Guardi age como o vendedor, nunca
+# com o alcance de gestão da pessoa. Usuário humano não passa por nenhuma delas.
+MSG_AGENTE_CARD_DE_OUTRO = "O agente só escreve em card seu (vendedor ou SDR)"
+MSG_AGENTE_CADASTRO_SEM_CARD = (
+    "O agente só altera cliente ou contato ligado a um card aberto seu (vendedor ou SDR)"
+)
+
+
+def _eh_dono_do_card(card, user: User) -> bool:
+    return user.id is not None and user.id in (card.assigned_to_id, card.sdr_id)
+
+
+def exigir_card_do_dono_se_agente(db: Session, user: User, card_id: Optional[int]) -> None:
+    """Token de agente: 403 se o card não for do dono (vendedor ou SDR). Sem agente,
+    ou card inexistente (o fluxo normal dá o 404), não faz nada."""
+    if via_agente(user) is None or card_id is None:
+        return
+    from app.models.card import Card
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if card is None:
+        return
+    if not _eh_dono_do_card(card, user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=MSG_AGENTE_CARD_DE_OUTRO)
+
+
+def exigir_card_aberto_do_dono_se_agente(
+    db: Session,
+    user: User,
+    client_id: Optional[int] = None,
+    person_id: Optional[int] = None,
+) -> None:
+    """Token de agente: cliente/contato só se ligado (Card.client_id / Card.person_id)
+    a um card aberto (nem ganho nem perdido, não apagado) do dono; senão 403."""
+    if via_agente(user) is None:
+        return
+    from sqlalchemy import or_
+    from app.models.card import Card
+    query = db.query(Card.id).filter(
+        Card.is_won == 0,
+        Card.is_deleted == False,  # noqa: E712
+        or_(Card.assigned_to_id == user.id, Card.sdr_id == user.id),
+    )
+    if client_id is not None:
+        query = query.filter(Card.client_id == client_id)
+    elif person_id is not None:
+        query = query.filter(Card.person_id == person_id)
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=MSG_AGENTE_CADASTRO_SEM_CARD)
+    if query.first() is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=MSG_AGENTE_CADASTRO_SEM_CARD)
 
 
 async def get_current_user(
