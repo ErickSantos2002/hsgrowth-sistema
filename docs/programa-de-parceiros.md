@@ -83,12 +83,20 @@ os mesmos termos.
 ### Comissões
 | Tipo | Quem recebe | Regra |
 |---|---|---|
-| **Venda própria (Y%)** | A empresa (venda dela ou da equipe) ou o hunter (venda dele) | Toda venda confirmada, sem prazo |
-| **Indicação (X%)** | O indicador | Vendas da indicada durante o **prazo de indicação**, que conta da 1ª venda confirmada (padrão 24 meses) |
-| **Bônus de 1ª venda (R$)** | O indicador | Uma vez por indicada, somado ao X% |
-| **Calibração (Z%)** | A empresa que vendeu o aparelho | Lançada **à mão pelo Financeiro**, até 2 por número de série |
+| **Venda própria da empresa (Y%)** | A empresa (venda dela ou da equipe) | Toda venda confirmada, sem prazo. Valor do programa: **10%** |
+| **Venda própria do hunter (Yh%)** | O hunter (venda dele) | Toda venda confirmada, sem prazo. Valor do programa: **5%** |
+| **Indicação (X%)** | O indicador | Vendas da indicada durante o **prazo de indicação**, que conta da 1ª venda confirmada (padrão 24 meses). Valor do programa: **1,5%** |
+| **Bônus de ativação (R$)** | O indicador | Uma vez por indicada, na 1ª venda, somado ao X%. Valor do programa: **R$ 1.000** |
+| **Renovação (Z%)** | A empresa que vendeu o aparelho | Sobre o valor pago em cada calibração, lançada **à mão pelo Financeiro**, até 2 por número de série. Valor do programa: **25%** (anuidade de referência R$ 2.500 → R$ 625) |
 
-- **Base de cálculo:** produtos menos o desconto geral, **sem frete**. Locação não gera comissão.
+- **Base de cálculo (desde a 1.11.22):** o **preço cheio** (quantidade × preço do catálogo), **sem
+  desconto e sem frete**. Locação não gera comissão.
+- **Desconto:** a oportunidade só aceita **0, 2, 4 ou 6%** (preço travado no catálogo, sem desconto
+  por item). A **venda própria cai meio ponto por ponto de desconto** (10% → 9/8/7%; 5% → 4/3/2%).
+  X% e bônus nunca mudam com o desconto. A tabela fica em `GET /comissoes/tabela-desconto`.
+- **Renovações previstas:** cada aparelho vendido (soma das quantidades) mostra a 1ª e a 2ª
+  renovação em ganho + 12 e + 24 meses, com Z% × anuidade de referência como valor previsto. Só
+  venda de empresa; venda do hunter e locação não têm renovação. Um nº de série por aparelho.
 - Cada lançamento guarda o percentual usado. **Mudar a configuração não recalcula o passado.**
 - **Ganho desfeito antes do pagamento** cancela os lançamentos pendentes da oportunidade.
   **Lançamento pago nunca é desfeito.** A geração é idempotente (oportunidade + tipo +
@@ -105,7 +113,8 @@ os mesmos termos.
 - **Vendedor do parceiro:** só as próprias vendas. A resposta da API **não tem** campos de comissão.
 - **H&S:** filtros (período, hunter, empresa), rankings de empresas e de hunters, empresas
   paradas e totais de comissão.
-- **Valor vendido** é a mesma base da comissão, contando só ganho confirmado.
+- **Valor vendido** é o que o cliente pagou (produtos menos desconto, sem frete), contando só
+  ganho confirmado. A comissão usa o preço cheio.
 
 ## 4. Onde fica cada tela (após 12/11/2026)
 
@@ -199,6 +208,7 @@ Na edição de um hunter, o bloqueio usa `POST /parcerias/parceiros/{partner_id}
 | `7b8c9d0e1f2a` | Acessos: convite ou senha, `partner_member` | aditiva |
 | `8c9d0e1f2a3b` | Hunter, indicação, termos, PIX e CPF | **reescreve `partners.stage`**: código primeiro, migration logo depois |
 | `9d0e1f2a3b4c` | Comissões (configuração começa zerada, prazo de 24 meses) | aditiva |
+| `0e1f2a3b4c5d` | % de venda própria do hunter e anuidade de referência | aditiva |
 
 **Para levar à produção:** seguir a ordem acima e ler a seção "Banco de dados" de cada versão
 no CHANGELOG. As que convertem dados exigem subir o código antes da migration (veja
@@ -207,23 +217,25 @@ no CHANGELOG. As que convertem dados exigem subir o código antes da migration (
 ## 8. Pendências e decisões a validar
 
 **Valores e textos (H&S):**
-- Percentuais **X% (indicação), Y% (venda própria), Z% (calibração)** e o **bônus de 1ª venda**.
-  Enquanto estiverem zerados, nada é gerado.
-- **Prazo de indicação:** 2 ou 3 anos (hoje está em 24 meses).
+- ~~Percentuais e bônus~~ — definidos em 13/11/2026 (10% / 5% / 1,5% / R$ 1.000 / 24 meses /
+  25% / anuidade R$ 2.500). **Preencher em Configurações → Comissões no homo.**
 - **Texto dos termos** da empresa e do hunter. Precisam ser publicados *antes* de convidar:
   sem termos publicados, ninguém fica barrado, mas também ninguém sai de Convidado.
 - **Calibração:** regras finas (identificação do aparelho, prazo) e a integração com o GestorHS.
   Hoje o lançamento é manual, por número de série.
 
 **Decisões técnicas tomadas durante a construção (conferir):**
-- Só o admin cadastra hunter e login de parceiro (pela tela Usuários). O gerente perdeu isso
-  quando a página Hunters saiu.
+- Só o admin cadastra hunter (pela tela Usuários). O gerente cria login de parceiro pelo card
+  do parceiro. **Confirmado pelo usuário em 13/11/2026.**
+- O hunter já cria o login da empresa ao indicá-la (convite na hora). Confirmado em 13/11/2026.
 - Hunter pode ser criado por convite **ou** com senha inicial.
 - O e-mail de um vendedor do parceiro que já tem login não muda pela Equipe.
 - 1ª venda desfeita: a âncora vai para a venda confirmada mais antiga que restar.
 - Os valores da oportunidade ficam travados depois do ganho confirmado.
 - "Parada" = 30 dias sem venda, sem oportunidade nova e sem atividade nas oportunidades.
-- Hunter bloqueado para de acumular X% e bônus. As empresas dele seguem normais.
+  Confirmado em 13/11/2026.
+- Hunter bloqueado para de acumular X% e bônus. As empresas dele seguem normais e o que já foi
+  gerado continua. Confirmado em 13/11/2026.
 
 **Infra, antes da produção:**
 - O IP do aceite dos termos e do login usa o **último** valor de `X-Forwarded-For`

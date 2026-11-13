@@ -9,6 +9,25 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.22] — 13/11/2026
+
+### Adicionado
+- **Comissões com os valores reais do Programa de Parceiros** (spec `2026-11-13-parcerias-comissoes-valores-reais-design.md`).
+  - **Configurações → Comissões** ganhou **"Venda própria do hunter (%)"**, separada da venda própria da empresa, e **"Anuidade de referência (R$)"**, usada só na previsão das renovações.
+  - **Quadro "Desconto × sua remuneração"** em Comissões, para a empresa e o hunter: quanto cada faixa de desconto paga por aparelho. Endpoint `GET /parcerias/comissoes/tabela-desconto`.
+  - **Previsão das 2 renovações por aparelho** na seção Calibrações da oportunidade: data prevista (ganho + 12 e + 24 meses), valor previsto, selo "faltam X dias" (a partir de 60 dias) ou "vencida há X dias". Lançada a calibração, a linha mostra a data, o valor pago, a comissão e se está Pendente ou Paga.
+
+### Alterado
+- **Desconto da oportunidade de parceria só 0%, 2%, 4% ou 6%**, para todos que editam (inclusive a H&S). O preço do aparelho fica **travado no do catálogo** e o desconto por item saiu; só a quantidade muda.
+- **Comissão de venda sobre o preço cheio:** a venda própria (empresa ou hunter) **cai meio ponto a cada ponto de desconto** (10% → 9/8/7% com 2/4/6%). A indicação (rede do hunter) e o bônus de ativação **não mudam com o desconto**. Comissões já geradas não são recalculadas.
+- **Uma série por aparelho vendido:** a calibração de um nº de série novo é recusada quando todos os aparelhos da oportunidade já têm série.
+- A API `GET /parcerias/oportunidades/{id}/calibracoes` passou a devolver `{aparelhos, sem_comissao}`.
+
+### Banco de dados
+- Migration **aditiva** `0e1f2a3b4c5d` (down `9d0e1f2a3b4c`): `partner_commission_config.hunter_own_sale_pct` e `annual_fee_reference`. Pode rodar antes do código. **Só no homo.**
+
+---
+
 ## [1.11.21] — 13/11/2026
 
 ### Adicionado

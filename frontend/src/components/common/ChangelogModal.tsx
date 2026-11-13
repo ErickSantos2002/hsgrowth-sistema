@@ -25,6 +25,28 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.22",
+    date: "13/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Oportunidade de parceria: preço do aparelho travado na tabela e desconto só de 0%, 2%, 4% ou 6%. Ao escolher o desconto, o parceiro e o hunter já veem quanto vai ser a comissão deles.",
+      },
+      {
+        type: "improvement",
+        text: "Comissão de venda calculada sobre o preço cheio: cada ponto de desconto tira meio ponto da comissão de quem vendeu. A comissão do hunter pela indicação e a ativação não mudam com o desconto.",
+      },
+      {
+        type: "feature",
+        text: "Calibrações mostram, para cada aparelho vendido, as 2 renovações previstas (12 e 24 meses após o ganho) com data e valor, avisando quando estão chegando.",
+      },
+      {
+        type: "feature",
+        text: "Em Comissões, a empresa e o hunter têm o quadro \"Desconto × sua remuneração\"; em Configurações, a venda própria do hunter e a anuidade de referência ficaram separadas.",
+      },
+    ],
+  },
+  {
     version: "1.11.21",
     date: "13/11/2026",
     entries: [
