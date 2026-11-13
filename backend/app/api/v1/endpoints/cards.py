@@ -7,7 +7,14 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user, require_not_viewer, require_role
+from app.api.deps import (
+    get_db,
+    get_current_active_user,
+    require_not_viewer,
+    require_role,
+    via_agente,
+    exigir_card_do_dono_se_agente,
+)
 from app.core import realtime
 from app.services.card_service import CardService
 from app.schemas.card import (
@@ -30,6 +37,14 @@ from app.models.user import User
 from app.models.card import Card
 
 router = APIRouter()
+
+# Token de agente (Guardi): campos que nunca saem no PUT /cards/{id} — responsável e
+# SDR são da gestão; ganho e perda só pelas rotas próprias (/win, /lose).
+CAMPOS_PROIBIDOS_AO_AGENTE_NO_PUT = ("assigned_to_id", "sdr_id", "is_won", "is_lost", "loss_reason")
+
+
+def _recusar_agente(mensagem: str) -> None:
+    raise HTTPException(status_code=403, detail=mensagem)
 
 
 def card_to_response(
@@ -379,6 +394,17 @@ async def create_card(
     """
     Endpoint de criação de card.
     """
+    if via_agente(current_user) is not None:
+        # Lead do agente nasce do próprio dono, sem SDR escolhido por ele.
+        if card_data.assigned_to_id is not None and card_data.assigned_to_id != current_user.id:
+            _recusar_agente("O agente só cria card com você como responsável")
+        if card_data.sdr_id is not None:
+            _recusar_agente("O agente não escolhe SDR ao criar card")
+        # Admin/gerente pelo agente: sem responsável, o lead nasceria sem dono e o
+        # próprio agente não poderia mais escrever nele. (O SDR o service já trata.)
+        papel = current_user.role.name if current_user.role else None
+        if card_data.assigned_to_id is None and papel != "sdr":
+            card_data = card_data.model_copy(update={"assigned_to_id": current_user.id})
     service = CardService(db)
     # Criação manual pelo board: card nasce no topo da lista (visível na hora)
     card = service.create_card(card_data, current_user, at_top=True)
@@ -474,6 +500,14 @@ async def update_card(
     - **card_id**: ID do card
     - Todos os campos são opcionais
     """
+    exigir_card_do_dono_se_agente(db, current_user, card_id)
+    if via_agente(current_user) is not None:
+        proibidos = [c for c in CAMPOS_PROIBIDOS_AO_AGENTE_NO_PUT if c in card_data.model_fields_set]
+        if proibidos:
+            _recusar_agente(
+                "O agente não altera responsável, SDR, ganho ou perda por aqui "
+                f"(campos: {', '.join(proibidos)})"
+            )
     service = CardService(db)
 
     # Captura estado anterior ANTES de atualizar (extrai para dict para evitar referência à sessão)
@@ -616,6 +650,8 @@ async def move_card(
     - **position**: Posição na lista de destino (opcional)
     """
     from app.models.list import List as BoardList
+
+    exigir_card_do_dono_se_agente(db, current_user, card_id)
 
     # Captura lista de origem ANTES de mover
     card_before_obj = db.query(Card).filter(Card.id == card_id).first()
@@ -913,6 +949,7 @@ async def mark_card_won(
     - Board de Prospecção não possui lista de ganho — somente Aquisição/Expansão permitem ganho.
     - Card já ganho ou já perdido retorna erro 422.
     """
+    exigir_card_do_dono_se_agente(db, current_user, card_id)
     service = CardService(db)
     moved_card = service.mark_card_won(card_id, current_user)
 
@@ -989,6 +1026,7 @@ async def mark_card_lost(
     **Restrições:**
     - Card já ganho ou já perdido retorna erro 422.
     """
+    exigir_card_do_dono_se_agente(db, current_user, card_id)
     service = CardService(db)
     moved_card = service.mark_card_lost(card_id, data.loss_reason, current_user)
 
@@ -1142,6 +1180,12 @@ async def add_or_update_field(
     - **field_definition_id**: ID da definição do campo (ou field_name + field_type)
     - **value**: Valor do campo (ou field_value)
     """
+    exigir_card_do_dono_se_agente(db, current_user, card_id)
+    if via_agente(current_user) is not None and (
+        field_data.field_definition_id is None or field_data.field_name is not None
+    ):
+        # Nunca criar definição de campo por nome: só campo que já existe no quadro.
+        _recusar_agente("O agente só preenche campo personalizado já existente (field_definition_id)")
     service = CardService(db)
 
     # Adiciona ou atualiza o campo customizado
@@ -1254,6 +1298,7 @@ async def link_person_to_card(
     """
     Vincula uma pessoa a um card.
     """
+    exigir_card_do_dono_se_agente(db, current_user, card_id)
     service = CardService(db)
     card = service.link_person_to_card(card_id, person_id, current_user)
 

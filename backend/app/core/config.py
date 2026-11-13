@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 480  # 8 horas
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Token de agente do HS.OS (o Guardi age como o dono): PEM Ed25519 pública, de
+    # GET /agente/chave-publica do HS.OS. Vazia = token de agente recusado (401).
+    HSOS_AGENTE_CHAVE_PUBLICA: str = ""
+
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:5300", "http://127.0.0.1:5300", "http://localhost:3000"]
 

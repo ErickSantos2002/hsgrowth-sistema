@@ -23,10 +23,19 @@ from app.schemas.card_task import (
 from app.models.user import User
 from app.models.audit_log import AuditLog
 from app.models.card_task import CardTask
-from app.api.deps import get_current_active_user, require_not_viewer
+from app.api.deps import get_current_active_user, require_not_viewer, via_agente, exigir_card_do_dono_se_agente
 from app.services.cadence_service import CadenceService
 
 router = APIRouter()
+
+
+def _exigir_card_da_tarefa_do_dono_se_agente(db: Session, user: User, task_id: int) -> None:
+    """Token de agente: a tarefa só se o card dela for do dono. Tarefa inexistente
+    segue o fluxo normal (404)."""
+    if via_agente(user) is None:
+        return
+    card_id = db.query(CardTask.card_id).filter(CardTask.id == task_id).scalar()
+    exigir_card_do_dono_se_agente(db, user, card_id)
 
 # Saudação do convite. Fica aqui, e não na tela, para o texto ser o mesmo na
 # prévia e no que o cliente recebe quando ninguém edita.
@@ -162,6 +171,7 @@ def create_task(
     - lunch: Almoço
     - other: Outro
     """
+    exigir_card_do_dono_se_agente(db, current_user, task_data.card_id)
     service = CardTaskService(db)
     task = service.create_task(task_data, current_user)
 
@@ -579,6 +589,7 @@ def update_task(
 
     Apenas campos fornecidos serão atualizados.
     """
+    _exigir_card_da_tarefa_do_dono_se_agente(db, current_user, task_id)
     service = CardTaskService(db)
     task = service.update_task(task_id, task_data, current_user)
 
@@ -732,6 +743,7 @@ def toggle_complete(
 
     Ao marcar como concluída, registra a data de conclusão.
     """
+    _exigir_card_da_tarefa_do_dono_se_agente(db, current_user, task_id)
     service = CardTaskService(db)
     task = service.toggle_complete(task_id, data.is_completed, current_user, is_valid=data.is_valid if data.is_valid is not None else True, notes=data.notes)
 
@@ -820,6 +832,8 @@ def mark_noshow(
     """
     from fastapi import HTTPException
     from app.models.card_task import TaskType as ModelTaskType
+
+    _exigir_card_da_tarefa_do_dono_se_agente(db, current_user, task_id)
 
     task = db.query(CardTask).filter(CardTask.id == task_id).first()
     if not task:

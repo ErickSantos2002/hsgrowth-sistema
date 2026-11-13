@@ -7,6 +7,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não lançado]
 
+### Adicionado
+- **Token de agente do HS.OS (Guardi):** o assistente de cada colaborador, que roda no HS.OS, passa a agir no HSGrowth como a própria pessoa, com a função dela. Vale para Vendas (vendedor) e Serviços.
+  - Token JWT EdDSA de 5 minutos (`iss=hsos`, `aud=hsgrowth`), verificado com a chave pública do HS.OS na env **`HSOS_AGENTE_CHAVE_PUBLICA`**. Sem a env, o token é recusado e nada muda.
+  - Só entra numa lista fechada de rotas (`backend/app/core/agente.py`); qualquer outra responde 403, inclusive leitura. Fora: excluir, reatribuir, reabrir, anexos, propostas, e-mail, usuários, admin.
+  - **Vendas:** o agente só escreve em card em que a pessoa é vendedora ou SDR, inclusive campos, nota, tarefa e contato. Não muda responsável, SDR nem ganho/perda pelo `PUT`, não cria campo personalizado por nome e só altera cliente ou contato ligado a um card aberto da pessoa.
+  - **Serviços:** o agente não move card pelo `PUT` (só pelo `/move`, dentro do mesmo quadro) nem o apaga ou clona.
+  - Histórico do card, atividades de Serviços e auditoria trazem **"(via <bot>)"** no que veio pelo Guardi.
+  - O card de Serviços passa a informar `external_source`/`external_id` (de onde ele veio, ex.: caixa do GestorHS).
+
+### Corrigido
+- **Busca de clientes por CPF/CNPJ** acha também os cadastrados com pontuação ao buscar só os dígitos.
+- **Kanban de Serviços:** as rotas do card conferem que ele é do quadro da URL, e editar/remover produto ou serviço confere que o item é daquele card (antes respondiam por qualquer id).
+
 ### Alterado
 - **Hunter e Parceiro nascem em Usuários:** a modal "Novo Usuário" ganhou os perfis **Hunter** e **Parceiro**. A lista de Usuários, com o filtro por perfil, mostra os dois.
   - **Hunter:** Pessoa (CPF) ou Empresa (CNPJ), Chave PIX opcional, convite por e-mail ou senha inicial.
