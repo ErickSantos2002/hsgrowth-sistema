@@ -21,18 +21,50 @@ sempre nem o token de integração. Specs no repo HS.OS:
   `password_changed_at`, e o usuário **não** vira `is_integracao`, para que a trava de CNPJ
   de parceiro continue valendo.
 - **Respostas de erro:** qualquer falha de token ou de usuário dá 401 "Token inválido ou
-  expirado". Rota fora da allowlist dá 403 "Ação não permitida para o agente".
+  expirado". Rota fora da allowlist dá 403 "Ação não permitida para o agente". Rota da
+  allowlist fora do papel da pessoa dá 403 "Ação não permitida para o seu papel pelo agente".
+
+## Capacidades (tela "Capacidade" do Guardi)
+
+`GET /api/v1/agente/capacidades`, só com token de agente (login normal → 404):
+
+```json
+{"papel": "Vendedor", "rotas": [["GET", "/boards"], ["POST", "/card-notes"], ...]}
+```
+
+`papel` é o `display_name` da função. `rotas` são os pares (método, template) da allowlist
+que o papel alcança, sem `/api/v1`, iguais aos de `ROTAS_AGENTE`. Uma resposta só serve às
+duas frentes, e o HS.OS separa Vendas de Serviços pelo catálogo dele. Onde a regra depende
+do dado (escrita só em card do dono), a rota entra e o detalhe é conferido na hora. Spec:
+`docs/superpowers/specs/2026-11-13-capacidade-do-guardi-design.md` no HS.OS.
+
+### Papéis por rota (`PAPEIS_AGENTE`)
+
+| Grupo | Papéis |
+|---|---|
+| `/users/me`, `/agente/capacidades` | todos |
+| Vendas, leitura | admin, manager, salesperson, sdr, viewer |
+| Vendas, escrita (inclui criar/alterar cliente e contato) | admin, manager, salesperson, sdr |
+| Cliente, contato e busca geral, leitura | os de Vendas + service |
+| Serviços, leitura e escrita | admin, manager, service |
+
+A tabela é a regra: `_usuario_do_agente` a aplica, e `tests/unit/test_capacidades_agente.py`
+confere, papel a papel, que ela bate com os `require_*` das rotas. Ela é mais estreita que
+as rotas em dois pontos, de propósito: serviço não entra em Vendas pelo agente (a tela
+também não deixa), e o visualizador não cria nota nem tarefa (essas rotas não têm
+`require_not_viewer`).
 
 ## Onde mora
 
 | O quê | Onde |
 |---|---|
-| Validação, allowlist e marcação "via" | `backend/app/core/agente.py` (`ROTAS_AGENTE`) |
+| Validação, allowlist com papéis e marcação "via" | `backend/app/core/agente.py` (`PAPEIS_AGENTE`, `ROTAS_AGENTE`) |
+| Capacidades | `backend/app/api/v1/endpoints/agente.py` |
 | Entrada do token | `get_current_user` → `_usuario_do_agente` em `backend/app/api/deps.py` |
 | Travas de dono (Vendas) | `exigir_card_do_dono_se_agente` e `exigir_card_aberto_do_dono_se_agente` em `deps.py`, chamadas nos endpoints |
 | Testes | `backend/tests/unit/test_token_agente*.py` |
 
-**Rota nova chega ao Guardi só entrando nos DOIS catálogos:** em `ROTAS_AGENTE`, aqui, e
+**Rota nova chega ao Guardi só entrando nos DOIS catálogos:** em `PAPEIS_AGENTE` (com os papéis), aqui, e
 no do HS.OS. A allowlist casa o caminho que o roteador usou, com todo parâmetro como
 `\d+`.
 

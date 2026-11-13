@@ -17,7 +17,8 @@ from app.core.config import settings
 from app.core.agente import (
     TokenDeAgenteInvalido,
     agente_atual,
-    agente_pode,
+    papel_alcanca,
+    rota_do_agente,
     eh_token_de_agente,
     validar_token_de_agente,
 )
@@ -113,6 +114,7 @@ logger = logging.getLogger(__name__)
 # Mesma mensagem para toda recusa do token de agente: não diz o que falhou.
 _MSG_AGENTE_401 = "Token inválido ou expirado"
 MSG_AGENTE_403 = "Ação não permitida para o agente"
+MSG_AGENTE_PAPEL_403 = "Ação não permitida para o seu papel pelo agente"
 
 
 def _usuario_do_agente(request: Request, token: str, db: Session) -> User:
@@ -146,9 +148,15 @@ def _usuario_do_agente(request: Request, token: str, db: Session) -> User:
     root_path = request.scope.get("root_path", "")
     if root_path and caminho.startswith(root_path):
         caminho = caminho[len(root_path):]
-    if not agente_pode(request.method, caminho):
+    rota = rota_do_agente(request.method, caminho)
+    if rota is None:
         logger.warning("token de agente fora da allowlist: %s %s via %s", request.method, caminho, bot)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=MSG_AGENTE_403)
+    # Papéis de cada rota (PAPEIS_AGENTE): a mesma tabela responde /agente/capacidades.
+    papel = user.role.name if user.role else None
+    if not papel_alcanca(rota, papel):
+        logger.warning("token de agente fora do papel %s: %s %s via %s", papel, request.method, caminho, bot)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=MSG_AGENTE_PAPEL_403)
     request.state.agente = bot
     # Atributo transitório: quem não tem o request à mão lê daqui. O caminho normal zera.
     user.via_agente = bot

@@ -256,4 +256,6 @@ def test_vendedor_via_agente_403_em_servicos(client, cenario, test_salesperson_u
     resp = client.request(metodo, _url(c) + sufixo, json=corpo,
                           headers=_h(agente(test_salesperson_user.email)))
     assert resp.status_code == 403, resp.text
-    assert "módulo de Serviços" in resp.json()["detail"]
+    # A tabela de papéis do agente (PAPEIS_AGENTE) recusa antes do require_service_access.
+    from app.api.deps import MSG_AGENTE_PAPEL_403
+    assert resp.json()["detail"] == MSG_AGENTE_PAPEL_403

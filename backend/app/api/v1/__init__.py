@@ -4,7 +4,7 @@ Agrega todos os endpoints da versão 1 da API.
 """
 from fastapi import APIRouter, Depends
 from app.api.deps import require_consulta_cnpj, require_parcerias_access, require_service_access
-from app.api.v1.endpoints import features, public_meeting, daily_webhook, auth, users, boards, cards, clients, persons, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products, integration_clients, api4com, audit_logs, attachments, user_avatar, custom_reports, ai, call_evaluations, cadencias, email_templates, cadences, service_boards, service_dashboard, service_activities, proposals, services, integration, service_products, reunioes, search, parcerias, consulta_cnpj
+from app.api.v1.endpoints import features, public_meeting, daily_webhook, auth, users, boards, cards, clients, persons, gamification, automations, transfers, reports, notifications, admin, card_tasks, card_notes, fields, products, integration_clients, api4com, audit_logs, attachments, user_avatar, custom_reports, ai, call_evaluations, cadencias, email_templates, cadences, service_boards, service_dashboard, service_activities, proposals, services, integration, service_products, reunioes, search, parcerias, consulta_cnpj, agente
 
 api_router = APIRouter()
 
@@ -44,6 +44,8 @@ api_router.include_router(call_evaluations.router, prefix="/call-evaluations", t
 api_router.include_router(reunioes.router, prefix="/reunioes", tags=["Reuniões"])
 # Busca geral (Ctrl+K) — Vendas + Serviço; os resultados de Serviço respeitam o acesso ao módulo.
 api_router.include_router(search.router, prefix="/search", tags=["Busca geral"])
+# Tela "Capacidade" do Guardi (HS.OS): só token de agente.
+api_router.include_router(agente.router, prefix="/agente", tags=["Agente (HS.OS)"])
 api_router.include_router(cadencias.router, prefix="/cadencias", tags=["Cadências"])
 api_router.include_router(cadences.router, prefix="/cadences", tags=["Cadências por Lead"])
 api_router.include_router(email_templates.router, prefix="/email-templates", tags=["Email Templates"])
