@@ -7,6 +7,8 @@ URL = "/api/v1/parcerias"
 NOVA = {
     "title": "Etilômetros", "deal_type": "Nova Venda", "sector": "Indústrias de Transformação",
     "relationship_type": "Prospect", "context": "Frota", "cnpj": CNPJ_B, "company_name": "Empresa B",
+    "company_city": "Santos", "company_state": "SP",
+    "contact_name": "Ana Souza", "contact_email": "ana@empresa.com", "contact_phone": "(11) 98888-7777",
 }
 
 

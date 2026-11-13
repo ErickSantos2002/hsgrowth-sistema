@@ -19,6 +19,43 @@ const LIMITE: Record<string, number> = {
 };
 
 /**
+ * O que escrever em cada campo (placeholder). "name", "email" e "phone" mudam de
+ * sentido de tela para tela (empresa, parceiro, vendedor): cada tela põe o seu.
+ */
+const DICA: Record<string, string> = {
+  cnpj: "00.000.000/0000-00",
+  company_name: "Razão social que consta no CNPJ",
+  company_segment: "Ex.: Transporte de cargas",
+  company_city: "Ex.: Recife",
+  company_state: "Ex.: PE",
+  contact_name: "Nome da pessoa com quem você fala na empresa",
+  contact_role: "Ex.: Gerente de SST, Compras",
+  contact_phone: "(00) 00000-0000",
+  contact_email: "nome@empresa.com.br",
+  main_contact_name: "Nome do responsável pela empresa",
+  main_contact_phone: "(00) 00000-0000",
+  main_contact_email: "nome@empresa.com.br",
+  partner_type: "Ex.: Revenda, consultoria de SST",
+  origin: "Ex.: Indicação, evento, LinkedIn",
+  segment: "Ex.: Segurança do trabalho",
+  region: "Ex.: Nordeste, Grande SP",
+};
+
+/**
+ * Empresa e contato da oportunidade vão para o cadastro geral (Clientes e Pessoas):
+ * obrigatórios, como no backend (OportunidadeCreate). O cargo é opcional.
+ */
+export const OBRIGATORIOS_EMPRESA_CONTATO = [
+  "company_name", "company_city", "company_state", "contact_name", "contact_phone", "contact_email",
+] as const;
+
+/** Campos obrigatórios que estão vazios. */
+export function faltando(form: object, campos: readonly string[]): string[] {
+  const f = form as Record<string, unknown>;
+  return campos.filter((c) => String(f[c] ?? "").trim() === "");
+}
+
+/**
  * CNPJ sem máscara e em maiúsculas. Desde jul/2026 a Receita emite CNPJ com
  * letras nas 12 primeiras posições (os 2 verificadores seguem números).
  */
@@ -82,6 +119,8 @@ export function propsDeTexto<F extends object>(form: F, setForm: (f: F) => void,
   return {
     value: ((form as Record<string, unknown>)[nome] as string) ?? "",
     maxLength: LIMITE[nome],
+    // Só quando há dica: a tela que põe o próprio placeholder não é sobrescrita.
+    ...(DICA[nome] && !desabilitado ? { placeholder: DICA[nome] } : {}),
     disabled: desabilitado,
     error: !!erroDoCampo(nome, (form as Record<string, unknown>)[nome]),
     inputMode: TELEFONE.includes(nome) || nome === "cnpj" ? ("numeric" as const) : undefined,

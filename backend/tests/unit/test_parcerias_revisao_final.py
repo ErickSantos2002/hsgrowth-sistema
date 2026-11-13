@@ -48,7 +48,7 @@ def test_evento_da_indicacao_nao_tem_o_nome_do_indicador(client, db, emails):
     _, uh = hunter(db, "João Hunter")
     r = client.post(f"{URL}/indicacoes", headers=headers(uh), json={
         "name": "Empresa Indicada", "cnpj": CNPJ_A, "main_contact_name": "Maria",
-        "main_contact_email": "maria@indicada.com"})
+        "main_contact_email": "maria@indicada.com", "main_contact_phone": "(81) 99999-0000"})
     assert r.status_code == 201, r.text
     p = db.query(Partner).filter(Partner.cnpj == CNPJ_A).one()
     textos = [a.description for a in db.query(PartnerActivity).filter(PartnerActivity.partner_id == p.id)]

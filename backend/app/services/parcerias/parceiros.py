@@ -67,8 +67,10 @@ def atualizar(db: Session, user: User, partner_id: int, dados: ParceiroUpdate) -
     if "name" in campos and campos["name"] is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "O nome do parceiro é obrigatório.")
     if not acesso.eh_gestao(user):
-        # O responsável H&S é escolha da H&S.
+        # A qualificação (responsável H&S, status e onboarding) é da gestão da H&S.
         campos.pop("hs_owner_id", None)
+        campos.pop("qualification_status", None)
+        campos.pop("onboarding_date", None)
         campos.pop("indicated_by_partner_id", None)
         # O CNPJ identifica o parceiro no Programa: só a gestão troca.
         campos.pop("cnpj", None)

@@ -7,6 +7,8 @@ NOVA = {
     "title": "Etilômetros", "deal_type": "Nova Venda", "sector": "Indústrias de Transformação",
     "relationship_type": "Prospect", "context": "Frota de 40 caminhões", "cnpj": CNPJ_A,
     "company_name": "Empresa A",
+    "company_city": "Santos", "company_state": "SP",
+    "contact_name": "Ana Souza", "contact_email": "ana@empresa.com", "contact_phone": "(11) 98888-7777",
 }
 
 

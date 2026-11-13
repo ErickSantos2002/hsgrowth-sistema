@@ -53,7 +53,7 @@ def test_liga_ao_cliente_existente_e_atualiza_o_preenchido(client, db):
     db.commit()
     _, h = _parceiro_logado(db)
 
-    client.post(URL, json={**NOVA, "company_state": None}, headers=h)
+    client.post(URL, json=NOVA, headers=h)
 
     assert db.query(Client).count() == 1
     db.refresh(existente)
@@ -82,19 +82,30 @@ def test_pessoa_achada_por_email_e_por_nome(client, db):
     _, h = _parceiro_logado(db)
 
     client.post(URL, json=NOVA, headers=h)
-    client.post(URL, json={**NOVA, "title": "Outra", "contact_name": "Bruno Lima", "contact_email": None}, headers=h)
+    client.post(URL, json={**NOVA, "title": "Outra", "contact_name": "Bruno Lima", "contact_email": "bruno@empresaa.com"}, headers=h)
 
     assert db.query(Person).count() == 2
     db.refresh(por_email)
     assert por_email.name == "Ana Souza" and por_email.phone_commercial == "(11) 98888-7777"
 
 
-def test_sem_contato_nao_cria_pessoa(client, db):
+def test_empresa_e_contato_sao_obrigatorios(client, db):
     _, h = _parceiro_logado(db)
 
-    client.post(URL, json={**NOVA, "contact_name": None}, headers=h)
+    for campo in ("contact_name", "contact_phone", "contact_email", "company_city", "company_state"):
+        assert client.post(URL, json={**NOVA, campo: None}, headers=h).status_code == 422, campo
+        assert client.post(URL, json={**NOVA, campo: "  "}, headers=h).status_code == 422, campo
 
     assert db.query(Person).count() == 0
+
+
+def test_edicao_nao_apaga_empresa_nem_contato(client, db):
+    _, h = _parceiro_logado(db)
+    op_id = client.post(URL, json=NOVA, headers=h).json()["id"]
+
+    for campo in ("contact_name", "contact_phone", "contact_email", "company_city", "company_state"):
+        assert client.put(f"{URL}/{op_id}", json={campo: None}, headers=h).status_code == 422, campo
+    assert client.put(f"{URL}/{op_id}", json={"contact_role": None, "contact_name": "Ana Lima"}, headers=h).status_code == 200
 
 
 def test_trocar_o_cnpj_religa(client, db, admin_headers):

@@ -7,7 +7,7 @@ import parceriasService, {
 } from "../../services/parceriasService";
 import { PERFIS_GESTAO } from "../../constants/parcerias";
 import { useAuth } from "../../hooks/useAuth";
-import { cnpjValido, errosDoForm, limparCnpj, propsDeTexto } from "./campos";
+import { OBRIGATORIOS_EMPRESA_CONTATO, cnpjValido, errosDoForm, faltando, limparCnpj, propsDeTexto } from "./campos";
 import ResultadoSemaforo from "./ResultadoSemaforo";
 
 interface Props {
@@ -76,8 +76,8 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
   const liberado = consultaValida && (consulta.resultado !== "vermelho" || gestao);
   const precisaJustificar = consultaValida && consulta.resultado === "vermelho" && gestao;
 
-  const obrigatorios = [form.title, form.deal_type, form.sector, form.relationship_type, form.context, form.cnpj, form.company_name];
-  const pronto = obrigatorios.every((v) => (v ?? "").toString().trim() !== "") && (!escolheParceiro || !!form.partner_id)
+  const obrigatorios = ["title", "deal_type", "sector", "relationship_type", "context", "cnpj", ...OBRIGATORIOS_EMPRESA_CONTATO];
+  const pronto = faltando(form, obrigatorios).length === 0 && (!escolheParceiro || !!form.partner_id)
     && Object.keys(erros).length === 0
     && liberado && (!precisaJustificar || !!form.cnpj_justificativa?.trim());
 
@@ -164,19 +164,33 @@ export default function NovaOportunidadeModal({ isOpen, parceiros, escolheParcei
         <FormField label="Setor da empresa" required className="sm:col-span-2">
           <SelectMenu value={form.sector ?? ""} placeholder="Escolha" options={opcoes(SECTORS)} onChange={(v) => setForm({ ...form, sector: v })} />
         </FormField>
-        <FormField label="Razão social / nome" required><Input {...texto("company_name")} /></FormField>
-        <FormField label="Cidade"><Input {...texto("company_city")} /></FormField>
-        <FormField label="UF" error={erros.company_state}><Input {...texto("company_state")} placeholder="SP" /></FormField>
         <FormField label="Contexto da indicação e necessidade" required className="sm:col-span-2"
           hint={`${(form.context ?? "").length}/2000`}>
-          <Textarea {...texto("context")} rows={3} />
+          <Textarea {...texto("context")} rows={3} placeholder="O que a empresa precisa, quantos aparelhos, prazo..." />
         </FormField>
-        <FormField label="Contato"><Input {...texto("contact_name")} /></FormField>
+
+        <TituloDoGrupo titulo="Empresa" texto="Vai para o cadastro de Clientes do CRM." />
+        <FormField label="Razão social" required className="sm:col-span-2"><Input {...texto("company_name")} /></FormField>
+        <FormField label="Cidade" required><Input {...texto("company_city")} /></FormField>
+        <FormField label="UF" required error={erros.company_state}><Input {...texto("company_state")} /></FormField>
+
+        <TituloDoGrupo titulo="Contato na empresa" texto="A pessoa com quem você negocia. Vai para o cadastro de Pessoas do CRM." />
+        <FormField label="Nome do contato" required><Input {...texto("contact_name")} /></FormField>
         <FormField label="Cargo"><Input {...texto("contact_role")} /></FormField>
-        <FormField label="Telefone" error={erros.contact_phone}><Input {...texto("contact_phone")} placeholder="(00) 00000-0000" /></FormField>
-        <FormField label="E-mail" error={erros.contact_email}><Input type="email" {...texto("contact_email")} placeholder="nome@empresa.com.br" /></FormField>
+        <FormField label="Telefone do contato" required error={erros.contact_phone}><Input {...texto("contact_phone")} /></FormField>
+        <FormField label="E-mail do contato" required error={erros.contact_email}><Input type="email" {...texto("contact_email")} /></FormField>
       </div>
       )}
     </BaseModal>
+  );
+}
+
+/** Separador entre os grupos do formulário (Empresa, Contato). */
+function TituloDoGrupo({ titulo, texto }: { titulo: string; texto: string }) {
+  return (
+    <div className="border-t border-gray-200 pt-3 dark:border-slate-700/50 sm:col-span-2">
+      <p className="text-sm font-semibold text-slate-900 dark:text-white">{titulo}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400">{texto}</p>
+    </div>
   );
 }

@@ -95,6 +95,13 @@ def _telefone_opcional(valor: Optional[str]) -> Optional[str]:
     return digitos
 
 
+def _obrigatorio(valor, mensagem: str):
+    """Campo que vai para o cadastro geral (Clientes e Pessoas): não pode ficar vazio."""
+    if valor is None:
+        raise ValueError(mensagem)
+    return valor
+
+
 def _uf_opcional(valor: Optional[str]) -> Optional[str]:
     valor = (valor or "").strip().upper()
     if not valor:
@@ -218,7 +225,7 @@ class IndicacaoCreate(BaseModel):
     cnpj: str
     main_contact_name: str = Field(..., min_length=1, max_length=255)
     main_contact_email: str = Field(..., max_length=255)
-    main_contact_phone: Optional[str] = Field(None, max_length=30)
+    main_contact_phone: str = Field(..., max_length=30)
     pix_key: Optional[str] = Field(None, max_length=140)
 
     @field_validator("cnpj")
@@ -229,10 +236,15 @@ class IndicacaoCreate(BaseModel):
             raise ValueError("Informe o CNPJ")
         return cnpj
 
+    @field_validator("main_contact_name")
+    @classmethod
+    def _validar_contato(cls, valor):
+        return _obrigatorio((valor or "").strip() or None, "Informe o nome do contato")
+
     @field_validator("main_contact_phone")
     @classmethod
     def _validar_telefone(cls, valor):
-        return _telefone_opcional(valor)
+        return _obrigatorio(_telefone_opcional(valor), "Informe o telefone do contato")
 
     @field_validator("main_contact_email")
     @classmethod
@@ -405,12 +417,13 @@ class OportunidadeCreate(BaseModel):
     cnpj: str
     company_name: str = Field(..., min_length=1, max_length=255)
     company_segment: Optional[str] = Field(None, max_length=255)
-    company_city: Optional[str] = Field(None, max_length=255)
-    company_state: Optional[str] = Field(None, max_length=2)
-    contact_name: Optional[str] = Field(None, max_length=255)
+    # Empresa e contato vão para o cadastro geral (Clientes e Pessoas): vêm completos.
+    company_city: str = Field(..., max_length=255)
+    company_state: str = Field(..., max_length=2)
+    contact_name: str = Field(..., max_length=255)
     contact_role: Optional[str] = Field(None, max_length=255)
-    contact_phone: Optional[str] = Field(None, max_length=30)
-    contact_email: Optional[str] = Field(None, max_length=255)
+    contact_phone: str = Field(..., max_length=30)
+    contact_email: str = Field(..., max_length=255)
     modality: Optional[Literal["venda", "locacao"]] = None
     # Só admin/gerente: cadastrar (ou trocar o CNPJ) mesmo com o semáforo vermelho.
     cnpj_justificativa: Optional[str] = Field(None, max_length=500)
@@ -422,20 +435,30 @@ class OportunidadeCreate(BaseModel):
             raise ValueError("CNPJ inválido")
         return normalizar_cnpj(valor)
 
+    @field_validator("company_city")
+    @classmethod
+    def _validar_cidade(cls, valor):
+        return _obrigatorio((valor or "").strip() or None, "Informe a cidade")
+
+    @field_validator("contact_name")
+    @classmethod
+    def _validar_contato(cls, valor):
+        return _obrigatorio((valor or "").strip() or None, "Informe o nome do contato")
+
     @field_validator("contact_phone")
     @classmethod
     def _validar_telefone(cls, valor):
-        return _telefone_opcional(valor)
+        return _obrigatorio(_telefone_opcional(valor), "Informe o telefone do contato")
 
     @field_validator("contact_email")
     @classmethod
     def _validar_email(cls, valor):
-        return _email_opcional(valor)
+        return _obrigatorio(_email_opcional(valor), "Informe o e-mail do contato")
 
     @field_validator("company_state")
     @classmethod
     def _validar_uf(cls, valor):
-        return _uf_opcional(valor)
+        return _obrigatorio(_uf_opcional(valor), "Informe a UF")
 
 
 class OportunidadeUpdate(BaseModel):
@@ -482,6 +505,20 @@ class OportunidadeUpdate(BaseModel):
     @classmethod
     def _validar_uf(cls, valor):
         return _uf_opcional(valor)
+
+    @field_validator("company_city", "company_state", "contact_name", "contact_phone", "contact_email", mode="after")
+    @classmethod
+    def _nao_apaga(cls, valor, info):
+        """Empresa e contato vão para Clientes e Pessoas: na edição, quem manda o campo não o deixa vazio."""
+        if valor is None or (isinstance(valor, str) and not valor.strip()):
+            raise ValueError(f"{ROTULO_OBRIGATORIO[info.field_name]} é obrigatório")
+        return valor
+
+
+ROTULO_OBRIGATORIO = {
+    "company_city": "Cidade", "company_state": "UF", "contact_name": "Nome do contato",
+    "contact_phone": "Telefone do contato", "contact_email": "E-mail do contato",
+}
 
 
 class ElegibilidadeRequest(BaseModel):

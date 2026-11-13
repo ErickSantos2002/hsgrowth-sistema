@@ -25,7 +25,7 @@ import parceriasService, {
 const CAMPOS_TEXTO: { nome: keyof ParceiroForm; label: string }[] = [
   { nome: "name", label: "Parceiro / empresa" },
   { nome: "cnpj", label: "CNPJ" },
-  { nome: "main_contact_name", label: "Contato principal" },
+  { nome: "main_contact_name", label: "Nome do contato principal" },
   { nome: "main_contact_phone", label: "Telefone do contato" },
   { nome: "main_contact_email", label: "E-mail do contato" },
   { nome: "partner_type", label: "Tipo de parceiro" },
@@ -329,15 +329,25 @@ export default function ParceiroDetalhe() {
             <div className="space-y-3">
               {CAMPOS_TEXTO.map(({ nome, label }) => (
                 <FormField key={nome} label={label} required={nome === "name"} error={erros[nome]}>
-                  <Input {...propsDeTexto(form, setForm, nome, !podeEditar || (nome === "cnpj" && !gestao))} />
+                  <Input
+                    {...propsDeTexto(form, setForm, nome, !podeEditar || (nome === "cnpj" && !gestao))}
+                    {...(nome === "name" && podeEditar ? { placeholder: "Razão social do parceiro" } : {})}
+                  />
                 </FormField>
               ))}
               {podeEditar && <Button onClick={salvar} fullWidth disabled={!form.name?.trim() || temErro(erros)}>Salvar</Button>}
             </div>
           </ExpandableSection>
 
+          {/* Qualificação: só admin e gerente mudam; os outros acompanham. */}
           <ExpandableSection title="Qualificação" icon={<ClipboardCheck size={18} />}>
             <div className="space-y-3">
+              {/* Quem trouxe a empresa (a empresa indicada não recebe esse nome do backend). */}
+              {parceiro.indicated_by_name && !ehHunterCard && (
+                <FormField label="Hunter responsável" hint="Quem indicou a empresa ao Programa.">
+                  <Input value={parceiro.indicated_by_name} disabled readOnly />
+                </FormField>
+              )}
               <FormField label="Responsável H&S">
                 {gestao ? (
                   <SelectMenu
@@ -353,8 +363,8 @@ export default function ParceiroDetalhe() {
               <FormField label="Status de qualificação">
                 <SelectMenu
                   value={form.qualification_status ?? ""}
-                  placeholder="Escolha"
-                  disabled={!podeEditar}
+                  placeholder={gestao ? "Escolha" : "Não informado"}
+                  disabled={!gestao}
                   options={QUALIFICACAO_OPCOES}
                   onChange={(v) => setForm({ ...form, qualification_status: v })}
                 />
@@ -363,11 +373,11 @@ export default function ParceiroDetalhe() {
                 <Input
                   type="date"
                   value={form.onboarding_date ?? ""}
-                  disabled={!podeEditar}
+                  disabled={!gestao}
                   onChange={(e) => setForm({ ...form, onboarding_date: e.target.value })}
                 />
               </FormField>
-              {podeEditar && <Button onClick={salvar} fullWidth>Salvar</Button>}
+              {gestao && <Button onClick={salvar} fullWidth>Salvar</Button>}
             </div>
           </ExpandableSection>
 

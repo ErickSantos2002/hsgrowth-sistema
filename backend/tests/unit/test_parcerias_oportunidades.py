@@ -17,6 +17,8 @@ NOVA = {
     "title": "Etilômetros Empresa A", "deal_type": "Nova Venda",
     "sector": "Indústrias de Transformação", "relationship_type": "Prospect",
     "context": "Frota de 40 caminhões", "cnpj": "11.222.333/0001-81", "company_name": "Empresa A",
+    "company_city": "Santos", "company_state": "SP",
+    "contact_name": "Ana Souza", "contact_email": "ana@empresa.com", "contact_phone": "(11) 98888-7777",
 }
 
 

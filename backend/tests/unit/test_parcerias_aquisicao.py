@@ -30,7 +30,10 @@ def test_vendedor_acompanha_o_parceiro_mas_nao_cadastra_nem_cria_acesso(client, 
     p = parceiro(db, hs_owner_id=vendedor.id)
     h = headers(vendedor)
 
-    assert client.put(f"{URL}/parceiros/{p.id}", json={"onboarding_date": "2026-11-03"}, headers=h).status_code == 200
+    resposta = client.put(f"{URL}/parceiros/{p.id}", json={"segment": "Transporte", "onboarding_date": "2026-11-03"}, headers=h)
+    assert resposta.status_code == 200
+    assert resposta.json()["segment"] == "Transporte"
+    assert resposta.json()["onboarding_date"] is None   # qualificação é da gestão
     assert client.post(f"{URL}/parceiros/{p.id}/equipe", json={"name": "Ana"}, headers=h).status_code == 201
     assert client.post(f"{URL}/parceiros", json={"name": "Novo"}, headers=h).status_code == 403
     assert client.get(f"{URL}/parceiros/{p.id}/acessos", headers=h).status_code == 403

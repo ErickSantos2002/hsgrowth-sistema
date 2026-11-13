@@ -12,7 +12,7 @@ import EtapasParceria from "../../components/parcerias/EtapasParceria";
 import ModalTrava, { faltasParaMover, temFalta } from "../../components/parcerias/ModalTrava";
 import CalibracoesDaOportunidade from "../../components/parcerias/CalibracoesDaOportunidade";
 import ProdutosDaOportunidade from "../../components/parcerias/ProdutosDaOportunidade";
-import { errosDoForm, paraTela, propsDeTexto } from "../../components/parcerias/campos";
+import { OBRIGATORIOS_EMPRESA_CONTATO, errosDoForm, faltando, paraTela, propsDeTexto } from "../../components/parcerias/campos";
 import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
 import { DEAL_TYPES, LOSS_REASONS_ACQUISITION, RELATIONSHIP_TYPES, SECTORS } from "../../constants/blueprintOptions";
@@ -162,7 +162,13 @@ export default function OportunidadeDetalhe() {
 
   const texto = (nome: keyof OportunidadeForm & string) => propsDeTexto(form, setForm, nome, !podeEditar);
   const erros = errosDoForm(form);
-  const podeSalvar = Object.keys(erros).length === 0;
+  // Oportunidade antiga pode ter vindo sem contato: o Salvar pede para completar.
+  const faltam = podeEditar ? faltando(form, OBRIGATORIOS_EMPRESA_CONTATO) : [];
+  const podeSalvar = Object.keys(erros).length === 0 && faltam.length === 0;
+  const erroDe = (nome: string) => erros[nome] ?? (faltam.includes(nome) ? "Obrigatório" : undefined);
+  const avisoFaltam = faltam.length > 0 && (
+    <p className="text-xs text-amber-600 dark:text-amber-400">Complete os campos obrigatórios de Empresa e contato para salvar.</p>
+  );
 
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -251,7 +257,7 @@ export default function OportunidadeDetalhe() {
                     CNPJ no cadastro: {SEMAFORO_LABEL[op.cnpj_resultado]}
                     {op.cnpj_motivo && op.cnpj_motivo !== "livre" && ` · ${MOTIVO_SEMAFORO[op.cnpj_motivo]}`}
                   </div>
-                  {op.cnpj_resultado === "amarelo" && <p className="mt-0.5">Outra unidade em negociação — analisar.</p>}
+                  {op.cnpj_resultado === "amarelo" && <p className="mt-0.5">Outra unidade da empresa já está com a H&amp;S ou com um parceiro — analisar.</p>}
                   {op.cnpj_justificativa && (
                     <p className="mt-0.5 text-slate-600 dark:text-slate-300">
                       Liberado por {op.cnpj_liberado_por_name}: {op.cnpj_justificativa}
@@ -355,6 +361,7 @@ export default function OportunidadeDetalhe() {
               <FormField label="Contexto da indicação" required hint={`${(form.context ?? "").length}/2000`}>
                 <Textarea {...texto("context")} rows={3} />
               </FormField>
+              {podeEditar && avisoFaltam}
               {podeEditar && <Button onClick={salvar} fullWidth disabled={!podeSalvar}>Salvar</Button>}
             </div>
           </ExpandableSection>
@@ -370,14 +377,17 @@ export default function OportunidadeDetalhe() {
                 </div>
               )}
               <FormField label="CNPJ" required error={erros.cnpj}><Input {...texto("cnpj")} placeholder="00.000.000/0000-00" /></FormField>
-              <FormField label="Razão social / nome" required><Input {...texto("company_name")} /></FormField>
+              <FormField label="Razão social" required error={erroDe("company_name")}><Input {...texto("company_name")} /></FormField>
               <FormField label="Segmento"><Input {...texto("company_segment")} /></FormField>
-              <FormField label="Cidade"><Input {...texto("company_city")} /></FormField>
-              <FormField label="UF" error={erros.company_state}><Input {...texto("company_state")} placeholder="SP" /></FormField>
-              <FormField label="Contato"><Input {...texto("contact_name")} /></FormField>
+              <FormField label="Cidade" required error={erroDe("company_city")}><Input {...texto("company_city")} /></FormField>
+              <FormField label="UF" required error={erroDe("company_state")}><Input {...texto("company_state")} /></FormField>
+              <p className="border-t border-gray-200 pt-3 text-xs text-slate-500 dark:border-slate-700/50 dark:text-slate-400">
+                Contato: a pessoa com quem se negocia na empresa (vai para Pessoas do CRM).
+              </p>
+              <FormField label="Nome do contato" required error={erroDe("contact_name")}><Input {...texto("contact_name")} /></FormField>
               <FormField label="Cargo"><Input {...texto("contact_role")} /></FormField>
-              <FormField label="Telefone" error={erros.contact_phone}><Input {...texto("contact_phone")} placeholder="(00) 00000-0000" /></FormField>
-              <FormField label="E-mail" error={erros.contact_email}><Input type="email" {...texto("contact_email")} placeholder="nome@empresa.com.br" /></FormField>
+              <FormField label="Telefone do contato" required error={erroDe("contact_phone")}><Input {...texto("contact_phone")} /></FormField>
+              <FormField label="E-mail do contato" required error={erroDe("contact_email")}><Input type="email" {...texto("contact_email")} /></FormField>
               {podeEditar && <Button onClick={salvar} fullWidth disabled={!podeSalvar}>Salvar</Button>}
             </div>
           </ExpandableSection>

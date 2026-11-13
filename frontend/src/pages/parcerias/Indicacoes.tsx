@@ -21,7 +21,8 @@ function IndicarModal({ isOpen, onClose, onFeito }: { isOpen: boolean; onClose: 
   useEffect(() => { if (isOpen) setForm(VAZIO); }, [isOpen]);
 
   const erros = errosDoForm(form);
-  const valido = !!form.name.trim() && !!form.cnpj && !!form.main_contact_name.trim() && !!form.main_contact_email.trim() && Object.keys(erros).length === 0;
+  const valido = !!form.name.trim() && !!form.cnpj && !!form.main_contact_name.trim() && !!form.main_contact_email.trim()
+    && !!form.main_contact_phone.trim() && Object.keys(erros).length === 0;
   const campo = (nome: keyof typeof VAZIO) => ({
     value: form[nome],
     error: !!erros[nome],
@@ -37,7 +38,7 @@ function IndicarModal({ isOpen, onClose, onFeito }: { isOpen: boolean; onClose: 
         cnpj: limparCnpj(form.cnpj),
         main_contact_name: form.main_contact_name.trim(),
         main_contact_email: form.main_contact_email.trim(),
-        ...(form.main_contact_phone.trim() ? { main_contact_phone: form.main_contact_phone.trim() } : {}),
+        main_contact_phone: form.main_contact_phone.trim(),
         ...(form.pix_key.trim() ? { pix_key: form.pix_key.trim() } : {}),
       });
       onFeito(form.main_contact_email.trim(), r.email_enviado);
@@ -63,16 +64,22 @@ function IndicarModal({ isOpen, onClose, onFeito }: { isOpen: boolean; onClose: 
       }
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label="Empresa" required className="sm:col-span-2"><Input {...campo("name")} /></FormField>
+        <FormField label="Empresa (razão social)" required className="sm:col-span-2">
+          <Input {...campo("name")} placeholder="Razão social da empresa que você indica" />
+        </FormField>
         <FormField label="CNPJ" required error={erros.cnpj}><Input {...campo("cnpj")} inputMode="numeric" placeholder="00.000.000/0000-00" /></FormField>
-        <FormField label="Contato principal" required><Input {...campo("main_contact_name")} /></FormField>
-        <FormField label="E-mail do contato" required error={erros.main_contact_email}>
+        <FormField label="Nome do contato principal" required hint="Quem vai cuidar da parceria na empresa.">
+          <Input {...campo("main_contact_name")} placeholder="Nome completo do responsável" />
+        </FormField>
+        <FormField label="E-mail do contato" required error={erros.main_contact_email} hint="Recebe o convite e vira o login dele no CRM.">
           <Input type="email" {...campo("main_contact_email")} placeholder="nome@empresa.com.br" />
         </FormField>
-        <FormField label="Telefone do contato" error={erros.main_contact_phone}>
+        <FormField label="Telefone do contato" required error={erros.main_contact_phone}>
           <Input {...campo("main_contact_phone")} maxLength={15} inputMode="numeric" placeholder="(00) 00000-0000" />
         </FormField>
-        <FormField label="Chave PIX da empresa" className="sm:col-span-2"><Input {...campo("pix_key")} maxLength={140} /></FormField>
+        <FormField label="Chave PIX da empresa" hint="Opcional: a própria empresa pode informar depois." className="sm:col-span-2">
+          <Input {...campo("pix_key")} maxLength={140} placeholder="CNPJ, e-mail, telefone ou chave aleatória" />
+        </FormField>
       </div>
     </BaseModal>
   );

@@ -22,7 +22,7 @@ def emails(monkeypatch):
 
 def _dados(**campos):
     base = {"name": "Empresa Indicada", "cnpj": CNPJ_A, "main_contact_name": "Maria",
-            "main_contact_email": "maria@indicada.com"}
+            "main_contact_email": "maria@indicada.com", "main_contact_phone": "(81) 99999-0000"}
     base.update(campos)
     return base
 
