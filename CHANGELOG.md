@@ -7,6 +7,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não lançado]
 
+---
+
+## [1.11.21] — 13/11/2026
+
 ### Adicionado
 - **Token de agente do HS.OS (Guardi):** o assistente de cada colaborador, que roda no HS.OS, passa a agir no HSGrowth como a própria pessoa, com a função dela. Vale para Vendas (vendedor) e Serviços.
   - Token JWT EdDSA de 5 minutos (`iss=hsos`, `aud=hsgrowth`), verificado com a chave pública do HS.OS na env **`HSOS_AGENTE_CHAVE_PUBLICA`**. Sem a env, o token é recusado e nada muda.

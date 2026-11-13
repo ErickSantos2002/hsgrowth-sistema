@@ -25,6 +25,32 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.21",
+    date: "13/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Hunter e Parceiro passam a ser criados em Usuários (modal Novo Usuário), com convite por e-mail ou senha inicial. Bloquear/desbloquear o hunter fica na edição do usuário.",
+      },
+      {
+        type: "improvement",
+        text: "Termos e Comissões viraram abas de Configurações. O Financeiro vê a aba Comissões só para leitura.",
+      },
+      {
+        type: "improvement",
+        text: "Telas de Parcerias no padrão do CRM: Comissões, Indicações, Dashboard, Consulta de CNPJ e Configurações com o mesmo cabeçalho, tabelas paginadas de 10 em 10, cards de resumo e ações em botões de ícone.",
+      },
+      {
+        type: "feature",
+        text: "Calibrações agrupadas por aparelho, mostrando quantas das 2 recorrências com comissão já foram usadas e, em cada calibração, a ordem, a data, o valor e se a comissão está Pendente ou Paga.",
+      },
+      {
+        type: "fix",
+        text: "Busca de clientes por CPF/CNPJ encontra também os cadastrados com pontuação quando você digita só os números.",
+      },
+    ],
+  },
+  {
     version: "1.11.20",
     date: "12/11/2026",
     entries: [
