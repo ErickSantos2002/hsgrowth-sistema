@@ -4,7 +4,7 @@ import { Eye, Grid3x3, Handshake, RefreshCw, Search } from "lucide-react";
 import EmptyState from "../../components/common/EmptyState";
 import { useAuth } from "../../hooks/useAuth";
 import { showError } from "../../utils/toast";
-import { BOARDS_PARCERIAS, BoardParceria, PERFIS_DO_PARCEIRO } from "../../constants/parcerias";
+import { BOARDS_PARCERIAS, BoardParceria } from "../../constants/parcerias";
 import parceriasService, { mensagemDeErro } from "../../services/parceriasService";
 
 interface Contagem {
@@ -66,7 +66,9 @@ export default function ParceriasHome() {
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [contagens, setContagens] = useState<Record<string, Contagem>>({});
-  const ehParceiro = PERFIS_DO_PARCEIRO.includes(user?.role ?? "");
+  // O vendedor do parceiro só tem o Pipeline; o dono e o hunter veem os dois boards (na Aquisição, só os
+  // próprios cards e os das empresas que indicaram).
+  const soPipeline = user?.role === "partner_member";
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -88,12 +90,10 @@ export default function ParceriasHome() {
   }, []);
 
   useEffect(() => {
-    if (!ehParceiro) carregar();
-  }, [carregar, ehParceiro]);
+    if (!soPipeline) carregar();
+  }, [carregar, soPipeline]);
 
-  // Parceiro e hunter trabalham no Pipeline (filtro Minhas / Das indicadas / Todas);
-  // as empresas indicadas ficam em Indicações, no menu ao lado.
-  if (ehParceiro) return <Navigate to="/parcerias/oportunidades" replace />;
+  if (soPipeline) return <Navigate to="/parcerias/oportunidades" replace />;
 
   const termo = busca.trim().toLowerCase();
   const boards = BOARDS_PARCERIAS.filter(

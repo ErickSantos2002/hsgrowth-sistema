@@ -7,6 +7,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não lançado]
 
+### Alterado
+- **Menu do parceiro e do hunter:** Dashboard, Boards (Parcerias), Consulta de CNPJ, Indicações, Comissões e Configurações, nessa ordem. "Boards (Parcerias)" abre a tela com os dois boards, como para a H&S: na Aquisição, o dono vê o próprio card e o hunter vê as empresas que indicou. O vendedor do parceiro continua indo direto ao Pipeline ("Oportunidades").
+
 ---
 
 ## [1.11.22] — 13/11/2026

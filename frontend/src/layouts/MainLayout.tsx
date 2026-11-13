@@ -36,7 +36,7 @@ import GlobalSearch from "../components/GlobalSearch";
 import { UserAvatar } from "../components/common";
 import ChangelogModal from "../components/common/ChangelogModal";
 import { AgentGrowthWidget } from "../components/agentGrowth";
-import { PERFIS_COMISSOES, PERFIS_CONSULTA_CNPJ, PERFIS_DO_PARCEIRO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM, PERFIS_TRANCADOS } from "../constants/parcerias";
+import { PERFIS_COMISSOES, PERFIS_CONSULTA_CNPJ, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM, PERFIS_TRANCADOS } from "../constants/parcerias";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -191,7 +191,12 @@ export default function MainLayout() {
                     {/* Menu Items */}
                     <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
                         <ul className="space-y-2 font-medium">
-                            {menuItems.map((item) => {
+                            {/* Perfis presos a Parcerias: Dashboard primeiro, depois os Boards. */}
+                            {(trancado
+                                ? [...menuItems].sort((a, b) =>
+                                      Number(b.path === "/parcerias/dashboard") - Number(a.path === "/parcerias/dashboard"))
+                                : menuItems
+                            ).map((item) => {
                                 // Ocultar itens de admin se o usuário não for admin
                                 if (item.adminOnly && user?.role !== "admin") {
                                     return null;
@@ -253,9 +258,8 @@ export default function MainLayout() {
                                 }
 
                                 const Icon = item.icon;
-                                // Para o parceiro e o hunter, "/parcerias" abre o Pipeline (as oportunidades);
-                                // as empresas indicadas ficam no item "Indicações".
-                                const rotulo = item.path === "/parcerias" && PERFIS_DO_PARCEIRO.includes(user?.role ?? "")
+                                // O vendedor do parceiro só tem o Pipeline: "/parcerias" abre direto nas oportunidades.
+                                const rotulo = item.path === "/parcerias" && user?.role === "partner_member"
                                     ? "Oportunidades"
                                     : item.label;
 
