@@ -12,7 +12,8 @@ from app.db.base import Base
 
 
 class PartnerCommissionConfig(Base):
-    """Uma linha só: Y% venda própria, X% indicação, bônus da 1ª venda, prazo e Z% calibração."""
+    """Uma linha só: Y% venda própria (empresa e hunter), X% indicação, bônus da 1ª venda, prazo,
+    Z% calibração (renovação) e a anuidade de referência da previsão das renovações."""
     __tablename__ = "partner_commission_config"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -21,6 +22,8 @@ class PartnerCommissionConfig(Base):
     first_sale_bonus = Column(Numeric(12, 2), nullable=False, default=0)
     indication_months = Column(Integer, nullable=False, default=24)
     calibration_pct = Column(Numeric(5, 2), nullable=False, default=0)
+    hunter_own_sale_pct = Column(Numeric(5, 2), nullable=False, default=0)
+    annual_fee_reference = Column(Numeric(12, 2), nullable=False, default=0)  # só para a previsão
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     updated_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 

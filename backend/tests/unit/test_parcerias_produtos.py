@@ -1,4 +1,4 @@
-"""Produtos da oportunidade de parceiro: só produto liberado, desconto por linha, desconto geral e frete."""
+"""Produtos da oportunidade de parceiro: só produto liberado, preço do catálogo, desconto 0/2/4/6% e frete."""
 from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductUpdate
 from app.services.product_service import ProductService
@@ -55,35 +55,16 @@ def test_produto_nao_liberado_ou_repetido_da_422(client, db):
     assert repetido.status_code == 422
 
 
-def test_desconto_da_linha_nao_passa_do_valor_da_linha(client, db):
-    op, h = _cenario(db)
-    item = client.post(f"{URL}/{op.id}/produtos", json={"product_id": _produto(db).id, "quantity": 2},
-                       headers=h).json()
-
-    assert client.put(f"{URL}/{op.id}/produtos/{item['id']}", json={"discount": 2500}, headers=h).status_code == 422
-    certo = client.put(f"{URL}/{op.id}/produtos/{item['id']}",
-                       json={"discount": 300, "unit_price": 1000, "quantity": 2}, headers=h).json()
-    assert (certo["subtotal"], certo["discount"], certo["total"]) == (2000, 300, 1700)
-    # Baixar a quantidade com o desconto acima do novo valor também é recusado.
-    assert client.put(f"{URL}/{op.id}/produtos/{item['id']}", json={"unit_price": 100}, headers=h).status_code == 422
-
-
 def test_valor_com_desconto_geral_e_frete(client, db):
     op, h = _cenario(db)
-    item = client.post(f"{URL}/{op.id}/produtos", json={"product_id": _produto(db).id, "quantity": 2},
-                       headers=h).json()
-    client.put(f"{URL}/{op.id}/produtos/{item['id']}", json={"discount": 300}, headers=h)
+    client.post(f"{URL}/{op.id}/produtos", json={"product_id": _produto(db).id, "quantity": 2}, headers=h)
 
-    pct = client.put(f"{URL}/{op.id}", json={"global_discount": 10, "global_discount_type": "percent",
+    pct = client.put(f"{URL}/{op.id}", json={"global_discount": 6, "global_discount_type": "percent",
                                              "shipping": 50}, headers=h).json()
-    assert (pct["global_discount"], pct["global_discount_type"], pct["shipping"]) == (10, "percent", 50)
-    assert pct["total_value"] == 1700 - 170 + 50
-
-    tudo = client.put(f"{URL}/{op.id}", json={"global_discount": 5000, "global_discount_type": "value"},
-                      headers=h).json()
-    assert tudo["total_value"] == 0  # nunca negativo
+    assert (pct["global_discount"], pct["global_discount_type"], pct["shipping"]) == (6, "percent", 50)
+    assert pct["total_value"] == 2000 - 120 + 50
     [no_board] = client.get(URL, headers=h).json()
-    assert no_board["total_value"] == 0
+    assert no_board["total_value"] == 1930
 
 
 def test_desconto_geral_invalido(client, db):

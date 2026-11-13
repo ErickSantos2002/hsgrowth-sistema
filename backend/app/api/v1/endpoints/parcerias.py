@@ -19,6 +19,7 @@ from app.schemas.parcerias import (
     APagarBeneficiario,
     CalibracaoCreate,
     CalibracaoResponse,
+    CalibracoesDaOportunidadeResponse,
     ComissaoConfigResponse,
     ComissaoConfigUpdate,
     ComissaoResponse,
@@ -27,6 +28,7 @@ from app.schemas.parcerias import (
     DashFiltros,
     PagarRequest,
     PagarResponse,
+    TabelaDescontoResponse,
     AcessoCreate,
     AcessoCriadoResponse,
     AcessoMembroCreate,
@@ -416,6 +418,12 @@ def salvar_config_comissoes(dados: ComissaoConfigUpdate, db: Session = Depends(g
     return comissoes.salvar_config(db, current_user, dados)
 
 
+@router.get("/comissoes/tabela-desconto", response_model=TabelaDescontoResponse)
+def tabela_de_desconto(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    """Valores da apresentação comercial: qualquer perfil de Parcerias pode ver."""
+    return comissoes.tabela_de_desconto(db)
+
+
 @router.get("/comissoes", response_model=List[ComissaoResponse])
 def listar_comissoes(status: Optional[str] = Query(None, pattern="^(pendente|paga|cancelada)$"),
                      beneficiario: Optional[int] = None, de: Optional[date] = None, ate: Optional[date] = None,
@@ -449,7 +457,7 @@ def pagar_comissoes(dados: PagarRequest, db: Session = Depends(get_db),
     return comissoes.pagar(db, current_user, dados)
 
 
-@router.get("/oportunidades/{opportunity_id}/calibracoes", response_model=List[CalibracaoResponse])
+@router.get("/oportunidades/{opportunity_id}/calibracoes", response_model=CalibracoesDaOportunidadeResponse)
 def listar_calibracoes(opportunity_id: int, db: Session = Depends(get_db),
                        current_user: User = Depends(get_current_active_user)):
     return comissoes.listar_calibracoes(db, current_user, opportunity_id)

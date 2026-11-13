@@ -197,7 +197,7 @@ def test_reancora_sem_outra_venda_com_lancamento_limpa(client, db, admin_headers
 def test_desfazer_ganho_cancela_calibracao_pendente_e_mantem_paga(client, db, admin_headers):
     config_comissoes(db, y=10, x=5, bonus=100, z=8)
     a = parceiro(db, "Dmap")
-    op = oportunidade_ganha(db, a, 1000, modality="venda")
+    op = oportunidade_ganha(db, a, 1000, quantidade=2, modality="venda")  # SN1 e SN2
     _confirmar(client, op, admin_headers)
     corpo = {"calibration_date": "2026-11-01", "value": "200"}
     for s in ("SN1", "SN2"):

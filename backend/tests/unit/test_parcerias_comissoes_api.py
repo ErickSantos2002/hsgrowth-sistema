@@ -185,7 +185,8 @@ def test_calibracao_gera_z_para_empresa(client, db, admin_headers):
     assert (c.beneficiary_partner_id, c.rate, c.base_value, c.status) == (a.id, Decimal("8.00"), Decimal("200.00"), "pendente")
     assert c.calibration_id == r.json()["id"]
     lista = client.get(f"{URL}/oportunidades/{op_a.id}/calibracoes", headers=headers(a_user))
-    assert lista.status_code == 200 and len(lista.json()) == 1
+    assert lista.status_code == 200
+    assert lista.json()["aparelhos"][0]["renovacoes"][0]["calibracao"]["id"] == r.json()["id"]
     # Dono não lança
     assert client.post(f"{URL}/oportunidades/{op_a.id}/calibracoes", headers=headers(a_user),
                        json={"serial_number": "SN1", "calibration_date": "2026-11-01", "value": "1"}).status_code == 403
@@ -201,7 +202,10 @@ def test_calibracao_nao_gera_para_venda_do_hunter(client, db, admin_headers):
 
 
 def test_calibracao_limite_de_duas_por_serie(client, db, admin_headers):
-    _, _, _, _, op_a, _ = _cenario(client, db, admin_headers)
+    config_comissoes(db, y=10, x=5, bonus=100, z=8)
+    a = parceiro(db, "Dmap")
+    op_a = oportunidade_ganha(db, a, 1000, quantidade=2, modality="venda")  # 2 aparelhos: SN1 e SN2
+    _confirmar(client, op_a, admin_headers)
     corpo = {"serial_number": "SN1", "calibration_date": "2026-11-01", "value": "100"}
     for _ in range(2):
         assert client.post(f"{URL}/oportunidades/{op_a.id}/calibracoes", json=corpo,
@@ -226,9 +230,10 @@ def test_calibracao_mostra_recorrencia_e_situacao_da_comissao(client, db, admin_
     # Paga a comissão da 1ª calibração
     c1 = db.query(PartnerCommission).filter_by(calibration_id=r1["id"]).one()
     assert client.post(f"{URL}/comissoes/pagar", json={"ids": [c1.id]}, headers=admin_headers).status_code == 200
-    lista = client.get(f"{URL}/oportunidades/{op_a.id}/calibracoes", headers=headers(a_user)).json()
-    assert [(c["recorrencia"], c["commission_status"]) for c in lista] == [(1, "paga"), (2, "pendente")]
-    assert lista[0]["commission_paid_at"] is not None and lista[1]["commission_paid_at"] is None
+    t = client.get(f"{URL}/oportunidades/{op_a.id}/calibracoes", headers=headers(a_user)).json()
+    rv = [x["calibracao"] for x in t["aparelhos"][0]["renovacoes"]]
+    assert [(c["recorrencia"], c["commission_status"]) for c in rv] == [(1, "paga"), (2, "pendente")]
+    assert rv[0]["commission_paid_at"] is not None and rv[1]["commission_paid_at"] is None
 
 
 def test_calibracao_sem_comissao_nao_tem_recorrencia(client, db, admin_headers):

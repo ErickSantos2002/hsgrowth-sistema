@@ -4,8 +4,10 @@ cancelados quando o ganho é desfeito antes do pagamento.
 
 Regras (spec 2026-11-11, §4.1-4.2 e §8):
 - Só venda gera comissão (`locacao` não; `modality` nula conta como venda).
-- Base = produtos − desconto geral, sem o frete, nunca negativa.
-- Y% venda própria para quem vendeu (empresa ou hunter), sem prazo.
+- Base = preço cheio (Σ quantidade × preço, travado no catálogo), sem desconto e sem frete
+  (spec 2026-11-13).
+- Venda própria para quem vendeu, sem prazo: % da empresa ou % do hunter, menos meio ponto
+  por ponto de desconto (0, 2, 4 ou 6%). X% e bônus nunca mudam com o desconto.
 - X% indicação + bônus fixo da primeira venda para o indicador da hora da
   confirmação (não excluído e não bloqueado). O X% vale até `âncora + meses`
   (meses de calendário), contando da primeira venda confirmada de quem vendeu.
@@ -28,7 +30,8 @@ from sqlalchemy.orm import Session
 
 from app.models.partner import Partner
 from app.models.partner_commission import PartnerCalibration, PartnerCommission, PartnerCommissionConfig
-from app.models.partner_opportunity import PartnerOpportunity
+from app.models.partner_opportunity import PartnerOpportunity, PartnerOpportunityProduct
+from app.models.product import Product
 from app.models.user import User
 from app.services.parcerias import acesso, respostas
 
@@ -37,6 +40,11 @@ ZERO = Decimal("0.00")
 ATIVOS = ("pendente", "paga")
 FUSO = ZoneInfo("America/Sao_Paulo")
 MESES_PADRAO = 24
+# Desconto da oportunidade de parceria (spec 2026-11-13): só estes percentuais, e cada ponto
+# de desconto tira meio ponto da comissão de venda própria de quem vendeu.
+DESCONTOS_PERMITIDOS = (0, 2, 4, 6)
+REDUCAO_POR_PONTO = Decimal("0.5")
+MSG_DESCONTO = "Desconto permitido: 0%, 2%, 4% ou 6%."
 
 
 def _dinheiro(valor) -> Decimal:
@@ -49,10 +57,33 @@ def base_sem_frete(db: Session, op: PartnerOpportunity) -> Decimal:
     return max(ZERO, respostas.produtos_menos_desconto(total, op))
 
 
+def preco_cheio(db: Session, op: PartnerOpportunity) -> Decimal:
+    """Σ quantidade × preço dos produtos, sem desconto e sem frete. Base das comissões de venda:
+    com o preço travado no catálogo, é o preço cheio do aparelho."""
+    total = db.query(func.coalesce(func.sum(
+        PartnerOpportunityProduct.quantity * PartnerOpportunityProduct.unit_price), 0,
+    )).filter(PartnerOpportunityProduct.opportunity_id == op.id).scalar()
+    return _dinheiro(total)
+
+
+def desconto_da_oportunidade(op: PartnerOpportunity) -> Decimal:
+    """% do desconto geral. Desconto antigo em R$ (antes da 1.11.22) não reduz a taxa."""
+    if op.global_discount_type != "percent":
+        return ZERO
+    return Decimal(str(op.global_discount or 0))
+
+
+def taxa_com_desconto(pct, desconto) -> Decimal:
+    """Venda própria: cada ponto de desconto tira meio ponto da taxa; nunca abaixo de zero."""
+    taxa = Decimal(str(pct or 0)) - Decimal(str(desconto or 0)) * REDUCAO_POR_PONTO
+    return max(ZERO, taxa).quantize(CENTAVO, rounding=ROUND_HALF_UP)
+
+
 def _padrao() -> PartnerCommissionConfig:
     """Configuração enquanto a H&S não salvou nenhuma: tudo zero, prazo de 24 meses (não gravada)."""
-    return PartnerCommissionConfig(own_sale_pct=0, indication_pct=0, first_sale_bonus=0,
-                                   indication_months=MESES_PADRAO, calibration_pct=0)
+    return PartnerCommissionConfig(own_sale_pct=0, hunter_own_sale_pct=0, indication_pct=0,
+                                   first_sale_bonus=0, indication_months=MESES_PADRAO,
+                                   calibration_pct=0, annual_fee_reference=0)
 
 
 def _config(db: Session) -> PartnerCommissionConfig:
@@ -142,8 +173,10 @@ def gerar(db: Session, op: PartnerOpportunity, agora: datetime) -> List[PartnerC
         return []
     vendedor = _travar_vendedor(db, op.partner_id)
     cfg = _config(db)
-    base = base_sem_frete(db, op)
-    gerados = [_lancar(db, op, "venda_propria", vendedor.id, base, agora, rate=cfg.own_sale_pct)]
+    cheio = preco_cheio(db, op)
+    pct = cfg.hunter_own_sale_pct if vendedor.kind == "hunter" else cfg.own_sale_pct
+    taxa = taxa_com_desconto(pct, desconto_da_oportunidade(op))
+    gerados = [_lancar(db, op, "venda_propria", vendedor.id, cheio, agora, rate=taxa)]
     if not _programa_ativo(cfg):
         # Sem X% nem bônus, nada de indicação e a âncora não é gravada.
         db.flush()
@@ -158,11 +191,11 @@ def gerar(db: Session, op: PartnerOpportunity, agora: datetime) -> List[PartnerC
     indicador = _indicador(db, vendedor)
     if indicador is not None:
         if primeira:
-            gerados.append(_lancar(db, op, "bonus_primeira_venda", indicador.id, base, agora,
+            gerados.append(_lancar(db, op, "bonus_primeira_venda", indicador.id, cheio, agora,
                                    fixed_value=cfg.first_sale_bonus))
         prazo = vendedor.first_sale_at + relativedelta(months=int(cfg.indication_months or MESES_PADRAO))
         if agora <= prazo:
-            gerados.append(_lancar(db, op, "indicacao", indicador.id, base, agora, rate=cfg.indication_pct))
+            gerados.append(_lancar(db, op, "indicacao", indicador.id, cheio, agora, rate=cfg.indication_pct))
     db.flush()
     return [c for c in gerados if c is not None]
 
@@ -208,7 +241,7 @@ def _reancorar(db: Session, vendedor: Partner, desfeita: PartnerOpportunity, ago
         beneficiario = _indicador(db, vendedor)
         if beneficiario is None:
             return
-        base = base_sem_frete(db, outra)
+        base = preco_cheio(db, outra)
     _lancar(db, outra, "bonus_primeira_venda", beneficiario.id, base, agora, fixed_value=cfg.first_sale_bonus)
 
 
@@ -276,11 +309,48 @@ def salvar_config(db: Session, user: User, dados) -> PartnerCommissionConfig:
     cfg.first_sale_bonus = dados.first_sale_bonus
     cfg.indication_months = dados.indication_months
     cfg.calibration_pct = dados.calibration_pct
+    if dados.hunter_own_sale_pct is not None:
+        cfg.hunter_own_sale_pct = dados.hunter_own_sale_pct
+    if dados.annual_fee_reference is not None:
+        cfg.annual_fee_reference = dados.annual_fee_reference
     cfg.updated_by_id = user.id
     cfg.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(cfg)
     return cfg
+
+
+def renovacao_prevista(cfg: PartnerCommissionConfig) -> Optional[Decimal]:
+    """Comissão estimada de uma renovação: Z% da anuidade de referência (None se algum zerado)."""
+    anuidade = Decimal(str(cfg.annual_fee_reference or 0))
+    taxa = Decimal(str(cfg.calibration_pct or 0))
+    if anuidade <= 0 or taxa <= 0:
+        return None
+    return (anuidade * taxa / 100).quantize(CENTAVO, rounding=ROUND_HALF_UP)
+
+
+def _pct_de(valor: Optional[Decimal], taxa: Decimal) -> Optional[Decimal]:
+    return None if valor is None else (valor * taxa / 100).quantize(CENTAVO, rounding=ROUND_HALF_UP)
+
+
+def tabela_de_desconto(db: Session) -> dict:
+    """Quanto cada faixa de desconto paga, por aparelho, no preço do produto liberado mais caro."""
+    cfg = _config(db)
+    preco = db.query(func.max(Product.unit_price)).filter(
+        Product.is_active.is_(True), Product.is_deleted.is_(False), Product.partner_enabled.is_(True),
+    ).scalar()
+    preco = _dinheiro(preco) if preco else None
+    linhas = []
+    for d in DESCONTOS_PERMITIDOS:
+        dd = Decimal(d)
+        te = taxa_com_desconto(cfg.own_sale_pct, dd)
+        th = taxa_com_desconto(cfg.hunter_own_sale_pct, dd)
+        linhas.append({
+            "desconto": d, "cliente_paga": _pct_de(preco, Decimal(100) - dd),
+            "taxa_empresa": te, "valor_empresa": _pct_de(preco, te),
+            "taxa_hunter": th, "valor_hunter": _pct_de(preco, th),
+        })
+    return {"preco_referencia": preco, "linhas": linhas, "renovacao_prevista": renovacao_prevista(cfg)}
 
 
 def _meia_noite_utc(d: date) -> datetime:
@@ -452,24 +522,64 @@ def _calibracao_out(cal: PartnerCalibration, comissao: Optional[PartnerCommissio
             "recorrencia": recorrencia}
 
 
-def listar_calibracoes(db: Session, user: User, opportunity_id: int) -> list:
+def total_de_aparelhos(db: Session, op: PartnerOpportunity) -> int:
+    """Aparelhos vendidos = soma das quantidades dos produtos da oportunidade."""
+    return int(db.query(func.coalesce(func.sum(PartnerOpportunityProduct.quantity), 0)).filter(
+        PartnerOpportunityProduct.opportunity_id == op.id).scalar() or 0)
+
+
+def _dia_do_ganho(op: PartnerOpportunity) -> date:
+    return op.won_confirmed_at.replace(tzinfo=timezone.utc).astimezone(FUSO).date()
+
+
+def _gera_renovacao(op: PartnerOpportunity) -> bool:
+    """Só venda (não locação) de empresa, com ganho confirmado, rende renovação."""
+    return (op.won_confirmed_at is not None and op.modality != "locacao"
+            and op.partner is not None and op.partner.kind == "empresa")
+
+
+def listar_calibracoes(db: Session, user: User, opportunity_id: int) -> dict:
+    """
+    Aparelhos vendidos com as 2 renovações previstas (ganho + 12 e + 24 meses) e, em cada uma,
+    a calibração lançada (se houver). O aparelho N é a N-ésima série lançada com comissão; as
+    calibrações sem comissão (hunter, locação, Z% zerado, cancelada) vão para `sem_comissao`.
+    """
     op = _op_para_calibracao(db, user, opportunity_id, escrever=False)
     cals = db.query(PartnerCalibration).filter(PartnerCalibration.opportunity_id == op.id) \
         .order_by(PartnerCalibration.id).all()
     comissoes = {c.calibration_id: c for c in db.query(PartnerCommission).filter(
         PartnerCommission.opportunity_id == op.id, PartnerCommission.kind == "calibracao",
         PartnerCommission.status.in_(ATIVOS)).all()}
+
     # Recorrência = ordem do lançamento entre as calibrações do aparelho que geraram comissão
     # (as mesmas que contam no limite de LIMITE_CALIBRACOES).
-    usadas: dict = {}
-    saida = []
+    por_serie: dict = {}
+    sem_comissao = []
     for c in cals:
         comissao = comissoes.get(c.id)
-        recorrencia = None
-        if comissao is not None:
-            usadas[c.serial_number] = recorrencia = usadas.get(c.serial_number, 0) + 1
-        saida.append(_calibracao_out(c, comissao, recorrencia))
-    return saida
+        if comissao is None:
+            sem_comissao.append(_calibracao_out(c, None, None))
+            continue
+        lista = por_serie.setdefault(c.serial_number, [])
+        lista.append(_calibracao_out(c, comissao, len(lista) + 1))
+
+    aparelhos = []
+    if _gera_renovacao(op):
+        ganho = _dia_do_ganho(op)
+        valor = renovacao_prevista(_config(db))
+        series = list(por_serie)
+        for i in range(max(total_de_aparelhos(db, op), len(series))):
+            serie = series[i] if i < len(series) else None
+            feitas = por_serie.get(serie, []) if serie else []
+            aparelhos.append({"numero": i + 1, "serial_number": serie, "renovacoes": [
+                {"ordem": k, "prevista_para": ganho + relativedelta(months=12 * k),
+                 "valor_previsto": valor, "calibracao": feitas[k - 1] if k <= len(feitas) else None}
+                for k in range(1, LIMITE_CALIBRACOES + 1)
+            ]})
+    else:
+        for lista in por_serie.values():
+            sem_comissao.extend(lista)
+    return {"aparelhos": aparelhos, "sem_comissao": sorted(sem_comissao, key=lambda c: c["id"])}
 
 
 def lancar_calibracao(db: Session, user: User, opportunity_id: int, dados) -> dict:
@@ -481,6 +591,13 @@ def lancar_calibracao(db: Session, user: User, opportunity_id: int, dados) -> di
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MSG_CALIBRACAO_SEM_GANHO)
     if op.partner is None or op.partner.is_deleted or op.partner.stage == "bloqueado":
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, MSG_CALIBRACAO_BLOQUEADO)
+    # Uma série por aparelho vendido (oportunidade sem produto, dado antigo, não trava).
+    series = {s for (s,) in db.query(PartnerCalibration.serial_number).filter(
+        PartnerCalibration.opportunity_id == op.id).distinct()}
+    aparelhos = total_de_aparelhos(db, op)
+    if aparelhos and dados.serial_number not in series and len(series) >= aparelhos:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            f"Esta oportunidade tem {aparelhos} aparelho(s); todos já têm número de série.")
     # Só conta a calibração que gerou comissão: a mensagem do limite fala disso.
     existentes = db.query(func.count(PartnerCalibration.id)).join(
         PartnerCommission, PartnerCommission.calibration_id == PartnerCalibration.id,

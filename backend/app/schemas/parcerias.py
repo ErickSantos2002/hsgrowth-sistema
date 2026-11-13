@@ -751,11 +751,14 @@ class ComissaoConfigUpdate(BaseModel):
     first_sale_bonus: Decimal = Field(..., ge=0, decimal_places=2)
     indication_months: int = Field(..., ge=1, le=120)
     calibration_pct: Decimal = Field(..., ge=0, le=100, decimal_places=2)
+    # Opcionais: sem eles (tela antiga), os valores gravados ficam como estão.
+    hunter_own_sale_pct: Optional[Annotated[Decimal, Field(ge=0, le=100, decimal_places=2)]] = None
+    annual_fee_reference: Optional[Annotated[Decimal, Field(ge=0, decimal_places=2)]] = None
 
-    @field_validator("first_sale_bonus")
+    @field_validator("first_sale_bonus", "annual_fee_reference")
     @classmethod
     def _bonus_no_limite(cls, v):
-        return _valor_no_limite(v)
+        return v if v is None else _valor_no_limite(v)
 
 
 class ComissaoConfigResponse(BaseModel):
@@ -764,6 +767,8 @@ class ComissaoConfigResponse(BaseModel):
     first_sale_bonus: Decimal
     indication_months: int
     calibration_pct: Decimal
+    hunter_own_sale_pct: Decimal = Decimal("0")
+    annual_fee_reference: Decimal = Decimal("0")
     updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
@@ -864,6 +869,41 @@ class CalibracaoResponse(BaseModel):
     recorrencia: Optional[int] = None
 
     model_config = {"from_attributes": True}
+
+
+class RenovacaoPrevista(BaseModel):
+    """Uma das 2 renovações do aparelho: data prevista (ganho + 12/24 meses) e, se já lançada, a calibração."""
+    ordem: int
+    prevista_para: date
+    valor_previsto: Optional[Decimal] = None
+    calibracao: Optional[CalibracaoResponse] = None
+
+
+class AparelhoDaOportunidade(BaseModel):
+    numero: int
+    serial_number: Optional[str] = None
+    renovacoes: List[RenovacaoPrevista]
+
+
+class CalibracoesDaOportunidadeResponse(BaseModel):
+    aparelhos: List[AparelhoDaOportunidade]
+    sem_comissao: List[CalibracaoResponse]
+
+
+class LinhaTabelaDesconto(BaseModel):
+    desconto: int
+    cliente_paga: Optional[Decimal] = None
+    taxa_empresa: Decimal
+    valor_empresa: Optional[Decimal] = None
+    taxa_hunter: Decimal
+    valor_hunter: Optional[Decimal] = None
+
+
+class TabelaDescontoResponse(BaseModel):
+    """Quanto cada faixa de desconto paga, por aparelho, no preço de referência."""
+    preco_referencia: Optional[Decimal] = None
+    linhas: List[LinhaTabelaDesconto]
+    renovacao_prevista: Optional[Decimal] = None
 
 
 # ─── Dashboard ───────────────────────────────────────────────────────────────

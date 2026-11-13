@@ -1,5 +1,6 @@
 """Board 2 — Pipeline de Parceiros: oportunidade, elegibilidade, produtos e catálogo."""
 from datetime import datetime
+from decimal import Decimal
 from typing import List, Optional
 
 from fastapi import HTTPException, status
@@ -36,6 +37,9 @@ OBRIGATORIOS = {
 }
 # Campos do valor do negócio (fora os produtos), travados depois de encerrada.
 CAMPOS_DE_VALOR = ("global_discount", "global_discount_type", "shipping")
+
+
+MSG_ITEM_TRAVADO = "Preço e desconto por item são travados no Programa de Parceiros."
 
 
 def _422(mensagem: str) -> HTTPException:
@@ -177,10 +181,13 @@ def atualizar(db: Session, user: User, opportunity_id: int, dados: OportunidadeU
         campos.pop("global_discount_type")
     if any(c in campos and campos[c] != getattr(op, c) for c in CAMPOS_DA_BASE):
         _conferir_sem_ganho_confirmado(op)
+    # Desconto só 0/2/4/6% (spec 2026-11-13), para todos que editam. Depois da trava do ganho
+    # confirmado, que tem a própria mensagem.
     tipo = campos.get("global_discount_type", op.global_discount_type)
-    desconto = campos.get("global_discount", op.global_discount) or 0
-    if tipo == "percent" and desconto > 100:
-        raise _422("O desconto geral não pode passar de 100%.")
+    desconto = Decimal(str(campos.get("global_discount", op.global_discount) or 0))
+    if ("global_discount" in campos or "global_discount_type" in campos) and desconto != 0 and (
+            tipo != "percent" or desconto not in [Decimal(d) for d in comissoes.DESCONTOS_PERMITIDOS]):
+        raise _422(comissoes.MSG_DESCONTO)
     for campo, nome in OBRIGATORIOS.items():
         if campo in campos and campos[campo] is None:
             raise _422(f"{nome} é obrigatório.")
@@ -364,7 +371,7 @@ def adicionar_produto(db: Session, user: User, opportunity_id: int,
         opportunity_id=op.id,
         product_id=produto.id,
         quantity=dados.quantity,
-        unit_price=dados.unit_price if dados.unit_price is not None else produto.unit_price,
+        unit_price=produto.unit_price,  # preço do catálogo, sempre (spec 2026-11-13 §4)
     )
     db.add(item)
     db.commit()
@@ -379,9 +386,13 @@ def atualizar_produto(db: Session, user: User, opportunity_id: int, item_id: int
     _conferir_valor_aberto(user, op)
     _conferir_sem_ganho_confirmado(op)
     item = _buscar_item(db, op, item_id)
-    for campo, valor in dados.model_dump(exclude_unset=True).items():
-        if valor is not None:
-            setattr(item, campo, valor)
+    # Preço e desconto por item travados: só a quantidade muda.
+    campos = dados.model_dump(exclude_unset=True)
+    preco, desconto = campos.get("unit_price"), campos.get("discount")
+    if (preco is not None and Decimal(str(preco)) != Decimal(str(item.unit_price or 0)))             or (desconto is not None and Decimal(str(desconto)) > 0):
+        raise _422(MSG_ITEM_TRAVADO)
+    if campos.get("quantity") is not None:
+        item.quantity = campos["quantity"]
     if (item.discount or 0) > item.quantity * (item.unit_price or 0):
         db.rollback()
         raise _422("O desconto não pode ser maior que o valor da linha.")

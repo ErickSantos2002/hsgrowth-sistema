@@ -116,21 +116,24 @@ def card_de_vendas(db, lista, documento: str = CNPJ_A, **campos):
     return c
 
 
-def config_comissoes(db, y=10, x=5, bonus=100, meses=24, z=8):
-    """Cria (ou atualiza) a linha única de configuração das comissões."""
+def config_comissoes(db, y=10, x=5, bonus=100, meses=24, z=8, yh=None, anuidade=0):
+    """Cria (ou atualiza) a linha única de configuração das comissões.
+    `yh` = venda própria do hunter (padrão: igual a `y`, como antes da 1.11.22)."""
     from app.models.partner_commission import PartnerCommissionConfig
 
     cfg = db.query(PartnerCommissionConfig).first() or PartnerCommissionConfig()
     cfg.own_sale_pct, cfg.indication_pct, cfg.first_sale_bonus = y, x, bonus
     cfg.indication_months, cfg.calibration_pct = meses, z
+    cfg.hunter_own_sale_pct = y if yh is None else yh
+    cfg.annual_fee_reference = anuidade
     db.add(cfg)
     db.commit()
     db.refresh(cfg)
     return cfg
 
 
-def oportunidade_ganha(db, p: Partner, valor_produtos, **campos) -> PartnerOpportunity:
-    """Oportunidade em `ganho` com um item de produto que soma `valor_produtos`."""
+def oportunidade_ganha(db, p: Partner, valor_produtos, quantidade: int = 1, **campos) -> PartnerOpportunity:
+    """Oportunidade em `ganho` com um item de produto: `quantidade` × `valor_produtos` (preço unitário)."""
     from app.models.partner_opportunity import PartnerOpportunityProduct
     from app.models.product import Product
 
@@ -143,7 +146,7 @@ def oportunidade_ganha(db, p: Partner, valor_produtos, **campos) -> PartnerOppor
         db.add(produto)
         db.commit()
     db.add(PartnerOpportunityProduct(opportunity_id=op.id, product_id=produto.id,
-                                     quantity=1, unit_price=valor_produtos))
+                                     quantity=quantidade, unit_price=valor_produtos))
     db.commit()
     db.refresh(op)
     return op

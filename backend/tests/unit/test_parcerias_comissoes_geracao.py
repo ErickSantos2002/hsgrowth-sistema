@@ -54,14 +54,14 @@ def test_empresa_sem_indicador_so_venda_propria(client, db, admin_headers):
     assert (c.source_partner_id, c.base_value, c.rate) == (a.id, Decimal("1000.00"), Decimal("10.00"))
 
 
-def test_base_ignora_frete_e_aplica_desconto_geral(client, db, admin_headers):
+def test_base_e_o_preco_cheio_e_o_desconto_reduz_a_taxa(client, db, admin_headers):
     config_comissoes(db, y=10, x=5, bonus=100)
     a = parceiro(db, "Dmap")
-    op = oportunidade_ganha(db, a, 1000, global_discount=10, global_discount_type="percent", shipping=50)
-    assert comissoes.base_sem_frete(db, op) == Decimal("900.00")
+    op = oportunidade_ganha(db, a, 1000, global_discount=4, global_discount_type="percent", shipping=50)
+    assert comissoes.preco_cheio(db, op) == Decimal("1000.00")
     _confirmar(client, op, admin_headers)
-    c = _lancamentos(db, op)[0]
-    assert (c.base_value, c.amount) == (Decimal("900.00"), Decimal("90.00"))
+    c = _lancamentos(db, op, kind="venda_propria")[0]
+    assert (c.base_value, c.rate, c.amount) == (Decimal("1000.00"), Decimal("8.00"), Decimal("80.00"))
 
 
 def test_base_nunca_negativa(db):
@@ -500,7 +500,8 @@ def test_ganho_confirmado_trava_valores(client, db, admin_headers):
     assert client.put(base, json={"modality": "venda", "global_discount": 0}, headers=admin_headers).status_code == 200
     # Desfeito o ganho, volta a poder.
     _negar(client, op, admin_headers)
-    assert client.put(base, json={"global_discount": 50}, headers=admin_headers).status_code == 200
+    assert client.put(base, json={"global_discount": 2, "global_discount_type": "percent"},
+                      headers=admin_headers).status_code == 200
 
 
 def test_parceiro_bloqueado_nao_confirma_ganho(client, db, admin_headers):
