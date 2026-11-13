@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.25",
+    date: "13/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Vendas: o vendedor não cria nem reabre card com CNPJ que outro vendedor está trabalhando (em negociação, compra recente ou perda recente, as mesmas regras da Consulta de CNPJ). O próprio card e os leads automáticos não contam; admin e gerente liberam com justificativa, que fica no histórico do card.",
+      },
+      {
+        type: "feature",
+        text: "Configurações → Consulta de CNPJ (admin): prazos de proteção, compra e perda recente, consultas por dia e liga/desliga da trava entre vendedores.",
+      },
+    ],
+  },
+  {
     version: "1.11.24",
     date: "13/11/2026",
     entries: [

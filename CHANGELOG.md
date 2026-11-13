@@ -7,10 +7,23 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não lançado]
 
+---
+
+## [1.11.25] — 13/11/2026
+
 ### Adicionado
+- **Trava de CNPJ entre vendedores (Vendas):** o vendedor não cria card, não vincula empresa, não reabre nem clona card com um CNPJ que **outro vendedor** está trabalhando, pelas mesmas regras da Consulta de CNPJ: em negociação (atividade agendada ou movimento nos últimos 10 dias), compra há menos de 30 dias ou perda há menos de 90 dias. Não contam: o card do próprio vendedor (responsável ou SDR), os leads automáticos (RD Station, site, integrações), a importação de planilha e, no reabrir e no clonar, o card de origem. A mensagem diz com quem está e em qual card.
+- **Liberação pela gestão com justificativa:** admin e gerente que caem na trava (parceiro ou outro vendedor) veem uma janela com a justificativa; ela fica registrada no histórico do card ("CNPJ liberado por ..."). Antes a gestão passava direto pela trava do parceiro, sem justificativa.
+- **Configurações → Consulta de CNPJ** (só admin): dias de proteção da negociação, de compra recente e de perda recente, consultas por dia de parceiro e hunter, e liga/desliga da trava entre vendedores. 0 dias desliga a regra. O "Como funciona" da consulta passa a mostrar os números configurados.
 - **Tela "Capacidade" do Guardi:** nova rota `GET /api/v1/agente/capacidades`, só para token de agente (login normal recebe 404). Devolve o papel da pessoa (`"Vendedor"`, `"Serviço"`, `"Gerente"`…) e as rotas da lista do agente que o login dela alcança. O HS.OS usa a resposta para mostrar o que o Guardi consegue fazer aqui.
   - Cada rota da lista do agente declara os papéis que a alcançam (`PAPEIS_AGENTE` em `backend/app/core/agente.py`). Um teste confere, papel a papel, que a tabela bate com as checagens das rotas.
   - **Pelo agente**, a tabela agora também é aplicada (403 fora do papel). Vendas fica com admin, gerente, vendedor e SDR (o visualizador só lê). Serviços fica com admin, gerente e serviço. Cliente, contato e busca geral o serviço só lê. Muda o que antes passava: o papel serviço não entra mais em Vendas pelo agente, como já não entra pela tela, e o visualizador não cria nota nem tarefa pelo agente.
+
+### Alterado
+- **API de cards:** quando a trava de CNPJ bloqueia, o 409 de `POST /cards`, `PUT /cards/{id}`, `/reopen` e `/clone` passa a trazer `detail` em objeto (`code: "cnpj_bloqueado"`, `message`, `pode_liberar`). Os 4 aceitam `cnpj_justificativa` (o clone, num corpo opcional).
+
+### Banco de dados
+- Migration aditiva `1f2a3b4c5d6e` (down `0e1f2a3b4c5d`): tabela `cnpj_rules_config`, já com os valores de hoje (10/30/90 dias, 20 consultas, trava ligada). Pode rodar antes do código.
 
 ---
 
