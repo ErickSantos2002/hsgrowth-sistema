@@ -4,6 +4,7 @@ Funções reutilizáveis como dependencies em rotas.
 """
 import calendar
 import ipaddress
+import logging
 from datetime import datetime, timezone
 from typing import Generator, Optional
 from fastapi import Depends, Header, HTTPException, Request, status
@@ -12,6 +13,14 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import SessionLocal
 from app.core.security import decode_token, verify_token_type, hash_api_key
+from app.core.config import settings
+from app.core.agente import (
+    TokenDeAgenteInvalido,
+    agente_atual,
+    agente_pode,
+    eh_token_de_agente,
+    validar_token_de_agente,
+)
 from app.core.redis_sessions import session_manager
 from app.models.user import User
 from app.models.role import Role
@@ -99,7 +108,63 @@ def token_anterior_a_senha(payload: dict, user: User) -> bool:
     return int(iat) < calendar.timegm(trocada_em.utctimetuple())
 
 
+logger = logging.getLogger(__name__)
+
+# Mesma mensagem para toda recusa do token de agente: não diz o que falhou.
+_MSG_AGENTE_401 = "Token inválido ou expirado"
+MSG_AGENTE_403 = "Ação não permitida para o agente"
+
+
+def _usuario_do_agente(request: Request, token: str, db: Session) -> User:
+    """Token de agente do HS.OS (o Guardi agindo como o dono). Só nas rotas de
+    ROTAS_AGENTE (allowlist em core/agente.py). Sem blacklist/sessão do Redis e sem
+    password_changed_at: não há sessão, o token vive 5 min. NÃO vira is_integracao
+    (a trava de CNPJ de parceiro vale)."""
+    try:
+        email, bot = validar_token_de_agente(token, settings.HSOS_AGENTE_CHAVE_PUBLICA)
+    except TokenDeAgenteInvalido as exc:
+        logger.warning("token de agente recusado: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=_MSG_AGENTE_401,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    # E-mail EXATO, sem normalizar: o sub é o e-mail que o HS.OS tem do dono.
+    user = db.query(User).options(joinedload(User.role)).filter(
+        User.email == email,
+        User.is_deleted == False,  # noqa: E712
+    ).first()
+    if user is None or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=_MSG_AGENTE_401,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    caminho = request.url.path
+    if not agente_pode(request.method, caminho):
+        logger.warning("token de agente fora da allowlist: %s %s via %s", request.method, caminho, bot)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=MSG_AGENTE_403)
+    request.state.agente = bot
+    # Atributo transitório: quem não tem o request à mão lê daqui. O caminho normal zera.
+    user.via_agente = bot
+    # "via <bot>" no histórico (listeners before_insert em core/agente.py).
+    agente_atual.set((user.id, bot))
+    logger.info("token de agente: %s via %s em %s %s", email, bot, request.method, caminho)
+    return user
+
+
+def via_agente(user: Optional[User]) -> Optional[str]:
+    """O bot do HS.OS (act.sub) quando o usuário entrou por token de agente; senão None."""
+    return getattr(user, "via_agente", None)
+
+
+def eh_agente(request: Request) -> bool:
+    """A requisição veio com token de agente do HS.OS (só depois de get_current_user)."""
+    return getattr(request.state, "agente", None) is not None
+
+
 async def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
@@ -127,6 +192,11 @@ async def get_current_user(
 
     # Extrai o token
     token = credentials.credentials
+
+    # Token de agente do HS.OS: caminho próprio, ANTES da blacklist e do decode HS256.
+    if eh_token_de_agente(token):
+        return _usuario_do_agente(request, token, db)
+    agente_atual.set(None)
 
     # Verifica se o token está na blacklist do Redis (logout/revogação)
     # Graceful: se Redis estiver offline, não bloqueia (retorna False)
@@ -200,6 +270,7 @@ async def get_current_user(
                     detail="Usuário de impersonação não encontrado",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
+            user.via_agente = None
             return user
         else:
             # Sem impersonate_user_id - retorna erro
@@ -231,6 +302,7 @@ async def get_current_user(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        user.via_agente = None
         return user
 
 

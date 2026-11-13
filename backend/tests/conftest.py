@@ -554,3 +554,47 @@ def disable_email_sending(monkeypatch):
         return True
 
     monkeypatch.setattr(EmailService, '_send_email', mock_send_email)
+
+
+# ==================== TOKEN DE AGENTE DO HS.OS ====================
+
+
+def _par_ed25519():
+    """Par Ed25519 novo: (chave privada, PEM pública)."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    priv = Ed25519PrivateKey.generate()
+    pem = priv.public_key().public_bytes(
+        serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
+    ).decode()
+    return priv, pem
+
+
+def emitir_token_agente(priv, email, **sobrescreve):
+    """Token como o HS.OS emite (aud hsgrowth, 5 min). `campo=None` remove o campo."""
+    import time
+    import uuid
+    import jwt
+    agora = int(time.time())
+    payload = {
+        "iss": "hsos", "aud": "hsgrowth", "sub": email, "act": {"sub": "erick-bot"},
+        "iat": agora, "exp": agora + 300, "jti": str(uuid.uuid4()),
+    }
+    for k, v in sobrescreve.items():
+        if v is None:
+            payload.pop(k, None)
+        else:
+            payload[k] = v
+    return jwt.encode(payload, priv, algorithm="EdDSA")
+
+
+@pytest.fixture()
+def agente(monkeypatch):
+    """Configura a chave pública do HS.OS e devolve um emissor de token: agente(email)."""
+    from app.core.config import settings
+    priv, pem = _par_ed25519()
+    monkeypatch.setattr(settings, "HSOS_AGENTE_CHAVE_PUBLICA", pem)
+
+    def _emitir(email, **sobrescreve):
+        return emitir_token_agente(priv, email, **sobrescreve)
+    return _emitir

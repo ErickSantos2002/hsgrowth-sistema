@@ -107,6 +107,12 @@ from app.models.partner_commission import PartnerCommission, PartnerCommissionCo
 from app.models.cnpj_consulta import CnpjConsulta  # noqa
 from app.models.user_access_token import UserAccessToken  # noqa
 
+# Token de agente do HS.OS: "via <bot>" no histórico (listeners before_insert).
+# Registrado aqui porque este módulo é sempre importado antes de qualquer insert.
+from app.core.agente import registrar_marcacao_via_agente  # noqa: E402
+
+registrar_marcacao_via_agente(Activity, AuditLog, ServiceCardActivity)
+
 # Lista de todos os modelos (útil para imports)
 __all__ = [
     "Base",
