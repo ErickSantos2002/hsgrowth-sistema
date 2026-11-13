@@ -473,13 +473,30 @@ export default function ParceiroDetalhe() {
           extras={[{
             chave: "oportunidades", rotulo: "Oportunidades", icone: <Trello size={16} />,
             conteudo: (
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {etapasOp.map((e) => (
-                  <div key={e.codigo} className="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-slate-700/50 dark:bg-slate-800/30">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{e.nome}</p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{parceiro.oportunidades_por_etapa[e.codigo] ?? 0}</p>
-                  </div>
-                ))}
+              // Uma faixa só com todas as etapas, na ordem do Pipeline: abertas em azul, Ganho em verde, Perdido em vermelho.
+              <div className="space-y-3">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {etapasOp.reduce((s, e) => s + (parceiro.oportunidades_por_etapa[e.codigo] ?? 0), 0)} oportunidade(s) no Pipeline
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
+                  {etapasOp.map((e) => {
+                    const n = parceiro.oportunidades_por_etapa[e.codigo] ?? 0;
+                    const cor = e.codigo === "ganho"
+                      ? "border-t-emerald-500 dark:border-t-emerald-500 text-emerald-600 dark:text-emerald-400"
+                      : e.codigo === "perdido"
+                        ? "border-t-red-500 dark:border-t-red-500 text-red-600 dark:text-red-400"
+                        : "border-t-blue-500 dark:border-t-blue-500 text-blue-600 dark:text-blue-400";
+                    return (
+                      <div
+                        key={e.codigo}
+                        className={`rounded-lg border border-t-4 border-gray-200 bg-white px-3 py-3 text-center dark:border-slate-700/50 dark:bg-slate-800/30 ${cor}`}
+                      >
+                        <p className={`text-2xl font-bold ${n > 0 ? "" : "text-slate-400 dark:text-slate-500"}`}>{n}</p>
+                        <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400" title={e.nome}>{e.nome}</p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ),
           }, ...(externoAlheio || ehHunterCard ? [] : [{
