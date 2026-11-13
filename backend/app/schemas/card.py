@@ -197,6 +197,10 @@ class CardCreate(CardBase):
     """
     list_id: int = Field(..., description="ID da lista onde o card será criado")
     client_id: Optional[int] = Field(None, description="ID do cliente/organização")
+    cnpj_justificativa: Optional[str] = Field(
+        None, max_length=500,
+        description="Admin/gerente: justificativa para seguir com CNPJ que está com outro vendedor ou com um parceiro",
+    )
     person_id: Optional[int] = Field(None, description="ID da pessoa de contato vinculada")
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável (Vendedor)")
     sdr_id: Optional[int] = Field(None, description="ID do usuário SDR responsável")
@@ -260,6 +264,10 @@ class CardUpdate(BaseModel):
     Schema para atualização de card (todos os campos opcionais).
     """
     title: Optional[str] = Field(None, min_length=1, max_length=500, description="Título do card")
+    cnpj_justificativa: Optional[str] = Field(
+        None, max_length=500,
+        description="Admin/gerente: justificativa para seguir com CNPJ que está com outro vendedor ou com um parceiro",
+    )
     description: Optional[str] = Field(None, description="Descrição detalhada")
     client_id: Optional[int] = Field(None, description="ID do cliente/organização")
     assigned_to_id: Optional[int] = Field(None, description="ID do usuário responsável (Vendedor)")
@@ -606,6 +614,10 @@ class CardReopenRequest(BaseModel):
         ...,
         description="Detalhamento do canal Base: 'Base - Resgate' ou 'Base - Levantada de mão'"
     )
+    cnpj_justificativa: Optional[str] = Field(
+        None, max_length=500,
+        description="Admin/gerente: justificativa para seguir com CNPJ que está com outro vendedor ou com um parceiro",
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -641,6 +653,14 @@ class CardReopenResponse(BaseModel):
             ]
         }
     }
+
+
+class CardCloneRequest(BaseModel):
+    """Corpo opcional do clone: só a justificativa da trava de CNPJ."""
+    cnpj_justificativa: Optional[str] = Field(
+        None, max_length=500,
+        description="Admin/gerente: justificativa para seguir com CNPJ que está com outro vendedor ou com um parceiro",
+    )
 
 
 class CardCloneResponse(BaseModel):

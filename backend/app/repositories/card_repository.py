@@ -273,6 +273,7 @@ class CardRepository:
 
         # Converte o schema para dict, excluindo campos não setados
         data_dict = card_data.model_dump(exclude_unset=True)
+        data_dict.pop("cnpj_justificativa", None)  # só serve à trava de CNPJ
         data_dict["position"] = position
         data_dict["is_won"] = 0  # 0 = aberto, 1 = ganho, -1 = perdido
 
@@ -297,6 +298,7 @@ class CardRepository:
             Card atualizado
         """
         update_data = card_data.model_dump(exclude_unset=True)
+        update_data.pop("cnpj_justificativa", None)  # só serve à trava de CNPJ
 
         for field, value in update_data.items():
             # Lógica especial para is_won e is_lost

@@ -126,15 +126,16 @@ class CardService {
    * O card original permanece inalterado (continua perdido)
    */
   async clone(
-    id: number
+    id: number,
+    cnpj_justificativa?: string
   ): Promise<{ new_card_id: number; new_card_title: string; original_card_id: number; message: string }> {
-    const response = await api.post(`/api/v1/cards/${id}/clone`);
+    const response = await api.post(`/api/v1/cards/${id}/clone`, cnpj_justificativa ? { cnpj_justificativa } : undefined);
     return response.data;
   }
 
   async reopen(
     id: number,
-    data: { title: string; acquisition_channel_detail: string }
+    data: { title: string; acquisition_channel_detail: string; cnpj_justificativa?: string }
   ): Promise<{ new_card_id: number; new_card_title: string; original_card_id: number; message: string }> {
     const response = await api.post(`/api/v1/cards/${id}/reopen`, data);
     return response.data;

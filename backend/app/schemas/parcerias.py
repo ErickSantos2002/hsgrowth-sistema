@@ -713,6 +713,25 @@ class ConsultaCnpjResponse(BaseModel):
     registros: List[RegistroSemaforo] = []
 
 
+class RegrasCnpjResponse(BaseModel):
+    """Regras da Consulta de CNPJ (configuração do admin). 0 dias = regra desligada."""
+    protection_days: int
+    recent_purchase_days: int
+    recent_loss_days: int
+    daily_query_limit: int
+    block_between_sellers: bool
+    updated_at: Optional[datetime] = None
+    updated_by_name: Optional[str] = None
+
+
+class RegrasCnpjUpdate(BaseModel):
+    protection_days: Optional[int] = Field(None, ge=0, le=365)
+    recent_purchase_days: Optional[int] = Field(None, ge=0, le=365)
+    recent_loss_days: Optional[int] = Field(None, ge=0, le=365)
+    daily_query_limit: Optional[int] = Field(None, ge=1, le=1000)
+    block_between_sellers: Optional[bool] = None
+
+
 class ConsultasHojeResponse(BaseModel):
     feitas: int
     limite: Optional[int] = None

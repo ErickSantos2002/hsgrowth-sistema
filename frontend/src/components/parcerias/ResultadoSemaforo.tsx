@@ -1,8 +1,8 @@
 import { ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { MOTIVO_SEMAFORO, SEMAFORO_COR, SEMAFORO_LABEL } from "../../constants/parcerias";
-import type { ConsultaCnpj } from "../../services/parceriasService";
-import { BotaoRegrasSemaforo } from "./RegrasSemaforo";
+import type { ConsultaCnpj, RegrasCnpj } from "../../services/parceriasService";
+import { BotaoRegrasSemaforo, useRegrasCnpj } from "./RegrasSemaforo";
 
 /** Raiz do CNPJ (os 8 primeiros caracteres) no formato 00.000.000. */
 const raizFormatada = (cnpj: string) => {
@@ -11,7 +11,7 @@ const raizFormatada = (cnpj: string) => {
 };
 
 /** Por que deu essa cor, em uma linha (as regras completas ficam no "?"). */
-function porque(c: ConsultaCnpj): string {
+function porque(c: ConsultaCnpj, regras: RegrasCnpj): string {
   const raiz = raizFormatada(c.cnpj);
   switch (c.motivo) {
     case "livre":
@@ -19,11 +19,11 @@ function porque(c: ConsultaCnpj): string {
     case "outra_unidade":
       return `Este CNPJ está livre, mas outra unidade da raiz ${raiz} está em negociação, comprou ou foi perdida há pouco.`;
     case "em_negociacao":
-      return "Há card ou oportunidade aberto com este CNPJ, com atividade agendada ou movimento nos últimos 10 dias.";
+      return `Há card ou oportunidade aberto com este CNPJ, com atividade agendada ou movimento nos últimos ${regras.protection_days} dias.`;
     case "compra_recente":
-      return "A empresa comprou há menos de 30 dias.";
+      return `A empresa comprou há menos de ${regras.recent_purchase_days} dias.`;
     case "perdida_recente":
-      return "A negociação com a empresa foi perdida há menos de 90 dias.";
+      return `A negociação com a empresa foi perdida há menos de ${regras.recent_loss_days} dias.`;
     default:
       return "";
   }
@@ -31,7 +31,8 @@ function porque(c: ConsultaCnpj): string {
 
 /** Cartão com a cor do semáforo, a frase, o porquê e, para a H&S, onde a empresa está. */
 export default function ResultadoSemaforo({ consulta }: { consulta: ConsultaCnpj }) {
-  const motivoDetalhado = porque(consulta);
+  const regras = useRegrasCnpj();
+  const motivoDetalhado = porque(consulta, regras);
   return (
     <div className={`rounded-lg border px-4 py-3 ${SEMAFORO_COR[consulta.resultado]}`}>
       <div className="flex items-center gap-2 text-sm font-semibold">

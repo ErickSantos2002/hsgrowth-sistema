@@ -2,8 +2,10 @@
 Lado de Vendas da Consulta de CNPJ (Entrega 2): a faixa no card e o bloqueio
 de quem cria ou vincula pela tela um card com CNPJ que um parceiro está
 trabalhando (regra 3: vale o primeiro registro). Lead automático (usuário de
-integração) e importação de planilha não bloqueiam. Admin e gerente passam,
-e o card registra a liberação.
+integração) e importação de planilha não bloqueiam. Desde a 1.11.25 também
+bloqueia o CNPJ que OUTRO vendedor está trabalhando (mesmas regras do semáforo,
+com os prazos da configuração). Admin e gerente liberam com justificativa, e o
+card registra a liberação.
 """
 from typing import List, Optional
 
@@ -13,7 +15,7 @@ from sqlalchemy.orm import Session
 from app.models.client import Client
 from app.models.user import User
 from app.schemas.parcerias import AvisoParceriasItem
-from app.services.parcerias import acesso, semaforo
+from app.services.parcerias import acesso, regras_cnpj, semaforo
 from app.services.parcerias.cnpj import normalizar_cnpj
 
 
@@ -33,21 +35,51 @@ def avisos(db: Session, client_id: Optional[int]) -> List[AvisoParceriasItem]:
             for r in sorted(semaforo.protecao_de_parceiro(db, cnpj), key=lambda r: r.desde)]
 
 
-def conferir(db: Session, user: User, client_id: Optional[int]) -> Optional[str]:
+def _com_quem(db: Session, user: User, cnpj: str, ignorar_card_id: Optional[int]) -> Optional[str]:
+    """Com quem o CNPJ está (texto), ou None se está livre para este usuário. Parceiro primeiro."""
+    regras = regras_cnpj.regras(db)
+    parceiros = sorted(semaforo.protecao_de_parceiro(db, cnpj, regras=regras), key=lambda r: r.desde)
+    if parceiros:
+        p = parceiros[0]
+        return f"com o parceiro {p.parceiro} (Programa de Parceiros) desde {p.desde:%d/%m/%Y}"
+    if not regras.travar_vendedores:
+        return None
+    cards = semaforo.protecao_de_vendas(db, cnpj, user.id, ignorar_card_id, regras=regras)
+    if not cards:
+        return None
+    c = cards[0]
+    texto = f'com {c.responsavel or "outro vendedor"} no card "{c.titulo}" ({c.onde}): {semaforo.MOTIVOS[c.motivo].lower()}'
+    if c.libera_em:
+        texto += f", libera em {c.libera_em:%d/%m/%Y}"
+    return texto
+
+
+def conferir(db: Session, user: User, client_id: Optional[int], justificativa: Optional[str] = None,
+             ignorar_card_id: Optional[int] = None) -> Optional[str]:
     """
-    None quando o CNPJ está livre (ou quem cria é integração). Para admin e
-    gerente devolve o texto a registrar no card; para os demais responde 409.
+    None quando o CNPJ está livre (ou quem cria é integração). Admin e gerente com
+    justificativa passam e recebem o texto a registrar no card; os demais (e a gestão
+    sem justificativa) recebem 409 com {code, message, pode_liberar}.
+    `ignorar_card_id`: o card de origem (vincular, reabrir, clonar) não bloqueia.
     """
     if getattr(user, "is_integracao", False):
         return None
-    lista = avisos(db, client_id)
-    if not lista:
+    cnpj = _cnpj_do_cliente(db, client_id)
+    if not cnpj:
         return None
-    primeiro = lista[0]
-    onde = f"parceiro {primeiro.parceiro} (Programa de Parceiros) desde {primeiro.desde:%d/%m/%Y}"
-    if acesso.eh_gestao(user):
-        return f"Card com CNPJ do {onde}, liberado por {user.name}"
-    raise HTTPException(status.HTTP_409_CONFLICT, f"Este CNPJ está com o {onde}. Fale com o gerente.")
+    com_quem = _com_quem(db, user, cnpj, ignorar_card_id)
+    if not com_quem:
+        return None
+    gestao = acesso.eh_gestao(user)
+    motivo = (justificativa or "").strip()
+    if gestao and motivo:
+        return f"CNPJ liberado por {user.name}: {motivo} (estava {com_quem})"
+    raise HTTPException(status.HTTP_409_CONFLICT, {
+        "code": "cnpj_bloqueado",
+        "message": (f"Este CNPJ está {com_quem}. Para seguir mesmo assim, escreva a justificativa."
+                    if gestao else f"Este CNPJ está {com_quem}. Fale com o gerente."),
+        "pode_liberar": gestao,
+    })
 
 
 def registrar(db: Session, card_id: int, user: User, texto: Optional[str]) -> None:

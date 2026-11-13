@@ -323,6 +323,17 @@ export interface Hunter {
 export type TipoComissao = "venda_propria" | "indicacao" | "bonus_primeira_venda" | "calibracao";
 export type SituacaoComissao = "pendente" | "paga" | "cancelada";
 
+/** Regras da Consulta de CNPJ (Configurações → Consulta de CNPJ, só admin altera). */
+export interface RegrasCnpj {
+  protection_days: number;
+  recent_purchase_days: number;
+  recent_loss_days: number;
+  daily_query_limit: number;
+  block_between_sellers: boolean;
+  updated_at?: string | null;
+  updated_by_name?: string | null;
+}
+
 export interface ComissaoConfig {
   /** Venda própria da empresa; a do hunter é `hunter_own_sale_pct`. */
   own_sale_pct: string;
@@ -496,6 +507,8 @@ export function mensagemDeErro(err: any, padrao: string): string {
   const detail = err?.response?.data?.detail;
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail) && detail[0]?.msg) return String(detail[0].msg).replace(/^Value error, /, "");
+  // Trava de CNPJ em Vendas: {code, message, pode_liberar}.
+  if (detail && typeof detail === "object" && typeof detail.message === "string") return detail.message;
   return padrao;
 }
 
@@ -657,6 +670,12 @@ const parceriasService = {
   // Comissões
   async lerConfigComissoes() {
     return (await api.get<ComissaoConfig>(`${BASE}/comissoes/config`)).data;
+  },
+  async lerRegrasCnpj() {
+    return (await api.get<RegrasCnpj>(`${BASE}/consulta-cnpj/regras`)).data;
+  },
+  async salvarRegrasCnpj(dados: Partial<RegrasCnpj>) {
+    return (await api.put<RegrasCnpj>(`${BASE}/consulta-cnpj/regras`, dados)).data;
   },
   async salvarConfigComissoes(dados: ComissaoConfigForm) {
     return (await api.put<ComissaoConfig>(`${BASE}/comissoes/config`, dados)).data;

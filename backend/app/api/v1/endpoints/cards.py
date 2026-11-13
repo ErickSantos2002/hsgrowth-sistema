@@ -4,7 +4,7 @@ Rotas para gerenciamento de cartões e campos customizados.
 """
 from typing import Any, Optional, List
 from datetime import datetime
-from fastapi import APIRouter, Depends, Query, Path, Request, HTTPException, UploadFile, File
+from fastapi import APIRouter, Body, Depends, Query, Path, Request, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from app.api.deps import (
@@ -18,6 +18,7 @@ from app.api.deps import (
 from app.core import realtime
 from app.services.card_service import CardService
 from app.schemas.card import (
+    CardCloneRequest,
     CardCloneResponse,
     CardCreate,
     CardUpdate,
@@ -808,6 +809,7 @@ async def assign_card(
 async def clone_card(
     request: Request,
     card_id: int = Path(..., description="ID do card a ser clonado"),
+    dados: Optional[CardCloneRequest] = Body(None),
     current_user: User = Depends(require_not_viewer()),
     db: Session = Depends(get_db)
 ) -> Any:
@@ -818,7 +820,7 @@ async def clone_card(
     Cria uma nota em ambos os cards registrando o clone.
     """
     service = CardService(db)
-    new_card = service.clone_card(card_id, current_user)
+    new_card = service.clone_card(card_id, current_user, dados.cnpj_justificativa if dados else None)
 
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get("user-agent", "unknown")

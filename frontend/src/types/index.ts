@@ -880,6 +880,8 @@ export interface UpdateListRequest {
 }
 
 export interface CreateCardRequest {
+  /** Admin/gerente: justificativa para seguir com CNPJ bloqueado (trava de CNPJ). */
+  cnpj_justificativa?: string;
   list_id: number;
   title: string;
   description?: string;
@@ -904,6 +906,8 @@ export interface CreateCardRequest {
 }
 
 export interface UpdateCardRequest {
+  /** Admin/gerente: justificativa para seguir com CNPJ bloqueado (trava de CNPJ). */
+  cnpj_justificativa?: string;
   title?: string;
   description?: string | null; // Aceita null
   client_id?: number | null;

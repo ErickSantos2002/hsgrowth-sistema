@@ -802,9 +802,11 @@ class CardService:
                     )
                 )
 
-        # CNPJ com um parceiro (Programa de Parceiros): bloqueia quem não é gestão.
+        # CNPJ com parceiro ou com outro vendedor: bloqueia; a gestão libera com justificativa.
         from app.services.parcerias import vendas as parcerias_vendas
-        aviso_parcerias = parcerias_vendas.conferir(self.db, current_user, card_data.client_id)
+        aviso_parcerias = parcerias_vendas.conferir(
+            self.db, current_user, card_data.client_id, card_data.cnpj_justificativa,
+        )
 
         # Valida contato vinculado: deve ter pelo menos e-mail ou telefone
         if card_data.person_id:
@@ -960,7 +962,8 @@ class CardService:
             from app.services.parcerias import vendas as parcerias_vendas
             parcerias_vendas.registrar(
                 self.db, card.id, current_user,
-                parcerias_vendas.conferir(self.db, current_user, card_data.client_id),
+                parcerias_vendas.conferir(self.db, current_user, card_data.client_id,
+                                          card_data.cnpj_justificativa, ignorar_card_id=card.id),
             )
 
         # Guarda valores antigos para detectar mudanças
@@ -2613,9 +2616,13 @@ class CardService:
         # Busca e valida o card original
         original_card = self.get_card_by_id(card_id)
 
-        # CNPJ com um parceiro (Programa de Parceiros): bloqueia quem não é gestão.
+        # CNPJ com parceiro ou com outro vendedor: bloqueia; a gestão libera com justificativa.
+        # O card perdido que está sendo reaberto não conta.
         from app.services.parcerias import vendas as parcerias_vendas
-        aviso_parcerias = parcerias_vendas.conferir(self.db, current_user, original_card.client_id)
+        aviso_parcerias = parcerias_vendas.conferir(
+            self.db, current_user, original_card.client_id,
+            getattr(reopen_data, "cnpj_justificativa", None), ignorar_card_id=original_card.id,
+        )
 
         if not original_card.is_lost:
             raise HTTPException(
@@ -2841,7 +2848,7 @@ class CardService:
 
         return new_card
 
-    def clone_card(self, card_id: int, current_user: User) -> Card:
+    def clone_card(self, card_id: int, current_user: User, cnpj_justificativa: Optional[str] = None) -> Card:
         """
         Clona um card existente na mesma lista.
 
@@ -2875,9 +2882,13 @@ class CardService:
 
         original_card = self.get_card_by_id(card_id)
 
-        # CNPJ com um parceiro (Programa de Parceiros): bloqueia quem não é gestão.
+        # CNPJ com parceiro ou com outro vendedor: bloqueia; a gestão libera com justificativa.
+        # O card que está sendo clonado não conta.
         from app.services.parcerias import vendas as parcerias_vendas
-        aviso_parcerias = parcerias_vendas.conferir(self.db, current_user, original_card.client_id)
+        aviso_parcerias = parcerias_vendas.conferir(
+            self.db, current_user, original_card.client_id, cnpj_justificativa,
+            ignorar_card_id=original_card.id,
+        )
 
         target_list = self.list_repository.find_by_id(TARGET_LIST_ID)
         if not target_list:

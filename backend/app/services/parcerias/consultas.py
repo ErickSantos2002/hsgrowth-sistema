@@ -19,9 +19,8 @@ from app.schemas.parcerias import (
     ConsultasResumoResponse,
     RegistroSemaforo,
 )
-from app.services.parcerias import acesso, semaforo
+from app.services.parcerias import acesso, regras_cnpj, semaforo
 
-LIMITE_CONSULTAS_PARCEIRO = 20
 FUSO = ZoneInfo("America/Sao_Paulo")
 POR_PAGINA = 10
 
@@ -33,8 +32,9 @@ def _inicio_do_dia_utc(agora: Optional[datetime] = None) -> datetime:
     return meia_noite.astimezone(timezone.utc).replace(tzinfo=None)
 
 
-def limite_de(user: User) -> Optional[int]:
-    return LIMITE_CONSULTAS_PARCEIRO if acesso.eh_parceiro(user) else None
+def limite_de(db: Session, user: User) -> Optional[int]:
+    """Consultas por dia do parceiro e do hunter (configuração); a H&S não tem limite."""
+    return regras_cnpj.regras(db).limite_consultas if acesso.eh_parceiro(user) else None
 
 
 def feitas_hoje(db: Session, user: User) -> int:
@@ -45,7 +45,7 @@ def feitas_hoje(db: Session, user: User) -> int:
 
 
 def consultar(db: Session, user: User, cnpj: str) -> ConsultaCnpjResponse:
-    limite = limite_de(user)
+    limite = limite_de(db, user)
     if limite is not None and feitas_hoje(db, user) >= limite:
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
@@ -86,7 +86,7 @@ def resumo(db: Session, user: User) -> ConsultasResumoResponse:
         .group_by(CnpjConsulta.resultado).all()
     )
     return ConsultasResumoResponse(
-        hoje=hoje, limite=limite_de(user), ultimos_30_dias=sum(por_cor.values()),
+        hoje=hoje, limite=limite_de(db, user), ultimos_30_dias=sum(por_cor.values()),
         verdes=por_cor.get("verde", 0), amarelos=por_cor.get("amarelo", 0), vermelhos=por_cor.get("vermelho", 0),
     )
 

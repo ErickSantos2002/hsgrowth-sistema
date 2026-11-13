@@ -26,7 +26,9 @@ def test_vendedor_nao_cria_card_com_cnpj_do_parceiro(client, db):
                     json={"title": "Empresa A", "list_id": v.lead_novo.id, "client_id": cliente(db).id})
 
     assert r.status_code == 409
-    assert "parceiro Dmap" in r.json()["detail"] and "Fale com o gerente" in r.json()["detail"]
+    d = r.json()["detail"]
+    assert d["code"] == "cnpj_bloqueado" and d["pode_liberar"] is False
+    assert "parceiro Dmap" in d["message"] and "Fale com o gerente" in d["message"]
 
 
 def test_cnpj_livre_cria_normal(client, db):
@@ -40,17 +42,19 @@ def test_cnpj_livre_cria_normal(client, db):
     assert r.status_code == 201
 
 
-def test_admin_passa_e_fica_registrado(client, db, admin_headers):
+def test_admin_libera_com_justificativa_e_fica_registrado(client, db, admin_headers):
     v = vendas(db)
     _parceiro_trabalhando(db)
+    novo = {"title": "Empresa A", "list_id": v.lead_novo.id, "client_id": cliente(db).id}
 
-    r = client.post(CARDS, headers=admin_headers,
-                    json={"title": "Empresa A", "list_id": v.lead_novo.id, "client_id": cliente(db).id})
+    sem = client.post(CARDS, headers=admin_headers, json=novo)
+    assert sem.status_code == 409 and sem.json()["detail"]["pode_liberar"] is True
 
+    r = client.post(CARDS, headers=admin_headers, json={**novo, "cnpj_justificativa": "Parceiro desistiu"})
     assert r.status_code == 201
     [registro] = db.query(Activity).filter(Activity.card_id == r.json()["id"],
                                            Activity.activity_type == "parcerias_cnpj").all()
-    assert "parceiro Dmap" in registro.description
+    assert "parceiro Dmap" in registro.description and "Parceiro desistiu" in registro.description
 
 
 def test_lead_de_integracao_passa(client, db):

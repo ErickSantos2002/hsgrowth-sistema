@@ -243,7 +243,7 @@ def test_hunter_trancado_e_consulta_cnpj(client, db):
     assert client.get("/api/v1/clients", headers=h).status_code == 403
     assert client.get("/api/v1/cards", headers=h).status_code == 403
     assert client.get(f"{URL}/consulta-cnpj/resumo", headers=h).status_code == 200
-    assert consultas.limite_de(r.uh) == consultas.LIMITE_CONSULTAS_PARCEIRO
+    assert consultas.limite_de(db, r.uh) == 20
 
 
 def test_perfis_externos(db):

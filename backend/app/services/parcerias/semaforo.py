@@ -24,10 +24,11 @@ from app.models.list import List as Lista
 from app.models.partner_activity import PartnerActivity
 from app.models.partner_opportunity import PartnerOpportunity
 from app.services.parcerias.etapas import ETAPAS_OPORTUNIDADE, nome_da_etapa
+from app.services.parcerias.regras_cnpj import PADRAO, Regras
+from app.services.parcerias.regras_cnpj import regras as regras_do_banco
 
-DIAS_PROTECAO = 10
-DIAS_COMPRA_RECENTE = 30
-DIAS_PERDA_RECENTE = 90
+# Os prazos (proteção, compra recente, perda recente) vêm da configuração
+# (regras_cnpj, tabela cnpj_rules_config); 0 dias desliga a regra.
 
 # Entre vermelhos, a mensagem segue esta ordem.
 ORDEM_VERMELHOS = ("em_negociacao", "compra_recente", "perdida_recente")
@@ -48,13 +49,15 @@ def _naive(dt: datetime) -> datetime:
 
 
 def protegido(agora: datetime, prazos: Iterable[Optional[datetime]],
-              movimentos: Iterable[Optional[datetime]]) -> bool:
+              movimentos: Iterable[Optional[datetime]], dias: int = PADRAO.protecao) -> bool:
     """
     Aberto e protegido: tem atividade em aberto que não está atrasada há mais
-    de 10 dias (agendada para daqui a 2 meses protege) ou teve movimento nos
-    últimos 10 dias. Atividade em aberto sem data não conta.
+    de N dias (agendada para daqui a 2 meses protege) ou teve movimento nos
+    últimos N dias. Atividade em aberto sem data não conta. N = 0 desliga.
     """
-    limite = agora - timedelta(days=DIAS_PROTECAO)
+    if dias <= 0:
+        return False
+    limite = agora - timedelta(days=dias)
     if any(p is not None and _naive(p) >= limite for p in prazos):
         return True
     return any(m is not None and _naive(m) >= limite for m in movimentos)
@@ -62,15 +65,16 @@ def protegido(agora: datetime, prazos: Iterable[Optional[datetime]],
 
 def motivo_do_registro(agora: datetime, aberto: bool, protegido_: bool = False,
                        ganho_em: Optional[datetime] = None,
-                       perdido_em: Optional[datetime] = None) -> Optional[Tuple[str, Optional[date]]]:
+                       perdido_em: Optional[datetime] = None,
+                       regras: Regras = PADRAO) -> Optional[Tuple[str, Optional[date]]]:
     """O que o registro bloqueia (motivo e data em que libera), ou None se não bloqueia."""
     if aberto:
         return ("em_negociacao", None) if protegido_ else None
     if ganho_em is not None:
-        libera = _naive(ganho_em) + timedelta(days=DIAS_COMPRA_RECENTE)
+        libera = _naive(ganho_em) + timedelta(days=regras.compra)
         return ("compra_recente", libera.date()) if libera > agora else None
     if perdido_em is not None:
-        libera = _naive(perdido_em) + timedelta(days=DIAS_PERDA_RECENTE)
+        libera = _naive(perdido_em) + timedelta(days=regras.perda)
         return ("perdida_recente", libera.date()) if libera > agora else None
     return None
 
@@ -89,6 +93,8 @@ class Registro:
     parceiro_id: Optional[int]
     parceiro: Optional[str]
     desde: datetime
+    # Card de Vendas: responsável e SDR (o card do próprio vendedor não o bloqueia).
+    donos: Tuple[int, ...] = ()
 
 
 @dataclass
@@ -134,7 +140,7 @@ def _cnpj_sql(col):
     return expr
 
 
-def _cards(db: Session, raiz: str, agora: datetime) -> List[Registro]:
+def _cards(db: Session, raiz: str, agora: datetime, regras: Regras = PADRAO) -> List[Registro]:
     doc = _cnpj_sql(Client.document)
     linhas = (
         db.query(Card, doc, Lista.name, Board.name)
@@ -176,10 +182,12 @@ def _cards(db: Session, raiz: str, agora: datetime) -> List[Registro]:
             agora,
             aberto=aberto,
             protegido_=aberto and protegido(
-                agora, prazos.get(card.id, []), movimentos.get(card.id, []) + [card.created_at]
+                agora, prazos.get(card.id, []), movimentos.get(card.id, []) + [card.created_at],
+                dias=regras.protecao,
             ),
             ganho_em=card.closed_at if card.is_won == 1 else None,
             perdido_em=card.closed_at if card.is_won == -1 else None,
+            regras=regras,
         )
         if resultado:
             registros.append(Registro(
@@ -187,12 +195,13 @@ def _cards(db: Session, raiz: str, agora: datetime) -> List[Registro]:
                 responsavel=card.assigned_to.name if card.assigned_to else None,
                 cnpj=documento, motivo=resultado[0], libera_em=resultado[1],
                 parceiro_id=None, parceiro=None, desde=card.created_at,
+                donos=tuple(i for i in (card.assigned_to_id, card.sdr_id) if i),
             ))
     return registros
 
 
 def _oportunidades(db: Session, raiz: str, agora: datetime,
-                   ignorar: Optional[int] = None) -> List[Registro]:
+                   ignorar: Optional[int] = None, regras: Regras = PADRAO) -> List[Registro]:
     q = db.query(PartnerOpportunity).filter(
         PartnerOpportunity.is_deleted.is_(False),
         PartnerOpportunity.eligibility_status != "rejeitada",
@@ -218,9 +227,11 @@ def _oportunidades(db: Session, raiz: str, agora: datetime,
         resultado = motivo_do_registro(
             agora,
             aberto=aberto,
-            protegido_=aberto and protegido(agora, prazos.get(o.id, []), [o.last_activity_at, o.created_at]),
+            protegido_=aberto and protegido(agora, prazos.get(o.id, []), [o.last_activity_at, o.created_at],
+                                            dias=regras.protecao),
             ganho_em=o.won_at if o.stage == "ganho" else None,
             perdido_em=o.lost_at if o.stage == "perdido" else None,
+            regras=regras,
         )
         if resultado:
             nome = o.partner.name if o.partner else ""
@@ -235,19 +246,38 @@ def _oportunidades(db: Session, raiz: str, agora: datetime,
 
 
 def situacao(db: Session, cnpj: str, ignorar_oportunidade_id: Optional[int] = None,
-             agora: Optional[datetime] = None) -> Situacao:
+             agora: Optional[datetime] = None, regras: Optional[Regras] = None) -> Situacao:
     """A cor do CNPJ (14 dígitos) contra Vendas e todos os parceiros."""
     agora = agora or datetime.utcnow()
+    regras = regras or regras_do_banco(db)
     raiz = cnpj[:8]
-    registros = _cards(db, raiz, agora) + _oportunidades(db, raiz, agora, ignorar_oportunidade_id)
+    registros = _cards(db, raiz, agora, regras) + _oportunidades(db, raiz, agora, ignorar_oportunidade_id, regras)
     return juntar(cnpj, registros)
 
 
-def protecao_de_parceiro(db: Session, cnpj: str, agora: Optional[datetime] = None) -> List[Registro]:
+def protecao_de_parceiro(db: Session, cnpj: str, agora: Optional[datetime] = None,
+                         regras: Optional[Regras] = None) -> List[Registro]:
     """
     Oportunidades de parceiro em negociação com exatamente este CNPJ (faixa e
     bloqueio em Vendas). Oportunidade ganha ou perdida não segura o vendedor.
     """
     agora = agora or datetime.utcnow()
-    return [r for r in _oportunidades(db, cnpj[:8], agora)
+    regras = regras or regras_do_banco(db)
+    return [r for r in _oportunidades(db, cnpj[:8], agora, regras=regras)
             if r.cnpj == cnpj and r.motivo == "em_negociacao"]
+
+
+def protecao_de_vendas(db: Session, cnpj: str, user_id: int, ignorar_card_id: Optional[int] = None,
+                       agora: Optional[datetime] = None, regras: Optional[Regras] = None) -> List[Registro]:
+    """
+    Cards de Vendas de OUTRO vendedor que seguram exatamente este CNPJ (negociação,
+    compra recente ou perda recente). O card de origem (vincular, reabrir, clonar)
+    não conta, nem o card em que o usuário é o responsável ou o SDR.
+    """
+    agora = agora or datetime.utcnow()
+    regras = regras or regras_do_banco(db)
+    return sorted(
+        (r for r in _cards(db, cnpj[:8], agora, regras)
+         if r.cnpj == cnpj and r.id != ignorar_card_id and user_id not in r.donos),
+        key=lambda r: r.desde,
+    )

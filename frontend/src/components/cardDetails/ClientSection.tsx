@@ -11,6 +11,7 @@ import ClientModal from "../clients/ClientModal";
 import { showError } from "../../utils/toast";
 import { ehCpf, formatarDocumento, limparDocumento } from "../../utils/formatters";
 import { useConfirm } from "../../contexts/ConfirmContext";
+import { textoDoErro, useLiberacaoCnpj } from "../../hooks/useLiberacaoCnpj";
 
 interface ClientSectionProps {
   card: Card;
@@ -57,6 +58,8 @@ const linkifyNotes = (text: string): React.ReactNode[] =>
  */
 const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly = false }) => {
   const { confirm } = useConfirm();
+  // Trava de CNPJ (parceiro ou outro vendedor): janela da justificativa para a gestão.
+  const { comLiberacao, janela: janelaCnpj } = useLiberacaoCnpj();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(false);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
@@ -146,17 +149,18 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
     try {
       setLoading(true);
 
-      await cardService.update(card.id, {
+      const feito = await comLiberacao((j) => cardService.update(card.id, {
         client_id: clientId,
-      });
+        cnpj_justificativa: j,
+      }));
+      if (feito === null) return; // trava de CNPJ: cancelado ou sem permissão
 
       setSearchTerm("");
       setShowModal(false);
       onUpdate();
     } catch (error: any) {
       console.error("Erro ao vincular cliente:", error);
-      const detail = error?.response?.data?.detail;
-      showError(typeof detail === "string" ? detail : "Erro ao vincular cliente");
+      showError(textoDoErro(error, "Erro ao vincular cliente"));
     } finally {
       setLoading(false);
     }
@@ -211,16 +215,17 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
         const newClient = response.clients[0];
 
         // Vincula automaticamente ao card
-        await cardService.update(card.id, {
+        const feito = await comLiberacao((j) => cardService.update(card.id, {
           client_id: newClient.id,
-        });
+          cnpj_justificativa: j,
+        }));
+        if (feito === null) return;
 
         onUpdate();
       }
     } catch (error: any) {
       console.error("Erro ao vincular cliente recém-criado:", error);
-      const detail = error?.response?.data?.detail;
-      showError(typeof detail === "string" ? detail : "Cliente criado, mas houve erro ao vincular. Vincule manualmente");
+      showError(textoDoErro(error, "Cliente criado, mas houve erro ao vincular. Vincule manualmente"));
     }
   };
 
@@ -364,6 +369,8 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
           </div>,
           document.body
         )}
+
+        {janelaCnpj}
 
         {/* Modal de criar cliente */}
         {showCreateModal && (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { User as UserIcon, Bell, Save, Upload, Shield, Monitor, Clock, Activity, Settings as SettingsIcon, Award, Plus, Edit2, Trash2, Power, PowerOff, Search, Coins, CheckCircle, UserPlus, ChevronDown, Phone, Globe, FileText, Filter, Calendar, RefreshCw, Wifi, Mail, X, ChevronRight, Loader2 } from "lucide-react";
-import { ListOrdered, ScrollText, Wallet } from "lucide-react";
+import { ListOrdered, ScanSearch, ScrollText, Wallet } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
@@ -21,9 +21,10 @@ import CadenceTemplateManager from "../components/settings/CadenceTemplateManage
 import NotificacoesConfig from "../components/settings/NotificacoesConfig";
 import TermosConfig from "../components/settings/TermosConfig";
 import ComissoesConfig from "../components/settings/ComissoesConfig";
+import RegrasCnpjConfig from "../components/settings/RegrasCnpjConfig";
 import { PERFIS_COMISSOES_TUDO, PERFIS_GESTAO } from "../constants/parcerias";
 
-type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs" | "email_templates" | "cadence_templates" | "termos" | "comissoes";
+type Tab = "profile" | "notifications" | "security" | "badges" | "points" | "api4com" | "logs" | "email_templates" | "cadence_templates" | "termos" | "comissoes" | "regras_cnpj";
 
 const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -1022,6 +1023,10 @@ const Settings: React.FC = () => {
   }
   if (PERFIS_COMISSOES_TUDO.includes(user?.role ?? "")) {
     tabs.push({ id: "comissoes" as Tab, label: "Comissões", icon: Wallet });
+  }
+  // Regras da Consulta de CNPJ (prazos, limite e trava entre vendedores): só o admin.
+  if (user?.role === "admin") {
+    tabs.push({ id: "regras_cnpj" as Tab, label: "Consulta de CNPJ", icon: ScanSearch });
   }
 
   // Aba do link que este perfil não tem: volta para Perfil.
@@ -3198,6 +3203,7 @@ const Settings: React.FC = () => {
 
             {/* Tab: Configuração das comissões */}
             {abaVisivel === "comissoes" && <ComissoesConfig />}
+            {abaVisivel === "regras_cnpj" && <RegrasCnpjConfig />}
 
           </div>
         </div>

@@ -48,6 +48,7 @@ import { useConfirm } from "../contexts/ConfirmContext";
 import attachmentService from "../services/attachmentService";
 import callEvaluationService from "../services/callEvaluationService";
 import UserAvatar from "../components/common/UserAvatar";
+import { textoDoErro, useLiberacaoCnpj } from "../hooks/useLiberacaoCnpj";
 
 /**
  * Página de detalhes do Card - Layout estilo Pipedrive com tema escuro
@@ -58,6 +59,8 @@ const CardDetails: React.FC = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const { confirm } = useConfirm();
+  // Trava de CNPJ (parceiro ou outro vendedor) no clonar e no reabrir: justificativa da gestão.
+  const { comLiberacao, janela: janelaCnpj } = useLiberacaoCnpj();
 
   // Estados principais
   const [card, setCard] = useState<Card | null>(null);
@@ -330,11 +333,12 @@ const CardDetails: React.FC = () => {
     if (!confirmed) return;
     setIsCloning(true);
     try {
-      const result = await cardService.clone(card.id);
+      const result = await comLiberacao((j) => cardService.clone(card.id, j));
+      if (!result) return; // trava de CNPJ: cancelado ou sem permissão
       showSuccess(`Card clonado com sucesso! Abrindo card #${result.new_card_id}…`);
       navigate(`/cards/${result.new_card_id}`);
     } catch (error: any) {
-      showError(error?.response?.data?.detail || "Erro ao clonar o card. Tente novamente.");
+      showError(textoDoErro(error, "Erro ao clonar o card. Tente novamente."));
     } finally {
       setIsCloning(false);
     }
@@ -365,18 +369,19 @@ const CardDetails: React.FC = () => {
     if (!card) return;
     setIsReopening(true);
     try {
-      const result = await cardService.reopen(card.id, {
+      const result = await comLiberacao((j) => cardService.reopen(card.id, {
         title,
         acquisition_channel_detail: acquisitionChannelDetail,
-      });
+        cnpj_justificativa: j,
+      }));
+      if (!result) return; // trava de CNPJ: cancelado ou sem permissão
       setShowReopenModal(false);
       showSuccess(`Negócio reaberto com sucesso! Redirecionando para o novo card...`);
       // Navega para o novo card criado
       navigate(`/cards/${result.new_card_id}`);
     } catch (error: any) {
       console.error("Erro ao reabrir negócio:", error);
-      const detail = error?.response?.data?.detail;
-      showError(typeof detail === "string" ? detail : "Erro ao reabrir negócio. Tente novamente.");
+      showError(textoDoErro(error, "Erro ao reabrir negócio. Tente novamente."));
     } finally {
       setIsReopening(false);
     }
@@ -1302,6 +1307,8 @@ const CardDetails: React.FC = () => {
           boardName={card.board_name || "Board"}
         />
       )}
+
+      {janelaCnpj}
 
       {/* Modal de Reabertura de Negócio */}
       {card && (

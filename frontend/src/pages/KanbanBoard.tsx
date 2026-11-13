@@ -43,6 +43,7 @@ import CardModal, { CardFormData } from "../components/kanban/CardModal";
 import BoardModal from "../components/kanban/BoardModal";
 import { useAuth } from "../context/AuthContext";
 import { useBoardStream } from "../hooks/useBoardStream";
+import { textoDoErro, useLiberacaoCnpj } from "../hooks/useLiberacaoCnpj";
 
 const KanbanBoard: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -50,6 +51,8 @@ const KanbanBoard: React.FC = () => {
   const location = useLocation();
   const boardsBasePath = location.pathname.startsWith("/servicos") ? "/servicos" : "/boards";
   const { user } = useAuth(); // Pegar usuário logado
+  // Trava de CNPJ (parceiro ou outro vendedor): janela da justificativa para a gestão.
+  const { comLiberacao, janela: janelaCnpj } = useLiberacaoCnpj();
   const { confirm } = useConfirm();
 
   // Permissões: Apenas Admin e Manager podem criar listas
@@ -1059,19 +1062,17 @@ const KanbanBoard: React.FC = () => {
         cardData.due_date = dateStr;
       }
 
-      if (editingCard) {
+      const feito = editingCard
         // Editar card existente
-        await cardService.update(editingCard.id, cardData);
-      } else {
+        ? await comLiberacao((j) => cardService.update(editingCard.id, { ...cardData, cnpj_justificativa: j }))
         // Criar novo card
-        await cardService.create(cardData);
-      }
+        : await comLiberacao((j) => cardService.create({ ...cardData, cnpj_justificativa: j }));
+      if (feito === null) return; // trava de CNPJ: cancelado ou sem permissão
       // Recarrega apenas os cards — board e listas não mudam ao criar/editar um card
       await loadCardsOnly(statusFilter);
     } catch (error: any) {
       console.error("Erro ao salvar card:", error);
-      const detail = error?.response?.data?.detail;
-      showError(typeof detail === "string" ? detail : "Erro ao salvar card");
+      showError(textoDoErro(error, "Erro ao salvar card"));
     }
   };
 
@@ -1740,6 +1741,8 @@ const KanbanBoard: React.FC = () => {
         confirmText="Deletar"
         isDanger={true}
       />
+
+      {janelaCnpj}
 
       {/* Modal de criar/editar card */}
       <CardModal
