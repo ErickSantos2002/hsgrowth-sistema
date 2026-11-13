@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Search, X } from "lucide-react";
+import { ArrowLeft, Filter, Plus, Search, X } from "lucide-react";
 import type { BoardParceria } from "../../constants/parcerias";
 
 interface Props {
@@ -8,14 +8,20 @@ interface Props {
   busca: string;
   onBusca: (texto: string) => void;
   placeholderBusca: string;
-  /** Botões e filtros do lado direito. */
+  /** Botões do lado direito. */
   children?: React.ReactNode;
+  /** Painel de filtros (abre pelo botão de funil, como nos boards de Serviço). */
+  filtros?: React.ReactNode;
+  /** Há filtro aplicado: o botão fica destacado mesmo com o painel fechado. */
+  filtrosAtivos?: boolean;
 }
 
 /** Cabeçalho do kanban, igual ao dos boards de Serviço: voltar, ícone, nome e ações. */
-export default function CabecalhoBoard({ board, busca, onBusca, placeholderBusca, children }: Props) {
+export default function CabecalhoBoard({ board, busca, onBusca, placeholderBusca, children, filtros, filtrosAtivos }: Props) {
   const navigate = useNavigate();
   const [mostrarBusca, setMostrarBusca] = useState(false);
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const realce = mostrarFiltros || filtrosAtivos;
   const Icone = board.icone;
 
   return (
@@ -71,9 +77,19 @@ export default function CabecalhoBoard({ board, busca, onBusca, placeholderBusca
               <Search size={20} className={busca ? "text-blue-400" : "text-slate-500 dark:text-slate-400"} />
             </button>
           )}
+          {filtros && (
+            <button
+              onClick={() => setMostrarFiltros((m) => !m)}
+              className={`rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-slate-800/50 ${realce ? "bg-violet-500/20" : ""}`}
+              title="Filtros"
+            >
+              <Filter size={20} className={realce ? "text-violet-400" : "text-slate-500 dark:text-slate-400"} />
+            </button>
+          )}
           {children}
         </div>
       </div>
+      {filtros && mostrarFiltros && filtros}
     </div>
   );
 }

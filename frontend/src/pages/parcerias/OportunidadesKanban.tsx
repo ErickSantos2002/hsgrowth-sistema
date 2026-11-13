@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, CheckCircle2, ShieldCheck } from "lucide-react";
-import { LoadingSpinner, SelectMenu } from "../../components/common";
+import { LoadingSpinner } from "../../components/common";
 import CabecalhoBoard, { BotaoNovo } from "../../components/parcerias/CabecalhoBoard";
+import {
+  FiltroPeriodo, FiltroSelect, OPCOES_ETIQUETA, PainelFiltros, noPeriodo, opcoesUnicas, useFiltrosSalvos,
+} from "../../components/parcerias/FiltrosBoard";
 import KanbanParcerias, { CardBadge, CardPadrao } from "../../components/parcerias/KanbanParcerias";
 import ModalTrava, { faltasParaMover, temFalta } from "../../components/parcerias/ModalTrava";
 import NovaOportunidadeModal from "../../components/parcerias/NovaOportunidadeModal";
@@ -19,6 +22,12 @@ import parceriasService, {
 
 const BOARD = BOARDS_PARCERIAS.find((b) => b.chave === "oportunidades")!;
 const FINAIS = ["ganho", "perdido"];
+
+const FILTROS_PADRAO = {
+  origem: "todas", parceiro: "", tipo: "", indicador: "", responsavel: "", vendedor: "",
+  status: "todas", elegibilidade: "", ganho: "", uf: "", etiqueta: "",
+  criado: "", criadoDe: "", criadoAte: "", fechado: "", fechadoDe: "", fechadoAte: "",
+};
 
 /** Valor total da coluna, no mesmo quadrinho do rodapé dos boards de Serviço. */
 function ValorDaColuna({ ops }: { ops: Oportunidade[] }) {
@@ -45,9 +54,8 @@ export default function OportunidadesKanban() {
   const [etapas, setEtapas] = useState<Etapa[]>([]);
   const [ops, setOps] = useState<Oportunidade[]>([]);
   const [parceiros, setParceiros] = useState<Parceiro[]>([]);
-  const [filtro, setFiltro] = useState("");
   const [busca, setBusca] = useState("");
-  const [origem, setOrigem] = useState<"todas" | "minhas" | "indicadas">("todas");
+  const { f, mudar, limpar, ativos } = useFiltrosSalvos("parcerias_filtros_oportunidades_v1", FILTROS_PADRAO);
   const [carregando, setCarregando] = useState(true);
   const [nova, setNova] = useState(false);
   const [pendente, setPendente] = useState<{ op: Oportunidade; destino: string } | null>(null);
@@ -56,7 +64,7 @@ export default function OportunidadesKanban() {
     try {
       const [e, o, p] = await Promise.all([
         parceriasService.etapas(),
-        parceriasService.listarOportunidades(filtro ? Number(filtro) : undefined),
+        parceriasService.listarOportunidades(),
         parceriasService.listarParceiros(),
       ]);
       setEtapas(e.oportunidades);
@@ -67,7 +75,7 @@ export default function OportunidadesKanban() {
     } finally {
       setCarregando(false);
     }
-  }, [filtro]);
+  }, []);
 
   useEffect(() => {
     carregar();
@@ -91,41 +99,124 @@ export default function OportunidadesKanban() {
 
   const termo = busca.trim().toLowerCase();
   const documento = limparCnpj(termo);
-  const visiveis = ops.filter(
-    (o) =>
-      (origem === "todas" || (origem === "minhas") === ehMinha(o)) &&
+  // Tipo, indicação e responsável H&S vêm do parceiro dono da oportunidade.
+  const parceiroDe = new Map(parceiros.map((p) => [p.id, p]));
+  const igualOuSem = (filtro: string, valor: string | number | null | undefined) =>
+    !filtro || (filtro === "sem" ? valor == null || valor === "" : String(valor ?? "") === filtro);
+  const fechadaEm = (o: Oportunidade) => (o.stage === "ganho" ? o.won_at : o.stage === "perdido" ? o.lost_at : null);
+  const statusOk = (o: Oportunidade) =>
+    f.status === "todas" ||
+    (f.status === "abertas" && !FINAIS.includes(o.stage)) ||
+    (f.status === "ganhas" && o.stage === "ganho") ||
+    (f.status === "perdidas" && o.stage === "perdido");
+  const ganhoOk = (o: Oportunidade) =>
+    !f.ganho ||
+    (f.ganho === "a_confirmar" && o.stage === "ganho" && !o.won_confirmed_at) ||
+    (f.ganho === "confirmado" && !!o.won_confirmed_at);
+
+  const visiveis = ops.filter((o) => {
+    const dono = parceiroDe.get(o.partner_id);
+    return (
+      (f.origem === "todas" || (f.origem === "minhas") === ehMinha(o)) &&
       (!termo ||
-      [o.title, o.company_name, o.partner_name, o.seller_name].some((v) => v?.toLowerCase().includes(termo)) ||
-      (documento.length >= 3 && o.cnpj?.includes(documento)))
+        [o.title, o.company_name, o.partner_name, o.seller_name].some((v) => v?.toLowerCase().includes(termo)) ||
+        (documento.length >= 3 && o.cnpj?.includes(documento))) &&
+      (!f.parceiro || String(o.partner_id) === f.parceiro) &&
+      (!f.tipo || (dono?.kind ?? "empresa") === f.tipo) &&
+      igualOuSem(f.indicador, dono?.indicated_by_partner_id) &&
+      igualOuSem(f.responsavel, dono?.hs_owner_id) &&
+      igualOuSem(f.vendedor, o.seller_member_id) &&
+      statusOk(o) &&
+      (!f.elegibilidade || o.eligibility_status === f.elegibilidade) &&
+      ganhoOk(o) &&
+      (!f.uf || (o.company_state ?? "").toUpperCase() === f.uf) &&
+      (!f.etiqueta || (o.pending_status ?? "none") === f.etiqueta) &&
+      noPeriodo(o.created_at, f.criado, f.criadoDe, f.criadoAte) &&
+      noPeriodo(fechadaEm(o), f.fechado, f.fechadoDe, f.fechadoAte)
+    );
+  });
+
+  const vendedores = opcoesUnicas(ops.map((o) => [o.seller_member_id, o.seller_name]));
+  const ufs = [...new Set(ops.map((o) => (o.company_state ?? "").toUpperCase()).filter(Boolean))].sort();
+
+  const filtros = (
+    <PainelFiltros ativos={ativos} onLimpar={limpar}>
+      {indicadora && (
+        <FiltroSelect valor={f.origem} onChange={(v) => mudar("origem", v)} largura="min-w-[170px]" opcoes={[
+          { value: "todas", label: "Minhas e das indicadas" },
+          { value: "minhas", label: "Só minhas" },
+          { value: "indicadas", label: "Só das indicadas" },
+        ]} />
+      )}
+      {!ehParceiro && (
+        <>
+          <FiltroSelect valor={f.parceiro} onChange={(v) => mudar("parceiro", v)} largura="min-w-[190px]" opcoes={[
+            { value: "", label: "Todos os parceiros" },
+            ...parceiros.map((p) => ({ value: String(p.id), label: p.name })),
+          ]} />
+          <FiltroSelect valor={f.tipo} onChange={(v) => mudar("tipo", v)} largura="min-w-[170px]" opcoes={[
+            { value: "", label: "Empresa ou hunter" },
+            { value: "empresa", label: "Vendidas por empresa" },
+            { value: "hunter", label: "Vendidas por hunter" },
+          ]} />
+          <FiltroSelect valor={f.indicador} onChange={(v) => mudar("indicador", v)} largura="min-w-[190px]" opcoes={[
+            { value: "", label: "Qualquer indicação" },
+            { value: "sem", label: "Parceiro sem indicação" },
+            ...opcoesUnicas(parceiros.map((p) => [p.indicated_by_partner_id, p.indicated_by_name])).map((o) => ({ ...o, label: `Rede de ${o.label}` })),
+          ]} />
+          <FiltroSelect valor={f.responsavel} onChange={(v) => mudar("responsavel", v)} largura="min-w-[190px]" opcoes={[
+            { value: "", label: "Todos os responsáveis H&S" },
+            { value: "sem", label: "Sem responsável" },
+            ...opcoesUnicas(parceiros.map((p) => [p.hs_owner_id, p.hs_owner_name])),
+          ]} />
+        </>
+      )}
+      {vendedores.length > 0 && (
+        <FiltroSelect valor={f.vendedor} onChange={(v) => mudar("vendedor", v)} opcoes={[
+          { value: "", label: "Todos os vendedores" },
+          { value: "sem", label: "Sem vendedor" },
+          ...vendedores,
+        ]} />
+      )}
+      <FiltroSelect valor={f.status} onChange={(v) => mudar("status", v)} largura="min-w-[150px]" opcoes={[
+        { value: "todas", label: "Todas" },
+        { value: "abertas", label: "Apenas abertas" },
+        { value: "ganhas", label: "Apenas ganhas" },
+        { value: "perdidas", label: "Apenas perdidas" },
+      ]} />
+      <FiltroSelect valor={f.elegibilidade} onChange={(v) => mudar("elegibilidade", v)} opcoes={[
+        { value: "", label: "Qualquer elegibilidade" },
+        ...Object.entries(ELEGIBILIDADE_LABEL).map(([value, label]) => ({ value, label })),
+      ]} />
+      <FiltroSelect valor={f.ganho} onChange={(v) => mudar("ganho", v)} largura="min-w-[150px]" opcoes={[
+        { value: "", label: "Qualquer ganho" },
+        { value: "a_confirmar", label: "Ganho a confirmar" },
+        { value: "confirmado", label: "Ganho confirmado" },
+      ]} />
+      {ufs.length > 0 && (
+        <FiltroSelect valor={f.uf} onChange={(v) => mudar("uf", v)} largura="min-w-[110px]" opcoes={[
+          { value: "", label: "Todas as UFs" },
+          ...ufs.map((u) => ({ value: u, label: u })),
+        ]} />
+      )}
+      <FiltroSelect valor={f.etiqueta} onChange={(v) => mudar("etiqueta", v)} opcoes={OPCOES_ETIQUETA} />
+      <FiltroPeriodo
+        rotulo="Qualquer criação" periodo={f.criado} de={f.criadoDe} ate={f.criadoAte}
+        onPeriodo={(v) => mudar("criado", v)} onDe={(v) => mudar("criadoDe", v)} onAte={(v) => mudar("criadoAte", v)}
+      />
+      <FiltroPeriodo
+        rotulo="Qualquer fechamento" periodo={f.fechado} de={f.fechadoDe} ate={f.fechadoAte}
+        onPeriodo={(v) => mudar("fechado", v)} onDe={(v) => mudar("fechadoDe", v)} onAte={(v) => mudar("fechadoAte", v)}
+      />
+    </PainelFiltros>
   );
 
   return (
     <div className="flex h-full flex-col bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      <CabecalhoBoard board={BOARD} busca={busca} onBusca={setBusca} placeholderBusca="Buscar por título, empresa ou CNPJ...">
-        {indicadora && (
-          <div className="w-48">
-            <SelectMenu
-              size="sm"
-              value={origem}
-              options={[
-                { value: "todas", label: "Todas" },
-                { value: "minhas", label: "Minhas" },
-                { value: "indicadas", label: "Das indicadas" },
-              ]}
-              onChange={(v) => setOrigem(v as typeof origem)}
-            />
-          </div>
-        )}
-        {!ehParceiro && (
-          <div className="w-56">
-            <SelectMenu
-              size="sm"
-              value={filtro}
-              options={[{ value: "", label: "Todos os parceiros" }, ...parceiros.map((p) => ({ value: String(p.id), label: p.name }))]}
-              onChange={setFiltro}
-            />
-          </div>
-        )}
+      <CabecalhoBoard
+        board={BOARD} busca={busca} onBusca={setBusca} placeholderBusca="Buscar por título, empresa ou CNPJ..."
+        filtros={filtros} filtrosAtivos={ativos}
+      >
         {podeMover && <BotaoNovo rotulo="Nova Oportunidade" onClick={() => setNova(true)} />}
       </CabecalhoBoard>
 
