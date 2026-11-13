@@ -120,7 +120,7 @@ export function FiltroSelect({ valor, onChange, opcoes, largura = "min-w-[170px]
 }) {
   return (
     <div className={largura}>
-      <SelectMenu size="sm" value={valor} onChange={onChange} options={opcoes} />
+      <SelectMenu size="sm" value={valor} onChange={onChange} options={opcoes} listaAjustada />
     </div>
   );
 }

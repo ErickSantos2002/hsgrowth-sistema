@@ -30,6 +30,11 @@ interface SelectMenuProps {
    * Ajuda a distinguir seletores lado a lado sem precisar de label acima.
    */
   icon?: React.ReactNode;
+  /**
+   * A lista aberta cresce até caber o texto das opções (até 22rem), em vez de ficar
+   * da largura do botão. Útil em filtros estreitos com nomes compridos.
+   */
+  listaAjustada?: boolean;
 }
 
 /**
@@ -60,6 +65,7 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
   error = false,
   size = "md",
   icon,
+  listaAjustada = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -144,7 +150,7 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
       {/* Dropdown de opções */}
       {isOpen && (
         <div
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
+          className={`absolute z-50 mt-1 max-h-60 ${listaAjustada ? "w-max min-w-full max-w-[22rem]" : "w-full"} overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900`}
           role="listbox"
         >
           {options.length === 0 ? (

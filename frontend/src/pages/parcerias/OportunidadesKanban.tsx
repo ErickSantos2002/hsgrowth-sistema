@@ -179,7 +179,7 @@ export default function OportunidadesKanban() {
         ]} />
       )}
       <FiltroSelect valor={f.status} onChange={(v) => mudar("status", v)} largura="min-w-[150px]" opcoes={[
-        { value: "todas", label: "Todas" },
+        { value: "todas", label: "Todos os status" },
         { value: "abertas", label: "Apenas abertas" },
         { value: "ganhas", label: "Apenas ganhas" },
         { value: "perdidas", label: "Apenas perdidas" },

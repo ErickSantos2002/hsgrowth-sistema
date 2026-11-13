@@ -107,7 +107,7 @@ def _frase(motivo: str, libera_em: Optional[date]) -> str:
         "em_negociacao": "Esta empresa já está em negociação.",
         "compra_recente": f"Cliente com compra recente. Disponível a partir de {data}.",
         "perdida_recente": f"Negociação encerrada há pouco. Disponível a partir de {data}.",
-        "outra_unidade": "Outra unidade desta empresa está em negociação. O cadastro entra para análise da H&S.",
+        "outra_unidade": "Outra unidade desta empresa já está com a H&S ou com um parceiro. O cadastro entra para análise da H&S.",
     }[motivo]
 
 
