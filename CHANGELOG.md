@@ -7,6 +7,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não lançado]
 
+---
+
+## [1.11.23] — 13/11/2026
+
 ### Alterado
 - **Menu do parceiro e do hunter:** Dashboard, Boards (Parcerias), Consulta de CNPJ, Indicações, Comissões e Configurações, nessa ordem. "Boards (Parcerias)" abre a tela com os dois boards, como para a H&S: na Aquisição, o dono vê o próprio card e o hunter vê as empresas que indicou. O vendedor do parceiro continua indo direto ao Pipeline ("Oportunidades").
 - **Filtros nos boards de Parcerias**, no padrão dos boards de Serviços (botão de funil, "Limpar filtros", guardados no navegador por board).
@@ -14,6 +18,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   - **Pipeline:** parceiro, quem vendeu (empresa/hunter), rede do hunter (oportunidades das empresas que ele indicou), responsável H&S, vendedor da equipe, status (começa em Todas), elegibilidade, ganho a confirmar/confirmado, UF, etiqueta, criação e fechamento. O "Minhas / Das indicadas" do parceiro e do hunter foi para dentro do painel.
 - **Consulta de CNPJ explica o resultado:** botão "Como funciona" no cabeçalho e "?" no resultado (também no cadastro da oportunidade) com as regras do Livre, Bloqueado e Para análise; o resultado mostra o motivo e uma linha com o porquê (ex.: a raiz com outra unidade em negociação).
 - **Card do parceiro, aba Oportunidades:** as etapas do Pipeline numa faixa só, ocupando a largura toda, com o total no topo; etapas abertas em azul, Ganho em verde e Perdido em vermelho.
+
+### Banco de dados
+- Sem migration.
 
 ---
 

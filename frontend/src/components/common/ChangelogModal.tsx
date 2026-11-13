@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.23",
+    date: "13/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Filtros nos boards de Parcerias, como nos boards de Serviços: na Aquisição, por empresa ou hunter, quem indicou, responsável H&S e qualificação; no Pipeline, por parceiro, rede de um hunter, vendedor, status, elegibilidade, ganho, UF e datas.",
+      },
+      {
+        type: "improvement",
+        text: "Consulta de CNPJ explica o resultado: botão \"Como funciona\" e \"?\" com as regras do Livre, Bloqueado e Para análise, e o porquê de cada resultado (por exemplo, outra unidade da mesma empresa em negociação).",
+      },
+      {
+        type: "improvement",
+        text: "Parceiro e hunter: menu na ordem Dashboard, Boards (Parcerias), Consulta de CNPJ, Indicações, Comissões e Configurações, com a tela dos dois boards. No card do parceiro, as etapas das oportunidades ficam numa faixa só.",
+      },
+    ],
+  },
+  {
     version: "1.11.22",
     date: "13/11/2026",
     entries: [
