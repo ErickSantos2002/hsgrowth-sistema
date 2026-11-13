@@ -7,6 +7,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não lançado]
 
+### Adicionado
+- **Tela "Capacidade" do Guardi:** nova rota `GET /api/v1/agente/capacidades`, só para token de agente (login normal recebe 404). Devolve o papel da pessoa (`"Vendedor"`, `"Serviço"`, `"Gerente"`…) e as rotas da lista do agente que o login dela alcança. O HS.OS usa a resposta para mostrar o que o Guardi consegue fazer aqui.
+  - Cada rota da lista do agente declara os papéis que a alcançam (`PAPEIS_AGENTE` em `backend/app/core/agente.py`). Um teste confere, papel a papel, que a tabela bate com as checagens das rotas.
+  - **Pelo agente**, a tabela agora também é aplicada (403 fora do papel). Vendas fica com admin, gerente, vendedor e SDR (o visualizador só lê). Serviços fica com admin, gerente e serviço. Cliente, contato e busca geral o serviço só lê. Muda o que antes passava: o papel serviço não entra mais em Vendas pelo agente, como já não entra pela tela, e o visualizador não cria nota nem tarefa pelo agente.
+
 ---
 
 ## [1.11.23] — 13/11/2026
@@ -53,9 +58,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   - **Serviços:** o agente não move card pelo `PUT` (só pelo `/move`, dentro do mesmo quadro) nem o apaga ou clona.
   - Histórico do card, atividades de Serviços e auditoria trazem **"(via <bot>)"** no que veio pelo Guardi.
   - O card de Serviços passa a informar `external_source`/`external_id` (de onde ele veio, ex.: caixa do GestorHS).
-- **Tela "Capacidade" do Guardi:** nova rota `GET /api/v1/agente/capacidades`, só para token de agente (login normal recebe 404). Devolve o papel da pessoa (`"Vendedor"`, `"Serviço"`, `"Gerente"`…) e as rotas da lista do agente que o login dela alcança. O HS.OS usa a resposta para mostrar o que o Guardi consegue fazer aqui.
-  - Cada rota da lista do agente declara os papéis que a alcançam (`PAPEIS_AGENTE` em `backend/app/core/agente.py`). Um teste confere, papel a papel, que a tabela bate com as checagens das rotas.
-  - **Pelo agente**, a tabela agora também é aplicada (403 fora do papel). Vendas fica com admin, gerente, vendedor e SDR (o visualizador só lê). Serviços fica com admin, gerente e serviço. Cliente, contato e busca geral o serviço só lê. Muda o que antes passava: o papel serviço não entra mais em Vendas pelo agente, como já não entra pela tela, e o visualizador não cria nota nem tarefa pelo agente.
 
 ### Corrigido
 - **Busca de clientes por CPF/CNPJ** acha também os cadastrados com pontuação ao buscar só os dígitos.
