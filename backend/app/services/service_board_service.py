@@ -284,6 +284,13 @@ class ServiceBoardService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Card não encontrado neste board")
         return card
 
+    @staticmethod
+    def _conferir_item_do_card(item, card_id: int) -> None:
+        """Item (produto/serviço) só é alterado/removido pela rota do próprio card
+        (anti-IDOR: a URL traz o card, o item tem de ser dele)."""
+        if item.service_card_id != card_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item não encontrado neste card")
+
     def _cards_aggregates(self, card_ids: List[int]) -> dict:
         """Calcula, para cada card: valor (produtos), status da próxima atividade
         pendente, contagem de pendentes e se está parado há 3+ dias."""
@@ -923,7 +930,7 @@ class ServiceBoardService:
         return self._build_card_product_response(item)
 
     def update_card_product(
-        self, item_id: int, data: ServiceCardProductUpdate, user: User
+        self, card_id: int, item_id: int, data: ServiceCardProductUpdate, user: User
     ) -> ServiceCardProductResponse:
         item = self.repo.get_card_product_by_id(item_id)
         if not item:
@@ -931,16 +938,18 @@ class ServiceBoardService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Produto do card {item_id} não encontrado",
             )
+        self._conferir_item_do_card(item, card_id)
         updated = self.repo.update_card_product(item_id, data)
         return self._build_card_product_response(updated)
 
-    def remove_card_product(self, item_id: int, user: User) -> dict:
+    def remove_card_product(self, card_id: int, item_id: int, user: User) -> dict:
         item = self.repo.get_card_product_by_id(item_id)
         if not item:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Produto do card {item_id} não encontrado",
             )
+        self._conferir_item_do_card(item, card_id)
         product_name = item.product.name if item.product else "Produto"
         card_id = item.service_card_id
         self.repo.remove_card_product(item_id)
@@ -1172,7 +1181,7 @@ class ServiceBoardService:
         return self._build_card_service_response(item)
 
     def update_card_service(
-        self, item_id: int, data: ServiceCardServiceUpdate, user: User
+        self, card_id: int, item_id: int, data: ServiceCardServiceUpdate, user: User
     ) -> ServiceCardServiceResponse:
         item = self.repo.get_card_service_by_id(item_id)
         if not item:
@@ -1180,16 +1189,18 @@ class ServiceBoardService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Serviço do card {item_id} não encontrado",
             )
+        self._conferir_item_do_card(item, card_id)
         updated = self.repo.update_card_service(item_id, data)
         return self._build_card_service_response(updated)
 
-    def remove_card_service(self, item_id: int, user: User) -> dict:
+    def remove_card_service(self, card_id: int, item_id: int, user: User) -> dict:
         item = self.repo.get_card_service_by_id(item_id)
         if not item:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Serviço do card {item_id} não encontrado",
             )
+        self._conferir_item_do_card(item, card_id)
         service_name = item.service.name if item.service else "Serviço"
         card_id = item.service_card_id
         self.repo.remove_card_service(item_id)

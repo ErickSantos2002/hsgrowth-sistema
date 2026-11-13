@@ -160,6 +160,9 @@ class ServiceCardResponse(ServiceCardBase):
     # Nº de série e nº do módulo dos aparelhos REAIS do card (Produtos) — p/ busca do kanban.
     # Acompanham os aparelhos quando são movidos entre cards.
     device_serials: Optional[List[str]] = None
+    # Origem externa do card (ex.: "gestorhs.os" + id lá); None quando nasceu aqui
+    external_source: Optional[str] = None
+    external_id: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

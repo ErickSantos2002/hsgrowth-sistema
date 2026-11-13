@@ -9,7 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Query, Path, HTTPExcept
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user, require_manager_or_admin, require_not_viewer, require_service_access
+from app.api.deps import get_db, get_current_active_user, require_manager_or_admin, require_not_viewer, require_service_access, via_agente, MSG_AGENTE_403
 from app.core import realtime
 from app.services.service_board_service import ServiceBoardService, deal_value_by_card
 from app.schemas.service_board import (
@@ -390,6 +390,7 @@ async def clone_service_card(
     """Clona um card de serviço com Resumo, Cliente, Contato, Produtos e Serviços
     já preenchidos (sem o histórico nem a origem externa)."""
     svc = ServiceBoardService(db)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
     card = svc.clone_card(card_id, current_user)
     return ServiceCardResponse(
         id=card.id,
@@ -427,7 +428,7 @@ async def get_service_card(
     from app.services.card_check_service import CardCheckService, situacao_lista_servico
 
     svc = ServiceBoardService(db)
-    card = svc.get_card(card_id)
+    card = svc.get_card_in_board(board_id, card_id)
     # Bolinha "concluído" do usuário logado (mesma regra do board)
     lista = db.get(ServiceList, card.list_id)
     checked = card.id in CardCheckService(db).ids_validos(
@@ -457,7 +458,14 @@ async def get_service_card(
         created_at=card.created_at,
         updated_at=card.updated_at,
         checked_by_me=checked,
+        # Origem externa (ex.: gestorhs.os): o Guardi decide por ela se o Ganho avisa o GestorHS
+        external_source=card.external_source,
+        external_id=card.external_id,
     )
+
+
+# Campos do PUT do card que o token de agente não pode mandar (403).
+CAMPOS_PROIBIDOS_AGENTE_PUT = frozenset({"list_id", "position", "is_deleted", "assigned_to_id"})
 
 
 @router.put("/{board_id}/cards/{card_id}", response_model=ServiceCardResponse)
@@ -468,7 +476,12 @@ async def update_service_card(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ) -> Any:
+    # Token de agente (Guardi) não move, não reordena, não apaga nem troca o
+    # responsável por aqui: mover é pelo PUT .../move, que aplica as regras de etapa.
+    if via_agente(current_user) and data.model_fields_set & CAMPOS_PROIBIDOS_AGENTE_PUT:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=MSG_AGENTE_403)
     svc = ServiceBoardService(db)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
     card = svc.update_card(card_id, data, current_user)
     return ServiceCardResponse(
         id=card.id,
@@ -492,6 +505,8 @@ async def update_service_card(
         is_deleted=card.is_deleted,
         created_at=card.created_at,
         updated_at=card.updated_at,
+        external_source=card.external_source,
+        external_id=card.external_id,
     )
 
 
@@ -503,6 +518,7 @@ async def delete_service_card(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
     svc.delete_card(card_id, current_user)
     return {"message": "Card de serviços deletado com sucesso"}
 
@@ -517,6 +533,13 @@ async def move_service_card(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
+    # O agente só move dentro do mesmo quadro (o move_card não confere o quadro do destino).
+    if via_agente(current_user):
+        from app.models.service_list import ServiceList
+        destino = db.query(ServiceList).filter(ServiceList.id == data.list_id).first()
+        if destino is None or destino.board_id != board_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=MSG_AGENTE_403)
     # `background_tasks` leva o aviso de Ganho ao GestorHS para depois da resposta,
     # sem segurar o usuário e sem depender de worker Celery (ver move_card).
     card = svc.move_card(card_id, data.list_id, data.position, current_user,
@@ -548,6 +571,8 @@ async def move_service_card(
         is_deleted=card.is_deleted,
         created_at=card.created_at,
         updated_at=card.updated_at,
+        external_source=card.external_source,
+        external_id=card.external_id,
     )
 
 
@@ -596,6 +621,7 @@ async def list_service_card_products(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
     return svc.get_card_products(card_id)
 
 
@@ -608,6 +634,7 @@ async def add_service_card_product(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
     return svc.add_card_product(card_id, data, current_user)
 
 
@@ -621,7 +648,8 @@ async def update_service_card_product(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return svc.update_card_product(item_id, data, current_user)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
+    return svc.update_card_product(card_id, item_id, data, current_user)
 
 
 @router.delete("/{board_id}/cards/{card_id}/products/{item_id}")
@@ -633,7 +661,8 @@ async def remove_service_card_product(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return svc.remove_card_product(item_id, current_user)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
+    return svc.remove_card_product(card_id, item_id, current_user)
 
 
 @router.get("/{board_id}/cards/{card_id}/related-devices", response_model=List[RelatedDevicesCard])
@@ -669,6 +698,7 @@ async def list_service_card_services(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
     return svc.get_card_services(card_id)
 
 
@@ -681,6 +711,7 @@ async def add_service_card_service(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
     return svc.add_card_service(card_id, data, current_user)
 
 
@@ -694,7 +725,8 @@ async def update_service_card_service(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return svc.update_card_service(item_id, data, current_user)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
+    return svc.update_card_service(card_id, item_id, data, current_user)
 
 
 @router.delete("/{board_id}/cards/{card_id}/services/{item_id}")
@@ -706,7 +738,8 @@ async def remove_service_card_service(
     db: Session = Depends(get_db),
 ) -> Any:
     svc = ServiceBoardService(db)
-    return svc.remove_card_service(item_id, current_user)
+    svc.get_card_in_board(board_id, card_id)  # card de outro quadro -> 404
+    return svc.remove_card_service(card_id, item_id, current_user)
 
 
 # ─── Card Activities (Atividade / Anotação / Arquivo / Alteração) ────────────────
