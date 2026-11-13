@@ -2,16 +2,50 @@ import { ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { MOTIVO_SEMAFORO, SEMAFORO_COR, SEMAFORO_LABEL } from "../../constants/parcerias";
 import type { ConsultaCnpj } from "../../services/parceriasService";
+import { BotaoRegrasSemaforo } from "./RegrasSemaforo";
 
-/** Cartão com a cor do semáforo, a frase e, para a H&S, onde a empresa está. */
+/** Raiz do CNPJ (os 8 primeiros caracteres) no formato 00.000.000. */
+const raizFormatada = (cnpj: string) => {
+  const r = cnpj.replace(/[^0-9A-Za-z]/g, "").slice(0, 8).toUpperCase();
+  return `${r.slice(0, 2)}.${r.slice(2, 5)}.${r.slice(5, 8)}`;
+};
+
+/** Por que deu essa cor, em uma linha (as regras completas ficam no "?"). */
+function porque(c: ConsultaCnpj): string {
+  const raiz = raizFormatada(c.cnpj);
+  switch (c.motivo) {
+    case "livre":
+      return `Nenhum card de Vendas nem oportunidade de parceiro com este CNPJ ou com outra unidade da raiz ${raiz}.`;
+    case "outra_unidade":
+      return `Este CNPJ está livre, mas outra unidade da raiz ${raiz} está em negociação, comprou ou foi perdida há pouco.`;
+    case "em_negociacao":
+      return "Há card ou oportunidade aberto com este CNPJ, com atividade agendada ou movimento nos últimos 10 dias.";
+    case "compra_recente":
+      return "A empresa comprou há menos de 30 dias.";
+    case "perdida_recente":
+      return "A negociação com a empresa foi perdida há menos de 90 dias.";
+    default:
+      return "";
+  }
+}
+
+/** Cartão com a cor do semáforo, a frase, o porquê e, para a H&S, onde a empresa está. */
 export default function ResultadoSemaforo({ consulta }: { consulta: ConsultaCnpj }) {
+  const motivoDetalhado = porque(consulta);
   return (
     <div className={`rounded-lg border px-4 py-3 ${SEMAFORO_COR[consulta.resultado]}`}>
       <div className="flex items-center gap-2 text-sm font-semibold">
         <span className="inline-block h-3 w-3 rounded-full bg-current" />
         {SEMAFORO_LABEL[consulta.resultado]}
+        {consulta.motivo !== "livre" && <span className="font-normal">· {MOTIVO_SEMAFORO[consulta.motivo]}</span>}
+        <span className="ml-auto">
+          <BotaoRegrasSemaforo />
+        </span>
       </div>
       <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">{consulta.frase}</p>
+      {motivoDetalhado && (
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{motivoDetalhado}</p>
+      )}
       {consulta.registros.length > 0 && (
         <ul className="mt-3 space-y-1.5 border-t border-current/20 pt-3">
           {consulta.registros.map((r) => (

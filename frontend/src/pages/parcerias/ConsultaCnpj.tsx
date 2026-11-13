@@ -4,6 +4,7 @@ import { Button, FormField, Input, Pagination, SelectMenu } from "../../componen
 import KpiCard from "../../components/dashboard/KpiCard";
 import { PageHeader } from "../../components/layout/PageHeader";
 import ResultadoSemaforo from "../../components/parcerias/ResultadoSemaforo";
+import { BotaoRegrasSemaforo } from "../../components/parcerias/RegrasSemaforo";
 import { cnpjValido, limparCnpj, mascarar } from "../../components/parcerias/campos";
 import { MOTIVO_SEMAFORO, PERFIS_GESTAO, SEMAFORO_COR, SEMAFORO_LABEL } from "../../constants/parcerias";
 import { useAuth } from "../../hooks/useAuth";
@@ -93,6 +94,7 @@ export default function ConsultaCnpj() {
         title="Consulta de CNPJ"
         description="Antes de trabalhar uma empresa, veja se ela já está com a H&S ou com outro parceiro."
         icon={ShieldCheck}
+        actions={<BotaoRegrasSemaforo comTexto />}
       />
 
       <div className="space-y-6">
