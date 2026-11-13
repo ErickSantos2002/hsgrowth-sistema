@@ -4,6 +4,7 @@ import { CheckCircle2, ChevronDown, ChevronRight, Clock, Copy, Download, ListChe
 import { Button, EmptyState, Input, Pagination, SelectMenu } from "../../components/common";
 import KpiCard from "../../components/dashboard/KpiCard";
 import { PageHeader } from "../../components/layout/PageHeader";
+import TabelaDesconto from "../../components/parcerias/TabelaDesconto";
 import { useAuth } from "../../hooks/useAuth";
 import { usePagination } from "../../hooks";
 import { useConfirm } from "../../contexts/ConfirmContext";
@@ -116,6 +117,7 @@ function Tabela({ itens, mostrarBeneficiario, acao }: {
 
 // ─── Minhas comissões (parceiro e hunter) ────────────────────────────────────
 function MinhasComissoes() {
+  const { user } = useAuth();
   const [status, setStatus] = useState("");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
@@ -159,6 +161,9 @@ function MinhasComissoes() {
           highlight="green"
         />
       </div>
+
+      {/* Empresa e hunter veem quanto cada faixa de desconto paga */}
+      {["partner", "hunter"].includes(user?.role ?? "") && <TabelaDesconto />}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <SelectMenu value={status} options={OPCOES_STATUS} onChange={setStatus} />

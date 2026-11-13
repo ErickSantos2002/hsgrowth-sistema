@@ -324,20 +324,42 @@ export type TipoComissao = "venda_propria" | "indicacao" | "bonus_primeira_venda
 export type SituacaoComissao = "pendente" | "paga" | "cancelada";
 
 export interface ComissaoConfig {
+  /** Venda própria da empresa; a do hunter é `hunter_own_sale_pct`. */
   own_sale_pct: string;
+  hunter_own_sale_pct: string;
   indication_pct: string;
   first_sale_bonus: string;
   indication_months: number;
   calibration_pct: string;
+  /** Anuidade usada só na previsão das renovações. */
+  annual_fee_reference: string;
   updated_at?: string | null;
 }
 
 export interface ComissaoConfigForm {
   own_sale_pct: number;
+  hunter_own_sale_pct: number;
   indication_pct: number;
   first_sale_bonus: number;
   indication_months: number;
   calibration_pct: number;
+  annual_fee_reference: number;
+}
+
+/** Uma faixa de desconto e quanto ela paga por aparelho (valores nulos sem produto liberado). */
+export interface LinhaTabelaDesconto {
+  desconto: number;
+  cliente_paga: string | null;
+  taxa_empresa: string;
+  valor_empresa: string | null;
+  taxa_hunter: string;
+  valor_hunter: string | null;
+}
+
+export interface TabelaDesconto {
+  preco_referencia: string | null;
+  linhas: LinhaTabelaDesconto[];
+  renovacao_prevista: string | null;
 }
 
 export interface Comissao {
@@ -403,6 +425,25 @@ export interface Calibracao {
   commission_status?: "pendente" | "paga" | null;
   commission_paid_at?: string | null;
   recorrencia?: number | null;
+}
+
+/** Uma das 2 renovações do aparelho: data prevista e, se já lançada, a calibração. */
+export interface RenovacaoPrevista {
+  ordem: number;
+  prevista_para: string;
+  valor_previsto: string | null;
+  calibracao: Calibracao | null;
+}
+
+export interface AparelhoDaOportunidade {
+  numero: number;
+  serial_number: string | null;
+  renovacoes: RenovacaoPrevista[];
+}
+
+export interface CalibracoesDaOportunidade {
+  aparelhos: AparelhoDaOportunidade[];
+  sem_comissao: Calibracao[];
 }
 
 export interface CalibracaoForm {
@@ -646,7 +687,10 @@ const parceriasService = {
     return (await api.post<PagarResposta>(`${BASE}/comissoes/pagar`, { ids })).data;
   },
   async listarCalibracoes(oportunidadeId: number) {
-    return (await api.get<Calibracao[]>(`${BASE}/oportunidades/${oportunidadeId}/calibracoes`)).data;
+    return (await api.get<CalibracoesDaOportunidade>(`${BASE}/oportunidades/${oportunidadeId}/calibracoes`)).data;
+  },
+  async tabelaDesconto() {
+    return (await api.get<TabelaDesconto>(`${BASE}/comissoes/tabela-desconto`)).data;
   },
   async lancarCalibracao(oportunidadeId: number, dados: CalibracaoForm) {
     return (await api.post<Calibracao>(`${BASE}/oportunidades/${oportunidadeId}/calibracoes`, dados)).data;

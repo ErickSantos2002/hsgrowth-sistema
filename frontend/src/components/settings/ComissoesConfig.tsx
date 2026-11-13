@@ -11,10 +11,14 @@ const paraCampo = (v: string | number) => String(Number(v)).replace(".", ",");
 const lerNumero = (v: string): number => parseFloat(v.replace(/\./g, "").replace(",", ".")) || 0;
 const limpar = (v: string) => v.replace(/[^0-9,]/g, "");
 
-type Campos = { own: string; ind: string; bonus: string; meses: string; cal: string };
+type Campos = {
+  own: string; hunter: string; ind: string; bonus: string; meses: string; cal: string; anuidade: string;
+};
 
 const dosCampos = (c: ComissaoConfig): Campos => ({
   own: paraCampo(c.own_sale_pct),
+  hunter: paraCampo(c.hunter_own_sale_pct ?? 0),
+  anuidade: paraCampo(c.annual_fee_reference ?? 0),
   ind: paraCampo(c.indication_pct),
   bonus: paraCampo(c.first_sale_bonus),
   meses: String(c.indication_months),
@@ -39,19 +43,22 @@ export default function ComissoesConfig() {
   }
 
   const mudar = (k: keyof Campos, v: string) => setCampos({ ...campos, [k]: v });
-  const pct = (k: "own" | "ind" | "cal") => lerNumero(campos[k]);
+  const pct = (k: "own" | "hunter" | "ind" | "cal") => lerNumero(campos[k]);
   const meses = parseInt(campos.meses, 10);
-  const valido = [pct("own"), pct("ind"), pct("cal")].every((p) => p >= 0 && p <= 100) && meses >= 1 && meses <= 120;
+  const valido = [pct("own"), pct("hunter"), pct("ind"), pct("cal")].every((p) => p >= 0 && p <= 100)
+    && meses >= 1 && meses <= 120;
 
   const salvar = async () => {
     setSalvando(true);
     try {
       const c = await parceriasService.salvarConfigComissoes({
         own_sale_pct: pct("own"),
+        hunter_own_sale_pct: pct("hunter"),
         indication_pct: pct("ind"),
         first_sale_bonus: lerNumero(campos.bonus),
         indication_months: meses,
         calibration_pct: pct("cal"),
+        annual_fee_reference: lerNumero(campos.anuidade),
       });
       setCampos(dosCampos(c));
       showSuccess("Configuração salva.");
@@ -84,11 +91,13 @@ export default function ComissoesConfig() {
       <Alert type="info">Mudanças valem para as próximas vendas confirmadas; lançamentos já gerados não mudam.</Alert>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {campo("Venda própria (%)", "own", "Do parceiro/hunter sobre a venda que ele mesmo indicou.")}
-        {campo("Indicação (%)", "ind", "Do hunter sobre as vendas das empresas que ele indicou.")}
-        {campo("Bônus de primeira venda (R$)", "bonus", "Valor fixo, pago uma vez ao indicador.")}
+        {campo("Venda própria da empresa (%)", "own", "Sobre o preço cheio; cai meio ponto a cada ponto de desconto.")}
+        {campo("Venda própria do hunter (%)", "hunter", "Quando o hunter vende direto; mesma regra de desconto.")}
+        {campo("Indicação (%)", "ind", "Do hunter sobre as vendas das empresas que ele indicou, sempre no preço cheio.")}
+        {campo("Bônus de ativação (R$)", "bonus", "Valor fixo, pago uma vez quando a empresa indicada faz a 1ª venda.")}
         {campo("Prazo de indicação (meses)", "meses", "Quanto tempo as vendas da empresa indicada rendem comissão.", true)}
-        {campo("Calibração (%)", "cal", "Sobre o valor de cada calibração (até 2 por aparelho).")}
+        {campo("Renovação (%)", "cal", "Sobre o valor pago em cada calibração (as 2 primeiras de cada aparelho).")}
+        {campo("Anuidade de referência (R$)", "anuidade", "Só para a previsão das renovações; a comissão usa o valor que o cliente pagou.")}
       </div>
 
       {podeEditar && (
