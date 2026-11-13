@@ -231,6 +231,18 @@ def test_atividade_do_agente_traz_via(client, db, cenario, agente, humano):
     assert db.get(ServiceCardActivity, resp.json()["id"]).description == "Cliente pediu retorno"
 
 
+def test_motivo_da_perda_do_agente_fica_limpo(client, db, cenario, agente):
+    # O texto alimenta o filtro "Motivo de perda" e o dashboard: a marca vai pro metadata.
+    c = cenario
+    corpo = {"category": "anotacao", "description": "Motivo da perda: Preço"}
+    resp = client.post(_url(c) + "/activities", json=corpo, headers=_h(agente(EMAIL_SERVICO)))
+    assert resp.status_code == 200, resp.text
+    db.expire_all()
+    a = db.get(ServiceCardActivity, resp.json()["id"])
+    assert a.description == "Motivo da perda: Preço"
+    assert (a.activity_metadata or {}).get("via_agente") == "erick-bot"
+
+
 # --- vendedor não entra em Serviços nem por agente -----------------------------------
 
 @pytest.mark.parametrize("metodo,sufixo,corpo", [

@@ -216,6 +216,13 @@ def test_criar_card_do_proprio_dono_passa(client, db, test_salesperson_user, lea
     assert resp.json()["assigned_to_id"] == test_salesperson_user.id
 
 
+def test_admin_via_agente_cria_lead_com_ele_de_responsavel(client, test_admin_user, lead_novo, agente):
+    corpo = {"title": "Lead do admin", "list_id": lead_novo.id}
+    resp = client.post("/api/v1/cards", json=corpo, headers=_h(agente(test_admin_user.email)))
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["assigned_to_id"] == test_admin_user.id
+
+
 # --- cliente e contato ------------------------------------------------------------
 
 @pytest.fixture

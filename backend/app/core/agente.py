@@ -149,6 +149,8 @@ def validar_token_de_agente(token: str, chave_pem: str) -> Tuple[str, str]:
 # histórico inseridas no request cujo user_id é o do dono do token — linhas de outro
 # autor (automação, sistema) ficam como estão. Não há choke point para AuditLog
 # (dezenas de construções diretas), por isso o before_insert.
+TEXTOS_SEM_MARCA = ("Motivo da perda:",)
+
 agente_atual: ContextVar[Optional[Tuple[int, str]]] = ContextVar("agente_atual", default=None)
 
 
@@ -162,6 +164,13 @@ def _marcar_via_agente(mapper, connection, target) -> None:
     marca = f"via {bot}"
     descricao = getattr(target, "description", None) or ""
     if marca in descricao:
+        return
+    # Texto que outro código LÊ como dado não ganha a marca: o motivo de perda de
+    # Serviços ("Motivo da perda: X") alimenta o filtro do kanban e o dashboard.
+    # A marca vai para o activity_metadata.
+    if descricao.startswith(TEXTOS_SEM_MARCA):
+        if hasattr(target, "activity_metadata"):
+            target.activity_metadata = {**(target.activity_metadata or {}), "via_agente": bot}
         return
     target.description = f"{descricao} ({marca})" if descricao else marca
 

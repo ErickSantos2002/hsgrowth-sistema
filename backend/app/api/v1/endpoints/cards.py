@@ -400,6 +400,11 @@ async def create_card(
             _recusar_agente("O agente só cria card com você como responsável")
         if card_data.sdr_id is not None:
             _recusar_agente("O agente não escolhe SDR ao criar card")
+        # Admin/gerente pelo agente: sem responsável, o lead nasceria sem dono e o
+        # próprio agente não poderia mais escrever nele. (O SDR o service já trata.)
+        papel = current_user.role.name if current_user.role else None
+        if card_data.assigned_to_id is None and papel != "sdr":
+            card_data = card_data.model_copy(update={"assigned_to_id": current_user.id})
     service = CardService(db)
     # Criação manual pelo board: card nasce no topo da lista (visível na hora)
     card = service.create_card(card_data, current_user, at_top=True)
