@@ -25,6 +25,24 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.24",
+    date: "13/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Parcerias: empresa e contato completos na oportunidade. Cidade, UF, nome, telefone e e-mail do contato passam a ser obrigatórios (vão para Clientes e Pessoas), com explicação do que escrever em cada campo. Na indicação, o telefone do contato também é obrigatório.",
+      },
+      {
+        type: "improvement",
+        text: "Parcerias: a Qualificação do parceiro (status e onboarding) passa a ser alterada só por admin e gerente, e mostra o hunter responsável quando a empresa veio por indicação.",
+      },
+      {
+        type: "improvement",
+        text: "Consulta de CNPJ e filtros: frase do amarelo mais clara, lista dos filtros mostra o nome inteiro e \"Todos os status\" no Pipeline.",
+      },
+    ],
+  },
+  {
     version: "1.11.23",
     date: "13/11/2026",
     entries: [

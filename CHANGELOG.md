@@ -14,6 +14,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.24] — 13/11/2026
+
+### Alterado
+- **Parcerias — empresa e contato obrigatórios:** na Nova oportunidade, Razão social, Cidade, UF, Nome, Telefone e E-mail do contato passam a ser obrigatórios (só o Cargo é opcional), porque viram Cliente e Pessoa no cadastro geral. Na edição do card, esses campos não podem ser apagados; oportunidade antiga sem esses dados pede para completar antes de salvar. Na Indicação, o telefone do contato também passa a ser obrigatório. Vale na tela e na API.
+- **Parcerias — formulários explicados:** placeholders dizendo o que escrever em cada campo (ex.: "Nome da pessoa com quem você fala na empresa"), rótulos mais claros ("Nome do contato", "Telefone do contato") e a Nova oportunidade separada em Empresa e Contato na empresa.
+- **Parcerias — Qualificação só da gestão:** status de qualificação e data de onboarding passam a ser alterados só por admin e gerente (antes o parceiro, o hunter e o vendedor também mudavam). Quando a empresa veio por indicação, a Qualificação mostra o **Hunter responsável** (quem indicou), ao lado do Responsável H&S.
+- **Consulta de CNPJ:** a frase do amarelo agora diz "Outra unidade desta empresa já está com a H&S ou com um parceiro".
+- **Filtros dos boards de Parcerias:** a lista do filtro alarga até caber o nome inteiro; no Pipeline, "Todas" virou "Todos os status".
+
+### Banco de dados
+- Sem migration.
+
+---
+
 ## [1.11.23] — 13/11/2026
 
 ### Alterado
