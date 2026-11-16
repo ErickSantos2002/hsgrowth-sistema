@@ -539,6 +539,10 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
       )}
       </ExpandableSection>
 
+      {/* O vincular põe a seção em "Carregando..." (este ramo): sem a janela aqui, a trava
+          de CNPJ ficava esperando uma justificativa que nunca aparecia na tela. */}
+      {janelaCnpj}
+
       {/* Modal de editar cliente */}
       {showEditModal && client && (
         <ClientModal
