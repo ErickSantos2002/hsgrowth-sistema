@@ -40,7 +40,7 @@ cai_em = base + N dias
 Atividade em aberto = `partner_activities` com `category == "atividade"` e
 `is_completed == False`; sem `due_date` não conta. Função pura `data_de_queda(prazos,
 movimentos, dias) -> Optional[datetime]` em `semaforo.py`, ao lado de `protegido`, com a
-garantia: `protegido(agora, ...) == (cai_em is not None and agora < cai_em)` — testada.
+garantia: `protegido(agora, ...) == (cai_em is not None and agora <= cai_em)` — testada.
 
 **Avisos** (tipo `parcerias_protecao`):
 
@@ -100,7 +100,7 @@ bloqueados já têm outra situação).
   login ativo, ainda não avisado). Usa `envio_email.enviar_email(email, assunto, html,
   texto)`, o mesmo do convite de acesso, com o link absoluto (`FRONTEND_URL` + link).
   Falha no e-mail é registrada no log e não desfaz o aviso do sino.
-- Agendador: `job_alertas_parcerias` em `scheduler.py` via `_rodar_aviso`, `CronTrigger(hour=11, minute=0)` (8h de Brasília, UTC−3), todos os dias.
+- Agendador: `job_alertas_parcerias` em `scheduler.py` via `_rodar_aviso`, `CronTrigger(hour=8, minute=0)` (o agendador já está no fuso `America/Sao_Paulo`), todos os dias.
 - Código novo em `app/services/notificacoes/parcerias.py`:
   `avisar_protecao(db, agora) -> int`, `avisar_convites(db, agora) -> int` e
   `avisar_parcerias(db, agora) -> int` (soma dos dois, chamado pelo job).
