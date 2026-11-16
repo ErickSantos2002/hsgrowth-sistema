@@ -9,6 +9,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.26] — 16/11/2026
+
+### Adicionado
+- **Parcerias — alertas (Entrega 4):** todo dia às 8h, sino e e-mail.
+  - **Proteção do CNPJ:** 3 dias antes de uma oportunidade de parceiro perder a proteção por falta de atividade (o prazo da Consulta de CNPJ, hoje 10 dias) e no dia em que perde. Recebem o vendedor da oportunidade, o dono do parceiro (ou o hunter) e o Responsável H&S. Registrar atividade recomeça a contagem.
+  - **Convite sem ativação:** quando uma empresa ou hunter convidado passa de 23 e de 30 dias sem aceitar os termos. Recebem o Responsável H&S (sem ele, os admins) e quem indicou. Só avisa: a situação continua "Convidado".
+- **Configurações → Notificações → Parcerias:** um interruptor para cada alerta (desliga sino e e-mail). Começam ligados.
+
+### Banco de dados
+- Migration aditiva `2a3b4c5d6e7f` (down `1f2a3b4c5d6e`): colunas `parcerias_protecao` e `parcerias_convite` em `user_notification_settings`, ligadas para todos. Pode rodar antes do código.
+
+---
+
 ## [1.11.25] — 13/11/2026
 
 ### Adicionado

@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.26",
+    date: "16/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Parcerias: alertas por sino e e-mail — 3 dias antes de uma oportunidade perder a proteção do CNPJ e no dia em que perde, e convite de empresa ou hunter sem ativação nos dias 23 e 30.",
+      },
+      {
+        type: "feature",
+        text: "Configurações → Notificações: seção Parcerias para ligar ou desligar cada alerta.",
+      },
+    ],
+  },
+  {
     version: "1.11.25",
     date: "13/11/2026",
     entries: [
