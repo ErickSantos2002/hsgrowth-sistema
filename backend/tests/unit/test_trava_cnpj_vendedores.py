@@ -145,3 +145,35 @@ def test_vincular_empresa_de_outro_vendedor_bloqueia(client, db):
 
     r = client.put(f"{CARDS}/{meu.id}", headers=headers(outro), json={"client_id": cliente(db).id})
     assert r.status_code == 409
+
+
+def _perdido(db, lista, **donos):
+    return card_de_vendas(db, lista, is_won=-1, closed_at=datetime.utcnow() - timedelta(days=20),
+                          criado_ha=60, **donos)
+
+
+def test_reabrir_nao_bloqueia_por_perda_antiga_da_mesma_dupla(db):
+    # Card 12709 em produção: a vendedora reabre o card dela (com o SDR Miguel), e o que
+    # segurava eram perdas antigas de Prospecção só do Miguel, que volta no card novo.
+    from app.services.parcerias import semaforo
+
+    v = vendas(db)
+    vendedora = _dono(db)
+    sdr = usuario(db, "salesperson", "miguel@hs.com")
+    _perdido(db, v.lead_novo, sdr_id=sdr.id)
+    origem = _perdido(db, v.proposta, assigned_to_id=vendedora.id, sdr_id=sdr.id)
+
+    assert semaforo.protecao_de_vendas(db, "11222333000181", vendedora.id, origem.id) == []
+
+
+def test_card_de_outro_vendedor_com_o_mesmo_sdr_continua_bloqueando(db):
+    from app.services.parcerias import semaforo
+
+    v = vendas(db)
+    vendedora = _dono(db)
+    sdr = usuario(db, "salesperson", "miguel@hs.com")
+    outro = usuario(db, "salesperson", "outro@hs.com")
+    do_outro = _perdido(db, v.lead_novo, assigned_to_id=outro.id, sdr_id=sdr.id)
+    origem = _perdido(db, v.proposta, assigned_to_id=vendedora.id, sdr_id=sdr.id)
+
+    assert [r.id for r in semaforo.protecao_de_vendas(db, "11222333000181", vendedora.id, origem.id)] == [do_outro.id]

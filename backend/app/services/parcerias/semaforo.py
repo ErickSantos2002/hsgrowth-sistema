@@ -288,12 +288,19 @@ def protecao_de_vendas(db: Session, cnpj: str, user_id: int, ignorar_card_id: Op
     """
     Cards de Vendas de OUTRO vendedor que seguram exatamente este CNPJ (negociação,
     compra recente ou perda recente). O card de origem (vincular, reabrir, clonar)
-    não conta, nem o card em que o usuário é o responsável ou o SDR.
+    não conta, nem o card em que o usuário é o responsável ou o SDR, nem o card cujos
+    donos são todos da dupla do card de origem (quem já trabalhava o card junto).
     """
     agora = agora or datetime.utcnow()
     regras = regras or regras_do_banco(db)
+    dupla = {user_id}
+    if ignorar_card_id:
+        origem = db.query(Card.assigned_to_id, Card.sdr_id).filter(Card.id == ignorar_card_id).first()
+        if origem:
+            dupla.update(i for i in origem if i)
     return sorted(
         (r for r in _cards(db, cnpj[:8], agora, regras)
-         if r.cnpj == cnpj and r.id != ignorar_card_id and user_id not in r.donos),
+         if r.cnpj == cnpj and r.id != ignorar_card_id and user_id not in r.donos
+         and not (r.donos and set(r.donos) <= dupla)),
         key=lambda r: r.desde,
     )
