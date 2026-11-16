@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.27",
+    date: "16/11/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Card de Vendas: vincular uma empresa cujo CNPJ está com outro vendedor ou parceiro ficava em \"Carregando...\" para sempre. Agora abre a janela da justificativa para admin e gerente.",
+      },
+    ],
+  },
+  {
     version: "1.11.26",
     date: "16/11/2026",
     entries: [

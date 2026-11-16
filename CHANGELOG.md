@@ -9,6 +9,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.27] — 16/11/2026
+
+### Corrigido
+- **Vincular empresa com CNPJ travado ficava "Carregando..." para sempre (Vendas):** ao vincular
+  na seção Cliente (Organização) do card um CNPJ que já está com outro vendedor ou com um parceiro, a
+  janela da justificativa do admin/gerente não aparecia. A seção entrava em "Carregando..." e a
+  janela só existia na outra tela da seção. Agora a janela abre e, com a justificativa, o vínculo
+  segue e fica registrado no histórico do card. O vendedor continua vendo a mensagem
+  "Fale com o gerente".
+
+---
+
 ## [1.11.26] — 16/11/2026
 
 ### Adicionado
