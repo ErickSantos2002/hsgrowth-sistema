@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.28",
+    date: "16/11/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Card de Vendas: o vendedor não conseguia reabrir o próprio card perdido quando o SDR do card tinha perdas antigas da mesma empresa. Agora essas perdas da mesma dupla não bloqueiam.",
+      },
+    ],
+  },
+  {
     version: "1.11.27",
     date: "16/11/2026",
     entries: [

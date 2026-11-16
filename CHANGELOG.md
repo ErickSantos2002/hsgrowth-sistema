@@ -9,6 +9,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.28] — 16/11/2026
+
+### Corrigido
+- **Trava de CNPJ bloqueava o vendedor de reabrir o próprio card perdido (Vendas):** a reabertura
+  era barrada por perdas antigas do mesmo CNPJ feitas pelo SDR do próprio card (ex.: tentativas
+  de Prospecção só do SDR). Agora, ao reabrir, clonar ou vincular, não bloqueiam os cards cujos
+  donos (vendedor e SDR) são todos da dupla do card de origem. O card de outro vendedor continua
+  bloqueando, mesmo que tenha o mesmo SDR.
+
+---
+
 ## [1.11.27] — 16/11/2026
 
 ### Corrigido
