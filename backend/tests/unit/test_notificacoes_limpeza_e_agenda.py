@@ -38,6 +38,7 @@ def test_jobs_registrados():
     finally:
         agenda.scheduler = None
 
-    assert {"resumo_manha", "reuniao_15min", "cards_novos_servico", "limpar_notificacoes"} <= ids
+    assert {"resumo_manha", "reuniao_15min", "cards_novos_servico", "limpar_notificacoes",
+            "alertas_parcerias"} <= ids
     assert not ids & {"check_overdue_cards", "check_overdue_tasks", "check_pending_transfers",
                       "report_failed_automations", "cleanup_notifications"}

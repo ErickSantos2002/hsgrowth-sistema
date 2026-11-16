@@ -3,7 +3,7 @@ Modelo de configurações de notificação por usuário.
 Permite que cada usuário escolha quais notificações deseja receber.
 Armazenado no PostgreSQL (não no Redis) para persistir mesmo com restart do Redis.
 """
-from sqlalchemy import Column, Integer, Boolean, ForeignKey, UniqueConstraint, JSON
+from sqlalchemy import Column, Integer, Boolean, ForeignKey, UniqueConstraint, JSON, true
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -50,6 +50,12 @@ class UserNotificationSetting(Base, TimestampMixin):
 
     # Aviso 15 minutos antes de reunião
     reuniao_15min = Column(Boolean, default=True, nullable=False)
+
+    # Parcerias (Entrega 4): oportunidade perto de perder / perdeu a proteção do CNPJ
+    parcerias_protecao = Column(Boolean, default=True, server_default=true(), nullable=False)
+
+    # Parcerias (Entrega 4): empresa ou hunter convidado sem aceitar os termos (dia 23 e 30)
+    parcerias_convite = Column(Boolean, default=True, server_default=true(), nullable=False)
 
     # Pop-up do navegador além do sino
     popup_navegador = Column(Boolean, default=True, nullable=False)

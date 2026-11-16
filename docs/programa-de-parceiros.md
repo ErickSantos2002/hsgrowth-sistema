@@ -116,6 +116,19 @@ os mesmos termos.
 - **Valor vendido** é o que o cliente pagou (produtos menos desconto, sem frete), contando só
   ganho confirmado. A comissão usa o preço cheio.
 
+### Alertas (desde 1.11.26)
+Todo dia às 8h, pelo sino e por e-mail (`app/services/notificacoes/parcerias.py`):
+- **Proteção do CNPJ:** 3 dias antes de uma oportunidade aberta perder a proteção por falta de
+  atividade (o prazo de Configurações → Consulta de CNPJ, hoje 10 dias) e no dia em que perde.
+  Recebem o vendedor da oportunidade, o dono do parceiro (ou o hunter) e o Responsável H&S.
+  Registrar atividade muda a data de queda e recomeça os avisos. Parceiro bloqueado não é avisado.
+- **Convite sem ativação:** empresa ou hunter em "Convidado" que não aceitou os termos, a partir do
+  dia 23 e no dia 30 (contados da criação do primeiro login). Recebem o Responsável H&S (sem ele,
+  os admins) e quem indicou. Só avisa: a situação não muda.
+- Cada pessoa liga/desliga cada alerta em **Configurações → Notificações → Parcerias** (desliga
+  sino e e-mail juntos). O "perdeu" e o "30 dias" só saem até 2 dias depois do fato, para não
+  disparar sobre casos antigos.
+
 ## 4. Onde fica cada tela (após 12/11/2026)
 
 | Tela | Caminho | Quem |
@@ -156,6 +169,8 @@ A antiga página `/parcerias/hunters` **não existe mais**.
   | `clientes.py` | Liga a oportunidade ao Cliente e à Pessoa do CRM |
   | `atividades.py` | Atividades e histórico no padrão do card de Serviço |
   | `respostas.py` | Monta as respostas da API (nomes, totais, campos escondidos por perfil) |
+  | `regras_cnpj.py` | Prazos configuráveis da Consulta de CNPJ e da trava entre vendedores |
+- **Alertas:** `app/services/notificacoes/parcerias.py` (job `alertas_parcerias` em `app/workers/scheduler.py`).
 - **Login (comum ao CRM):** `app/services/criacao_de_login.py` (convite ou senha, usado por
   Usuários, Acessos e Equipe), `tokens_de_acesso.py` e `emails_de_acesso.py`.
 - **Models:** `partner.py` (com `PartnerTeamMember`), `partner_opportunity.py`,
@@ -209,6 +224,8 @@ Na edição de um hunter, o bloqueio usa `POST /parcerias/parceiros/{partner_id}
 | `8c9d0e1f2a3b` | Hunter, indicação, termos, PIX e CPF | **reescreve `partners.stage`**: código primeiro, migration logo depois |
 | `9d0e1f2a3b4c` | Comissões (configuração começa zerada, prazo de 24 meses) | aditiva |
 | `0e1f2a3b4c5d` | % de venda própria do hunter e anuidade de referência | aditiva |
+| `1f2a3b4c5d6e` | Regras configuráveis da Consulta de CNPJ (`cnpj_rules_config`) | aditiva |
+| `2a3b4c5d6e7f` | Preferências dos alertas (`user_notification_settings`) | aditiva |
 
 **Para levar à produção:** seguir a ordem acima e ler a seção "Banco de dados" de cada versão
 no CHANGELOG. As que convertem dados exigem subir o código antes da migration (veja
@@ -250,7 +267,7 @@ no CHANGELOG. As que convertem dados exigem subir o código antes da migration (
 - Agregação em SQL no dashboard (hoje soma em Python).
 - Estorno de comissão já paga, pagamento automático, nota fiscal ou retenção.
 - Mais de um nível de indicação.
-- Entregas 4 (Alertas) e 7 (Finder) do roadmap original.
+- Entrega 7 (Finder) do roadmap original. A Entrega 4 (Alertas) entrou na 1.11.26.
 - O seletor padrão (`components/common/SelectMenu.tsx`) abre a lista dentro do container e, em
   modal, estica o corpo. O da modal de Usuários já abre por portal; dá para levar a mesma
   solução para o comum.
@@ -266,5 +283,7 @@ no CHANGELOG. As que convertem dados exigem subir o código antes da migration (
 | 05/11 | `specs/2026-11-05-parcerias-cliente-pessoa-historico-design.md` | — | Vigente |
 | 05/11 | `specs/2026-11-05-parcerias-entrega-3-acessos-login-design.md` | `plans/2026-11-05-parcerias-entrega-3-acessos-login.md` | Vigente. As respostas de convite são planas (veja a nota no §9 do spec). |
 | 11/11 | `specs/2026-11-11-parcerias-hunter-indicacao-comissoes-design.md` | `plans/2026-11-11-parcerias-hunter-parte-1-estrutura.md`, `...-parte-2-comissoes.md`, `plans/2026-11-12-parcerias-hunter-parte-3-dashboard.md` | Vigente. Os ajustes de 12/11 estão no §10 do spec. |
+| 13/11 | `specs/2026-11-13-trava-cnpj-vendedores-regras-configuraveis-design.md` | `plans/2026-11-13-trava-cnpj-vendedores-regras-configuraveis.md` | Vigente |
+| 16/11 | `specs/2026-11-16-parcerias-entrega-4-alertas-design.md` | `plans/2026-11-16-parcerias-entrega-4-alertas.md` | Vigente |
 
 Todos os caminhos são relativos a `docs/superpowers/`.

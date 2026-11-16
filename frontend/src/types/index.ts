@@ -839,6 +839,8 @@ export interface NotificationSettings {
   resumo_manha: boolean;
   reuniao_15min: boolean;
   popup_navegador: boolean;
+  parcerias_protecao: boolean;
+  parcerias_convite: boolean;
   quadros_servico: number[];
   created_at: string;
   updated_at: string;
@@ -847,7 +849,8 @@ export interface NotificationSettings {
 export type NotificationSettingsUpdate = Partial<
   Pick<NotificationSettings,
     "task_assigned" | "card_product_changed" | "reuniao_pronta" |
-    "resumo_manha" | "reuniao_15min" | "popup_navegador" | "quadros_servico">
+    "resumo_manha" | "reuniao_15min" | "popup_navegador" | "quadros_servico" |
+    "parcerias_protecao" | "parcerias_convite">
 >;
 
 export interface CreateBoardRequest {

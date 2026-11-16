@@ -21,6 +21,8 @@ class UserNotificationSettingResponse(BaseModel):
     resumo_manha: bool = Field(description="Resumo das 8h, seg a sex")
     reuniao_15min: bool = Field(description="Aviso 15 minutos antes de reunião")
     popup_navegador: bool = Field(description="Pop-up do navegador além do sino")
+    parcerias_protecao: bool = Field(default=True, description="Parcerias: proteção do CNPJ da oportunidade")
+    parcerias_convite: bool = Field(default=True, description="Parcerias: convite sem ativação")
     quadros_servico: List[int] = Field(default_factory=list, description="Boards de Serviço acompanhados")
     created_at: datetime
     updated_at: datetime
@@ -37,4 +39,6 @@ class UserNotificationSettingUpdate(BaseModel):
     resumo_manha: Optional[bool] = None
     reuniao_15min: Optional[bool] = None
     popup_navegador: Optional[bool] = None
+    parcerias_protecao: Optional[bool] = None
+    parcerias_convite: Optional[bool] = None
     quadros_servico: Optional[List[int]] = None

@@ -63,6 +63,22 @@ def protegido(agora: datetime, prazos: Iterable[Optional[datetime]],
     return any(m is not None and _naive(m) >= limite for m in movimentos)
 
 
+def data_de_queda(prazos: Iterable[Optional[datetime]], movimentos: Iterable[Optional[datetime]],
+                  dias: int = PADRAO.protecao) -> Optional[datetime]:
+    """
+    Quando a proteção cai (a mesma regra de `protegido`, olhando para a frente):
+    a data mais recente entre as atividades em aberto e os movimentos, mais N dias.
+    None = nada para proteger ou regra desligada (N = 0).
+    Garantia: protegido(agora, ...) == (agora <= data_de_queda(...)).
+    """
+    if dias <= 0:
+        return None
+    datas = [_naive(d) for d in list(prazos) + list(movimentos) if d is not None]
+    if not datas:
+        return None
+    return max(datas) + timedelta(days=dias)
+
+
 def motivo_do_registro(agora: datetime, aberto: bool, protegido_: bool = False,
                        ganho_em: Optional[datetime] = None,
                        perdido_em: Optional[datetime] = None,

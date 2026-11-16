@@ -1,4 +1,4 @@
-"""Textos dos e-mails de acesso: Convite e Redefinir senha (HTML simples e texto puro)."""
+"""Textos dos e-mails do CRM: Convite, Redefinir senha e avisos (HTML simples e texto puro)."""
 from datetime import datetime
 from html import escape
 from typing import Tuple
@@ -42,4 +42,17 @@ def redefinir(nome: str, link: str) -> Tuple[str, str, str]:
         + _botao(link, "Criar nova senha")
         + "<p>O link vale por 1 hora. Se não foi você, ignore este e-mail: a senha atual continua valendo.</p>"))
     texto = f"Olá, {nome}.\nPara criar uma nova senha, acesse: {link}\nO link vale por 1 hora."
+    return assunto, html, texto
+
+
+def aviso(nome: str, titulo: str, mensagem: str, link: str) -> Tuple[str, str, str]:
+    """E-mail que repete um aviso do sino, com botão para abrir no CRM. (assunto, html, texto)"""
+    assunto = f"HSGrowth: {titulo}"
+    html = _moldura(titulo, (
+        f"<p>Olá, {escape(nome)}.</p><p>{escape(mensagem)}</p>"
+        + _botao(link, "Abrir no CRM")
+        + '<p style="color:#64748b;font-size:13px">Para não receber este aviso, desligue em '
+          "Configurações → Notificações.</p>"))
+    texto = (f"Olá, {nome}.\n{mensagem}\nAbrir no CRM: {link}\n"
+             "Para não receber este aviso, desligue em Configurações → Notificações.")
     return assunto, html, texto

@@ -282,6 +282,11 @@ def job_limpar_notificacoes():
     _rodar_aviso("limpeza de notificações", limpar_notificacoes_lidas)
 
 
+def job_alertas_parcerias():
+    from app.services.notificacoes.parcerias import avisar_parcerias
+    _rodar_aviso("alertas de Parcerias", avisar_parcerias)
+
+
 # ===================== SCHEDULER CONFIGURATION =====================
 
 
@@ -344,6 +349,10 @@ def configure_jobs():
                   id="cards_novos_servico", name="Card novo de Serviço", replace_existing=True)
     sched.add_job(job_limpar_notificacoes, trigger=CronTrigger(hour=3, minute=30),
                   id="limpar_notificacoes", name="Limpar notificações lidas", replace_existing=True)
+    # Parcerias (Entrega 4): proteção do CNPJ e convite sem ativação. Todo dia
+    # (o prazo conta dias corridos), às 8h — o agendador já está no fuso de São Paulo.
+    sched.add_job(job_alertas_parcerias, trigger=CronTrigger(hour=8, minute=0),
+                  id="alertas_parcerias", name="Alertas de Parcerias", replace_existing=True)
 
     # 9. Backup de logs de auditoria - Semanalmente aos domingos às 04:00
     sched.add_job(

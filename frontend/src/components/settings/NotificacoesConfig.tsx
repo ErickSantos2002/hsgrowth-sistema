@@ -13,7 +13,8 @@ import { useAuth } from "../../hooks/useAuth";
 import { showError, showSuccess } from "../../utils/toast";
 import { NotificationSettings, NotificationSettingsUpdate } from "../../types";
 
-type Chave = "task_assigned" | "card_product_changed" | "reuniao_pronta" | "resumo_manha" | "reuniao_15min" | "popup_navegador";
+type Chave = "task_assigned" | "card_product_changed" | "reuniao_pronta" | "resumo_manha" | "reuniao_15min" | "popup_navegador"
+  | "parcerias_protecao" | "parcerias_convite";
 
 const CARTAO = "flex items-center justify-between rounded-lg bg-gray-100 p-4 dark:bg-slate-700/50";
 const TITULO = "mb-3 text-lg font-medium text-slate-900 dark:text-white";
@@ -54,6 +55,8 @@ const NotificacoesConfig: React.FC = () => {
   const papel = user?.role;
   const vendas = papel === "salesperson" || papel === "sdr" || papel === "admin" || papel === "manager";
   const servico = papel === "service" || papel === "admin" || papel === "manager";
+  // Quem participa do Programa de Parceiros (o vendedor pode ser Responsável H&S).
+  const parcerias = ["admin", "manager", "salesperson", "partner", "partner_member", "hunter"].includes(papel ?? "");
 
   useEffect(() => {
     userService.getNotificationSettings().then(setPrefs).catch(() => showError("Não foi possível carregar suas preferências"));
@@ -125,6 +128,20 @@ const NotificacoesConfig: React.FC = () => {
             </Linha>
             <Linha titulo="Gravação e análise da reunião" descricao="Quando a gravação ou a análise de uma reunião sua fica pronta">
               <Interruptor ligado={prefs.reuniao_pronta} onChange={(v) => alternar("reuniao_pronta", v)} />
+            </Linha>
+          </div>
+        </section>
+      )}
+
+      {parcerias && (
+        <section>
+          <h3 className={TITULO}>Parcerias</h3>
+          <div className="space-y-3">
+            <Linha titulo="Proteção do CNPJ da oportunidade" descricao="3 dias antes de uma oportunidade perder a proteção por falta de atividade, e no dia em que perde. Sino e e-mail.">
+              <Interruptor ligado={prefs.parcerias_protecao} onChange={(v) => alternar("parcerias_protecao", v)} />
+            </Linha>
+            <Linha titulo="Convite sem ativação" descricao="Quando uma empresa ou hunter convidado passa de 23 e de 30 dias sem aceitar os termos. Sino e e-mail.">
+              <Interruptor ligado={prefs.parcerias_convite} onChange={(v) => alternar("parcerias_convite", v)} />
             </Linha>
           </div>
         </section>
