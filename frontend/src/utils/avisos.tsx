@@ -5,8 +5,8 @@
  * Os antigos ficam até a limpeza de 30 dias apagar o histórico.
  */
 import {
-  AlarmClock, AlertTriangle, Bell, CheckSquare, Inbox, Package, Sun, Target,
-  UserCheck, Video, Zap, type LucideIcon,
+  AlarmClock, AlertTriangle, Bell, CheckSquare, Inbox, Package, ShieldAlert, Sun, Target,
+  UserCheck, UserX, Video, Zap, type LucideIcon,
 } from "lucide-react";
 
 interface InfoDoAviso {
@@ -24,6 +24,8 @@ const AVISOS: Record<string, InfoDoAviso> = {
   resumo_manha: { rotulo: "Resumo do dia", Icone: Sun, cor: "text-amber-500" },
   reuniao_15min: { rotulo: "Reunião em 15 minutos", Icone: AlarmClock, cor: "text-orange-400" },
   card_novo_servico: { rotulo: "Card novo no board", Icone: Inbox, cor: "text-cyan-500" },
+  parcerias_protecao: { rotulo: "Proteção do CNPJ", Icone: ShieldAlert, cor: "text-amber-500" },
+  parcerias_convite: { rotulo: "Convite sem ativação", Icone: UserX, cor: "text-orange-400" },
   reuniao_falha: { rotulo: "Falha na reunião", Icone: AlertTriangle, cor: "text-red-400" },
   automacao: { rotulo: "Automação", Icone: Zap, cor: "text-slate-400" },
   // Antigos — continuam no histórico até a limpeza apagar
