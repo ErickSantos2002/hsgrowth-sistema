@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.29",
+    date: "17/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Dashboard de Parcerias no padrão dos outros dashboards: visão geral, evolução das vendas dos últimos 6 meses, pipeline por etapa, conversão (fechamento, elegibilidade e tempo até o ganho) e Atenção · Riscos.",
+      },
+      {
+        type: "feature",
+        text: "Riscos do Dashboard de Parcerias: proteção do CNPJ caindo em até 3 dias e atividades vencidas; para a H&S, também ganho a confirmar, elegibilidade em análise e convites sem ativação. Clique no card para ver a lista.",
+      },
+    ],
+  },
+  {
     version: "1.11.28",
     date: "16/11/2026",
     entries: [

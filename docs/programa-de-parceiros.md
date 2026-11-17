@@ -107,6 +107,17 @@ os mesmos termos.
 - **Com os percentuais zerados, nenhum lançamento é gerado.** A configuração começou zerada.
 
 ### Dashboard de Parcerias
+- **Mesma estrutura dos outros dashboards (desde 1.11.29):**
+  - **Visão Geral:** novas, em negociação, vendas, valor vendido, ticket médio e comissões.
+  - **Evolução das Vendas:** os 6 meses até o fim do período.
+  - **Pipeline por Etapa.**
+  - **Conversão:** fechamento, elegibilidade e tempo médio até o ganho. As taxas não usam
+    histórico de etapas.
+  - **Atenção · Riscos:** proteção do CNPJ em até 3 dias e atividades vencidas. Só para a H&S:
+    ganho a confirmar, elegibilidade em análise e convites com 23 dias ou mais.
+
+  As contas ficam em `app/services/parcerias/dashboard_secoes.py`. O hunter vê no pipeline e nos
+  riscos só as oportunidades próprias; a evolução dele soma a carteira.
 - **Hunter:** a carteira (empresas, vendas, "parada há X dias" a partir de 30 dias, prazo de
   indicação) e as comissões.
 - **Empresa:** vendas por vendedor, unidades indicadas e comissões.

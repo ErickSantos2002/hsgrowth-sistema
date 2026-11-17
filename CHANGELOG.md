@@ -9,6 +9,32 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.29] — 17/11/2026
+
+### Alterado
+- **Dashboard de Parcerias no padrão dos dashboards de SDR, Vendas e Serviços:** seções
+  **Visão Geral**, **Evolução das Vendas** (linha dos últimos 6 meses, em vez da barra única de
+  "Este mês"), **Pipeline por Etapa**, **Conversão** e **Atenção · Riscos**. Cada perfil continua
+  vendo só os próprios números, e o vendedor da equipe continua sem comissão.
+  - **Visão geral:** oportunidades novas e em negociação (com o valor), além das vendas, do
+    valor vendido, do ticket médio e das comissões.
+  - **Conversão:**
+    - taxa de fechamento (ganhos ÷ ganhos + perdidos);
+    - taxa de elegibilidade (validadas ÷ validadas + rejeitadas);
+    - tempo médio até o ganho.
+  - **Riscos:**
+    - oportunidades que perdem a proteção do CNPJ em até 3 dias (a mesma conta dos alertas);
+    - atividades vencidas;
+    - só para a H&S: ganho a confirmar, elegibilidade em análise e convites sem ativação há
+      23 dias ou mais.
+
+    Clicar no card abre a lista, com o link para cada uma.
+
+### Banco de dados
+- Nenhuma migration.
+
+---
+
 ## [1.11.28] — 16/11/2026
 
 ### Corrigido
