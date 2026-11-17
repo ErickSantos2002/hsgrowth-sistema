@@ -482,21 +482,38 @@ export interface DashCarteiraItem {
 export interface DashCarteiraHunterItem extends DashCarteiraItem { prazo_indicacao_ate?: string | null }
 export interface DashComissaoTipo { pendente: string; pago: string }
 export interface DashComissoes { pendente: string; pago: string; por_tipo: Record<string, DashComissaoTipo> }
-export interface DashVendedor { visao: "vendedor"; vendas: DashVendas; serie: DashMes[] }
-export interface DashEmpresa {
-  visao: "empresa"; vendas: DashVendas; serie: DashMes[];
-  por_vendedor: DashPorVendedor[]; unidades: DashCarteiraItem[]; comissoes: DashComissoes;
+export interface DashEtapa { etapa: string; nome: string; quantidade: number; valor: string }
+export interface DashResumo { novas: number; em_negociacao: DashVendas }
+export interface DashConversao {
+  ganhos: number; perdidos: number; taxa_fechamento: number | null;
+  validadas: number; rejeitadas: number; taxa_elegibilidade: number | null;
+  tempo_medio_ganho_dias: number | null;
 }
-export interface DashHunter {
-  visao: "hunter"; vendas: DashVendas; carteira_vendas: DashVendas; serie: DashMes[];
-  carteira: DashCarteiraHunterItem[]; comissoes: DashComissoes;
+export interface DashRiscoItem {
+  id: number; titulo: string; empresa?: string | null; detalhe: string; quando?: string | null; link: string;
+}
+export interface DashRisco { total: number; itens: DashRiscoItem[] }
+export interface DashRiscos { protecao: DashRisco; atividades_vencidas: DashRisco }
+export interface DashRiscosHS extends DashRiscos {
+  ganho_a_confirmar: DashRisco; elegibilidade_em_analise: DashRisco; convites: DashRisco;
+}
+/** O que as 4 visões têm em comum. */
+interface DashSecoes { resumo: DashResumo; evolucao: DashMes[]; pipeline: DashEtapa[]; conversao: DashConversao }
+export interface DashVendedor extends DashSecoes { visao: "vendedor"; vendas: DashVendas; riscos: DashRiscos }
+export interface DashEmpresa extends DashSecoes {
+  visao: "empresa"; vendas: DashVendas;
+  por_vendedor: DashPorVendedor[]; unidades: DashCarteiraItem[]; comissoes: DashComissoes; riscos: DashRiscos;
+}
+export interface DashHunter extends DashSecoes {
+  visao: "hunter"; vendas: DashVendas; carteira_vendas: DashVendas;
+  carteira: DashCarteiraHunterItem[]; comissoes: DashComissoes; riscos: DashRiscos;
 }
 export interface DashRankingEmpresa { partner_id: number; nome: string; situacao: string; quantidade: number; valor: string }
 export interface DashRankingHunter { partner_id: number; nome: string; empresas: number; quantidade: number; valor: string }
-export interface DashHS {
-  visao: "hs"; vendas: DashVendas; serie: DashMes[];
+export interface DashHS extends DashSecoes {
+  visao: "hs"; vendas: DashVendas;
   ranking_empresas: DashRankingEmpresa[]; ranking_hunters: DashRankingHunter[];
-  paradas: DashCarteiraItem[]; comissoes: DashComissoes;
+  paradas: DashCarteiraItem[]; comissoes: DashComissoes; riscos: DashRiscosHS;
 }
 export type DashboardParcerias = DashVendedor | DashEmpresa | DashHunter | DashHS;
 export interface DashFiltroItem { id: number; nome: string }

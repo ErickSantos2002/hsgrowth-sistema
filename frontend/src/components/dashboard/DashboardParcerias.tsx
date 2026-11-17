@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { Calendar, CheckCircle2, Clock, Handshake, Hourglass, LayoutDashboard, ShoppingCart, TrendingUp, Users, Wallet } from "lucide-react";
-import { Pagination, SelectMenu } from "../common";
+import {
+  AlertTriangle, Calendar, CheckCircle2, Clock, Handshake, Hourglass, LayoutDashboard, ShieldAlert,
+  ShoppingCart, Sparkles, Target, TrendingUp, UserX, Users, Wallet, type LucideIcon,
+} from "lucide-react";
+import { BaseModal, Pagination, SelectMenu } from "../common";
 import { PageHeader } from "../layout/PageHeader";
 import { usePagination } from "../../hooks";
 import KpiCard from "./KpiCard";
@@ -18,8 +21,13 @@ import parceriasService, {
   type DashboardParcerias as Painel,
   type DashCarteiraItem,
   type DashComissoes,
+  type DashConversao,
+  type DashEtapa,
   type DashMes,
   type DashFiltroItem,
+  type DashRisco,
+  type DashRiscos,
+  type DashRiscosHS,
 } from "../../services/parceriasService";
 
 const dinheiro = (v: string | number) => formatarMoeda(Number(v));
@@ -166,29 +174,240 @@ function ComissoesPorTipo({ comissoes, link }: { comissoes: DashComissoes; link?
   );
 }
 
-function GraficoMensal({ serie }: { serie: DashMes[] }) {
+const TITULO_SECAO = "mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500";
+const CARTAO = "rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700/50 dark:bg-slate-800/50";
+const umaCasa = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+/** "2026-11-01" → "01/11/2026" sem passar por Date (evita voltar um dia no fuso de São Paulo). */
+const dataBR = (d: string) => d.split("-").reverse().join("/");
+
+function Secao({ titulo, risco, children }: { titulo: string; risco?: boolean; children: React.ReactNode }) {
+  return (
+    <section>
+      <h2 className={risco ? "mb-3 text-xs font-semibold uppercase tracking-wider text-red-400" : TITULO_SECAO}>
+        {titulo}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+function CabecalhoGrafico({ titulo, icone, fundo, extra }: {
+  titulo: string; icone: React.ReactNode; fundo: string; extra?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-4 flex items-center gap-2">
+      <div className={`rounded-lg p-2 ${fundo}`}>{icone}</div>
+      <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{titulo}</h3>
+      {extra}
+    </div>
+  );
+}
+
+/** Mesmas cores de eixo e de tooltip dos gráficos dos outros dashboards. */
+function useEstiloGrafico() {
   const { darkMode } = useTheme();
   const cores = getChartColors(darkMode);
-  const dados = serie.map((m) => ({ nome: rotuloMes(m.mes), valor: Number(m.valor), quantidade: m.quantidade }));
   const texto = darkMode ? "#ffffff" : "#0f172a";
+  return {
+    cores,
+    eixo: { fill: cores.content.secondary, fontSize: 11 },
+    tooltip: {
+      contentStyle: { backgroundColor: cores.surface.elevated, border: `1px solid ${cores.border.default}`, borderRadius: 8, fontSize: 12, color: texto },
+      labelStyle: { color: texto },
+      itemStyle: { color: texto },
+    },
+  };
+}
+
+function GraficoEvolucao({ evolucao, titulo }: { evolucao: DashMes[]; titulo: string }) {
+  const { cores, eixo, tooltip } = useEstiloGrafico();
+  const dados = evolucao.map((m) => ({ nome: rotuloMes(m.mes), valor: Number(m.valor), quantidade: m.quantidade }));
+  const vazio = evolucao.every((m) => m.quantidade === 0);
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <BarChart data={dados} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={cores.border.default} vertical={false} />
-        <XAxis dataKey="nome" tick={{ fill: cores.content.secondary, fontSize: 11 }} tickLine={false} />
-        <YAxis
-          tick={{ fill: cores.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} width={70}
-          tickFormatter={(v: number) => v.toLocaleString("pt-BR", { notation: "compact" })}
-        />
-        <Tooltip
-          contentStyle={{ backgroundColor: cores.surface.elevated, border: `1px solid ${cores.border.default}`, borderRadius: 8, fontSize: 12, color: texto }}
-          labelStyle={{ color: texto }}
-          itemStyle={{ color: texto }}
-          formatter={(v, _n, item) => [`${dinheiro(Number(v))} (${plural(item.payload.quantidade, "venda", "vendas")})`, "Valor vendido"]}
-        />
-        <Bar dataKey="valor" fill="#10b981" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className={CARTAO}>
+      <CabecalhoGrafico titulo={titulo} fundo="bg-emerald-500/20" icone={<TrendingUp size={16} className="text-emerald-400" />} />
+      {vazio ? (
+        <div className="flex h-48 items-center justify-center text-sm text-slate-400">Nenhuma venda confirmada nos últimos 6 meses</div>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={dados} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={cores.border.default} vertical={false} />
+            <XAxis dataKey="nome" tick={eixo} tickLine={false} />
+            <YAxis
+              tick={eixo} tickLine={false} axisLine={false} width={70}
+              tickFormatter={(v: number) => v.toLocaleString("pt-BR", { notation: "compact" })}
+            />
+            <Tooltip
+              {...tooltip}
+              formatter={(v, _n, item) => [`${dinheiro(Number(v))} (${plural(item.payload.quantidade, "venda", "vendas")})`, "Valor vendido"]}
+            />
+            <Line type="monotone" dataKey="valor" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: "#10b981" }} />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
+
+function GraficoPipeline({ pipeline }: { pipeline: DashEtapa[] }) {
+  const { cores, eixo, tooltip } = useEstiloGrafico();
+  const total = pipeline.reduce((soma, e) => soma + e.quantidade, 0);
+  const dados = pipeline.map((e) => ({ nome: e.nome, quantidade: e.quantidade, valor: Number(e.valor) }));
+  return (
+    <div className={CARTAO}>
+      <CabecalhoGrafico
+        titulo="Pipeline por Etapa" fundo="bg-blue-500/20" icone={<Target size={16} className="text-blue-400" />}
+        extra={total > 0 ? (
+          <span className="ml-auto rounded-full bg-blue-500/20 px-2.5 py-0.5 text-xs font-semibold text-blue-400">
+            {plural(total, "oportunidade", "oportunidades")}
+          </span>
+        ) : undefined}
+      />
+      {total === 0 ? (
+        <div className="flex h-48 items-center justify-center text-sm text-slate-400">Nenhuma oportunidade em negociação</div>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={dados} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={cores.border.default} vertical={false} />
+            <XAxis dataKey="nome" tick={eixo} tickLine={false} interval={0} />
+            <YAxis tick={eixo} tickLine={false} axisLine={false} allowDecimals={false} width={40} />
+            <Tooltip
+              {...tooltip}
+              formatter={(v, _n, item) => [`${v} (${dinheiro(item.payload.valor)})`, "Oportunidades"]}
+            />
+            <Bar dataKey="quantidade" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
+
+function Conversao({ conversao: c }: { conversao: DashConversao }) {
+  const itens = [
+    {
+      rotulo: "Taxa de fechamento",
+      valor: c.taxa_fechamento == null ? null : `${umaCasa(c.taxa_fechamento)}%`,
+      detalhe: `${plural(c.ganhos, "ganho", "ganhos")} · ${plural(c.perdidos, "perdido", "perdidos")}`,
+    },
+    {
+      rotulo: "Taxa de elegibilidade",
+      valor: c.taxa_elegibilidade == null ? null : `${umaCasa(c.taxa_elegibilidade)}%`,
+      detalhe: `${plural(c.validadas, "validada", "validadas")} · ${plural(c.rejeitadas, "rejeitada", "rejeitadas")}`,
+    },
+    {
+      rotulo: "Tempo médio até o ganho",
+      valor: c.tempo_medio_ganho_dias == null ? null : `${umaCasa(c.tempo_medio_ganho_dias)} dias`,
+      detalhe: "Do cadastro à confirmação do ganho",
+    },
+  ];
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {itens.map((i) => (
+        <div key={i.rotulo} className="rounded-xl border border-gray-200 bg-white p-4 text-center dark:border-slate-700/50 dark:bg-slate-800/50">
+          <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">{i.rotulo}</p>
+          {i.valor !== null ? (
+            <p className="text-2xl font-bold text-emerald-500">{i.valor}</p>
+          ) : (
+            <p className="text-2xl font-bold text-slate-400 dark:text-slate-500">—</p>
+          )}
+          <p className="mt-1 text-xs text-slate-400">{i.detalhe}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+type ChaveRisco = keyof DashRiscosHS;
+const COR_RISCO = {
+  red: { caixa: "border-red-500/20 bg-red-500/5 hover:bg-red-500/10", texto: "text-red-400" },
+  orange: { caixa: "border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10", texto: "text-orange-400" },
+  yellow: { caixa: "border-yellow-500/20 bg-yellow-500/5 hover:bg-yellow-500/10", texto: "text-yellow-500" },
+} as const;
+const RISCOS: { chave: ChaveRisco; titulo: string; descricao: string; cor: keyof typeof COR_RISCO; Icone: LucideIcon }[] = [
+  { chave: "protecao", titulo: "Perdendo a proteção", descricao: "CNPJ fica livre em até 3 dias", cor: "red", Icone: ShieldAlert },
+  { chave: "atividades_vencidas", titulo: "Atividades vencidas", descricao: "Oportunidades com atividade atrasada", cor: "orange", Icone: AlertTriangle },
+  { chave: "ganho_a_confirmar", titulo: "Ganho a confirmar", descricao: "Ganho marcado pelo parceiro", cor: "yellow", Icone: CheckCircle2 },
+  { chave: "elegibilidade_em_analise", titulo: "Elegibilidade em análise", descricao: "Aguardando a validação", cor: "yellow", Icone: Hourglass },
+  { chave: "convites", titulo: "Convites sem ativação", descricao: "23 dias ou mais sem aceitar os termos", cor: "orange", Icone: UserX },
+];
+
+function ModalRisco({ titulo, risco, onClose }: { titulo: string; risco: DashRisco | null; onClose: () => void }) {
+  const navigate = useNavigate();
+  return (
+    <BaseModal
+      isOpen={risco !== null}
+      onClose={onClose}
+      closeOnOverlayClick
+      size="xl"
+      title={titulo}
+      subtitle={risco && risco.total > risco.itens.length ? `Mostrando ${risco.itens.length} de ${risco.total}` : undefined}
+    >
+      {!risco || risco.itens.length === 0 ? (
+        <Vazio texto="Nada por aqui. Tudo em dia." />
+      ) : (
+        <div className="max-h-[60vh] overflow-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="sticky top-0 bg-white text-xs text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+              <tr>
+                <th className="py-2 pr-3 font-medium">Nome</th>
+                <th className="py-2 pr-3 font-medium">Empresa</th>
+                <th className="py-2 pr-3 font-medium">Situação</th>
+                <th className="py-2 text-right font-medium">Data</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+              {risco.itens.map((i) => (
+                <tr
+                  key={i.link}
+                  onClick={() => { onClose(); navigate(i.link); }}
+                  title="Abrir"
+                  className="cursor-pointer text-slate-700 hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  <td className="py-2 pr-3 font-medium">{i.titulo}</td>
+                  <td className="py-2 pr-3">{i.empresa || "—"}</td>
+                  <td className="py-2 pr-3 text-xs text-slate-500 dark:text-slate-400">{i.detalhe}</td>
+                  <td className="whitespace-nowrap py-2 text-right tabular-nums">{i.quando ? dia(i.quando) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </BaseModal>
+  );
+}
+
+function Riscos({ riscos }: { riscos: DashRiscos | DashRiscosHS }) {
+  const [aberto, setAberto] = useState<ChaveRisco | null>(null);
+  const lista = (chave: ChaveRisco): DashRisco | undefined => (riscos as Partial<DashRiscosHS>)[chave];
+  const visiveis = RISCOS.filter((r) => lista(r.chave) !== undefined);
+  const atual = RISCOS.find((r) => r.chave === aberto);
+  return (
+    <>
+      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${visiveis.length > 2 ? "lg:grid-cols-5" : ""}`}>
+        {visiveis.map(({ chave, titulo, descricao, cor, Icone }) => {
+          const c = COR_RISCO[cor];
+          return (
+            <button
+              key={chave}
+              type="button"
+              onClick={() => setAberto(chave)}
+              title="Ver a lista"
+              className={`rounded-xl border p-5 text-left transition-colors ${c.caixa}`}
+            >
+              <div className="mb-3 flex items-center gap-2">
+                <Icone size={16} className={c.texto} />
+                <h3 className={`text-sm font-semibold ${c.texto}`}>{titulo}</h3>
+              </div>
+              <p className={`text-3xl font-bold ${c.texto}`}>{lista(chave)?.total ?? 0}</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{descricao} · clique para ver</p>
+            </button>
+          );
+        })}
+      </div>
+      <ModalRisco titulo={atual?.titulo ?? ""} risco={aberto ? lista(aberto) ?? null : null} onClose={() => setAberto(null)} />
+    </>
   );
 }
 
@@ -272,9 +491,11 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo, filtrosEm }) => {
     </div>
   );
 
-  const semVendas = painel != null && painel.serie.length === 0;
-  const tituloGrafico = painel?.visao === "hunter" ? "Valor vendido (minhas + carteira)" : "Valor vendido por mês";
+  const tituloEvolucao = painel?.visao === "hunter" ? "Evolução das Vendas (minhas + carteira)" : "Evolução das Vendas · 6 meses";
   const ticket = painel && painel.vendas.quantidade > 0 ? Number(painel.vendas.valor) / painel.vendas.quantidade : null;
+  const rotuloPeriodo = atalhoPeriodo === "custom"
+    ? `${periodo.de ? dataBR(periodo.de) : "início"} a ${periodo.ate ? dataBR(periodo.ate) : "hoje"}`
+    : OPCOES_PERIODO.find((o) => o.value === atalhoPeriodo)?.label ?? "";
 
   return (
     <>
@@ -305,55 +526,73 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo, filtrosEm }) => {
 
       {painel && (
         <div className={`space-y-6 transition-opacity ${carregando || erro ? "opacity-60" : ""}`}>
-          <div className={`grid grid-cols-1 gap-4 sm:grid-cols-3 ${
-            painel.visao === "hunter" ? "xl:grid-cols-6" : painel.visao === "vendedor" ? "" : "lg:grid-cols-5"
-          }`}>
-            <KpiCard
-              icon={<ShoppingCart size={18} className="text-emerald-500" />} iconBg="bg-emerald-500/20"
-              label={painel.visao === "hunter" ? "Minhas vendas" : "Vendas no período"} value={painel.vendas.quantidade} format="number"
-              info="Oportunidades com ganho confirmado no período (locação não conta)."
-            />
-            {painel.visao === "hunter" && (
+          {/* ── 1. VISÃO GERAL ─────────────────────────────────────────── */}
+          <Secao titulo={`Visão Geral · ${rotuloPeriodo}`}>
+            <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${painel.visao === "vendedor" ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
               <KpiCard
-                icon={<Handshake size={18} className="text-amber-500" />} iconBg="bg-amber-500/20"
-                label="Vendas da carteira" value={painel.carteira_vendas.quantidade} format="number"
-                info={`Vendas das empresas que você indicou no período: ${dinheiro(painel.carteira_vendas.valor)}.`}
+                icon={<Sparkles size={18} className="text-cyan-500" />} iconBg="bg-cyan-500/20"
+                label="Oportunidades novas" value={painel.resumo.novas} format="number"
+                info="Oportunidades cadastradas no período."
               />
-            )}
-            <KpiCard
-              icon={<TrendingUp size={18} className="text-blue-500" />} iconBg="bg-blue-500/20"
-              label={painel.visao === "hunter" ? "Meu valor vendido" : "Valor vendido"} value={Number(painel.vendas.valor)} format="currency"
-              info="Produtos menos o desconto geral, sem frete (a mesma base da comissão)."
-            />
-            <KpiCard
-              icon={<Wallet size={18} className="text-purple-500" />} iconBg="bg-purple-500/20"
-              label="Ticket médio" value={ticket} format="currency"
-            />
-            {painel.visao !== "vendedor" && (
-              <>
+              <KpiCard
+                icon={<Target size={18} className="text-blue-500" />} iconBg="bg-blue-500/20"
+                label="Em negociação" value={painel.resumo.em_negociacao.quantidade} format="number"
+                sub={dinheiro(painel.resumo.em_negociacao.valor)}
+                info="Oportunidades abertas agora (sem as rejeitadas na elegibilidade), com o valor somado."
+              />
+              <KpiCard
+                icon={<ShoppingCart size={18} className="text-emerald-500" />} iconBg="bg-emerald-500/20"
+                label={painel.visao === "hunter" ? "Minhas vendas" : "Vendas no período"} value={painel.vendas.quantidade} format="number"
+                info="Oportunidades com ganho confirmado no período (locação não conta)."
+              />
+              {painel.visao === "hunter" && (
                 <KpiCard
-                  icon={<Clock size={18} />} iconBg="bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
-                  label="Comissões pendentes" value={Number(painel.comissoes.pendente)} format="currency" highlight="yellow"
-                  info="Lançamentos de comissão ainda não pagos no período."
+                  icon={<Handshake size={18} className="text-amber-500" />} iconBg="bg-amber-500/20"
+                  label="Vendas da carteira" value={painel.carteira_vendas.quantidade} format="number"
+                  info={`Vendas das empresas que você indicou no período: ${dinheiro(painel.carteira_vendas.valor)}.`}
                 />
-                <KpiCard
-                  icon={<CheckCircle2 size={18} />} iconBg="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                  label="Comissões pagas" value={Number(painel.comissoes.pago)} format="currency" highlight="green"
-                  info="Lançamentos de comissão já pagos no período."
-                />
-              </>
-            )}
-          </div>
+              )}
+              <KpiCard
+                icon={<TrendingUp size={18} className="text-blue-500" />} iconBg="bg-blue-500/20"
+                label={painel.visao === "hunter" ? "Meu valor vendido" : "Valor vendido"} value={Number(painel.vendas.valor)} format="currency"
+                info="Produtos menos o desconto geral, sem frete (a mesma base da comissão)."
+              />
+              <KpiCard
+                icon={<Wallet size={18} className="text-purple-500" />} iconBg="bg-purple-500/20"
+                label="Ticket médio" value={ticket} format="currency"
+              />
+              {painel.visao !== "vendedor" && (
+                <>
+                  <KpiCard
+                    icon={<Clock size={18} />} iconBg="bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                    label="Comissões pendentes" value={Number(painel.comissoes.pendente)} format="currency" highlight="yellow"
+                    info="Lançamentos de comissão ainda não pagos no período."
+                  />
+                  <KpiCard
+                    icon={<CheckCircle2 size={18} />} iconBg="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                    label="Comissões pagas" value={Number(painel.comissoes.pago)} format="currency" highlight="green"
+                    info="Lançamentos de comissão já pagos no período."
+                  />
+                </>
+              )}
+            </div>
+          </Secao>
 
-          {semVendas ? (
-            <Bloco titulo={tituloGrafico} icone={<TrendingUp size={16} className="text-emerald-500" />}>
-              <Vazio texto="Nenhuma venda confirmada neste período. Ajuste as datas para ver mais resultados." />
-            </Bloco>
-          ) : (
-            <Bloco titulo={tituloGrafico} icone={<TrendingUp size={16} className="text-emerald-500" />}>
-              <GraficoMensal serie={painel.serie} />
-            </Bloco>
-          )}
+          {/* ── 2. EVOLUÇÃO E PIPELINE ─────────────────────────────────── */}
+          <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <GraficoEvolucao evolucao={painel.evolucao} titulo={tituloEvolucao} />
+            <GraficoPipeline pipeline={painel.pipeline} />
+          </section>
+
+          {/* ── 3. CONVERSÃO ───────────────────────────────────────────── */}
+          <Secao titulo={`Conversão · ${rotuloPeriodo}`}>
+            <Conversao conversao={painel.conversao} />
+          </Secao>
+
+          {/* ── 4. RISCOS ──────────────────────────────────────────────── */}
+          <Secao titulo="Atenção · Riscos" risco>
+            <Riscos riscos={painel.riscos} />
+          </Secao>
 
           {painel.visao === "hunter" && (
             <>
