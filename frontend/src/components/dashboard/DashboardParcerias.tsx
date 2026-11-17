@@ -496,6 +496,9 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo, filtrosEm }) => {
   const rotuloPeriodo = atalhoPeriodo === "custom"
     ? `${periodo.de ? dataBR(periodo.de) : "início"} a ${periodo.ate ? dataBR(periodo.ate) : "hoje"}`
     : OPCOES_PERIODO.find((o) => o.value === atalhoPeriodo)?.label ?? "";
+  // Cards em flex: ¼ da linha (⅕ para o vendedor, que tem 5); a última linha estica e não sobra
+  // buraco (7 cards = 4 + 3 largos). Abaixo de 220px por card, quebram em menos colunas.
+  const kpi = `min-w-[220px] flex-1 ${painel?.visao === "vendedor" ? "basis-[calc(20%-0.8rem)]" : "basis-[calc(25%-0.75rem)]"}`;
 
   return (
     <>
@@ -528,47 +531,47 @@ const DashboardParcerias: React.FC<Props> = ({ semTitulo, filtrosEm }) => {
         <div className={`space-y-6 transition-opacity ${carregando || erro ? "opacity-60" : ""}`}>
           {/* ── 1. VISÃO GERAL ─────────────────────────────────────────── */}
           <Secao titulo={`Visão Geral · ${rotuloPeriodo}`}>
-            <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${painel.visao === "vendedor" ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
-              <KpiCard
+            <div className="flex flex-wrap gap-4">
+              <KpiCard className={kpi}
                 icon={<Sparkles size={18} className="text-cyan-500" />} iconBg="bg-cyan-500/20"
                 label="Oportunidades novas" value={painel.resumo.novas} format="number"
                 info="Oportunidades cadastradas no período."
               />
-              <KpiCard
+              <KpiCard className={kpi}
                 icon={<Target size={18} className="text-blue-500" />} iconBg="bg-blue-500/20"
                 label="Em negociação" value={painel.resumo.em_negociacao.quantidade} format="number"
                 sub={dinheiro(painel.resumo.em_negociacao.valor)}
                 info="Oportunidades abertas agora (sem as rejeitadas na elegibilidade), com o valor somado."
               />
-              <KpiCard
+              <KpiCard className={kpi}
                 icon={<ShoppingCart size={18} className="text-emerald-500" />} iconBg="bg-emerald-500/20"
                 label={painel.visao === "hunter" ? "Minhas vendas" : "Vendas no período"} value={painel.vendas.quantidade} format="number"
                 info="Oportunidades com ganho confirmado no período (locação não conta)."
               />
               {painel.visao === "hunter" && (
-                <KpiCard
+                <KpiCard className={kpi}
                   icon={<Handshake size={18} className="text-amber-500" />} iconBg="bg-amber-500/20"
                   label="Vendas da carteira" value={painel.carteira_vendas.quantidade} format="number"
                   info={`Vendas das empresas que você indicou no período: ${dinheiro(painel.carteira_vendas.valor)}.`}
                 />
               )}
-              <KpiCard
+              <KpiCard className={kpi}
                 icon={<TrendingUp size={18} className="text-blue-500" />} iconBg="bg-blue-500/20"
                 label={painel.visao === "hunter" ? "Meu valor vendido" : "Valor vendido"} value={Number(painel.vendas.valor)} format="currency"
                 info="Produtos menos o desconto geral, sem frete (a mesma base da comissão)."
               />
-              <KpiCard
+              <KpiCard className={kpi}
                 icon={<Wallet size={18} className="text-purple-500" />} iconBg="bg-purple-500/20"
                 label="Ticket médio" value={ticket} format="currency"
               />
               {painel.visao !== "vendedor" && (
                 <>
-                  <KpiCard
+                  <KpiCard className={kpi}
                     icon={<Clock size={18} />} iconBg="bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
                     label="Comissões pendentes" value={Number(painel.comissoes.pendente)} format="currency" highlight="yellow"
                     info="Lançamentos de comissão ainda não pagos no período."
                   />
-                  <KpiCard
+                  <KpiCard className={kpi}
                     icon={<CheckCircle2 size={18} />} iconBg="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
                     label="Comissões pagas" value={Number(painel.comissoes.pago)} format="currency" highlight="green"
                     info="Lançamentos de comissão já pagos no período."
