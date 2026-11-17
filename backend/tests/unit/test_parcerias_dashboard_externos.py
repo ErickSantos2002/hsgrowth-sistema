@@ -37,10 +37,10 @@ def test_vendedor_ve_so_as_proprias_sem_comissao(client, db, admin_headers):
     _confirmar(client, oportunidade_ganha(db, a, 1000, seller_member_id=m1.id, modality="venda"), admin_headers)
     _confirmar(client, oportunidade_ganha(db, a, 500, seller_member_id=m2.id, modality="venda"), admin_headers)
     r = _painel(client, login1)
-    assert set(r) == {"visao", "vendas", "serie"}
+    assert set(r) == {"visao", "vendas", "evolucao", "resumo", "pipeline", "conversao", "riscos"}
     assert r["visao"] == "vendedor"
     assert r["vendas"] == {"quantidade": 1, "valor": "1000.00"}
-    assert len(r["serie"]) == 1 and r["serie"][0]["valor"] == "1000.00"
+    assert len(r["evolucao"]) == 6 and r["evolucao"][-1]["valor"] == "1000.00"
 
 
 def test_empresa_ve_vendas_por_vendedor_e_unidades(client, db, admin_headers):
@@ -75,7 +75,7 @@ def test_hunter_carteira_um_nivel(client, db, admin_headers):
     assert [c["partner_id"] for c in r["carteira"]] == [a.id]
     assert r["carteira"][0]["valor"] == "1000.00"
     assert r["vendas"] == {"quantidade": 1, "valor": "100.00"}
-    assert sum(float(m["valor"]) for m in r["serie"]) == 1100.0
+    assert sum(float(m["valor"]) for m in r["evolucao"]) == 1100.0
     assert "prazo_indicacao_ate" in r["carteira"][0]
 
 
@@ -89,7 +89,7 @@ def test_locacao_nao_confirmada_e_excluida_fora(client, db, admin_headers):
     oportunidade_ganha(db, a, 200, modality="venda", won_confirmed_at=datetime.utcnow(), is_deleted=True)
     r = _painel(client, dono)
     assert r["vendas"] == {"quantidade": 1, "valor": "1000.00"}
-    assert [m["quantidade"] for m in r["serie"]] == [1]
+    assert sum(m["quantidade"] for m in r["evolucao"]) == 1
 
 
 def test_parada_e_prazo(client, db):
@@ -169,7 +169,7 @@ def test_hunter_sem_vendas_proprias_ve_carteira_e_serie(client, db, admin_header
     r = _painel(client, uh)
     assert r["vendas"] == {"quantidade": 0, "valor": "0.00"}
     assert r["carteira_vendas"] == {"quantidade": 1, "valor": "1000.00"}
-    assert len(r["serie"]) == 1 and r["serie"][0]["valor"] == "1000.00"
+    assert len(r["evolucao"]) == 6 and r["evolucao"][-1]["valor"] == "1000.00"
 
 
 def test_parada_considera_ultima_atividade_da_oportunidade(client, db):

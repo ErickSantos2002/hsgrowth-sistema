@@ -4,9 +4,9 @@ Painel de Parcerias (spec 2026-11-11, §5).
 Venda = oportunidade não excluída, com ganho confirmado e `modality != "locacao"`.
 Valor vendido = a mesma base da comissão (produtos − desconto geral, sem frete),
 somada em Decimal. Período (`de`/`ate`) sobre `won_confirmed_at`, em dias de
-São Paulo; a série mensal também agrupa pelo mês de São Paulo.
+São Paulo; a evolução (6 meses até o fim do período) agrupa pelo mês de São Paulo.
 """
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Dict, Iterable, List, Optional, Tuple
 
@@ -20,6 +20,7 @@ from app.models.partner_commission import PartnerCommission
 from app.models.partner_opportunity import PartnerOpportunity
 from app.models.user import User
 from app.services.parcerias import acesso, comissoes, respostas
+from app.services.parcerias import dashboard_secoes as secoes
 
 ZERO = Decimal("0.00")
 DIAS_PARADA = 30
@@ -72,19 +73,32 @@ def _mes_local(momento: datetime) -> str:
     return f"{local.year:04d}-{local.month:02d}"
 
 
-def _serie(vendas: List[Tuple[PartnerOpportunity, Decimal]]) -> List[dict]:
-    meses: Dict[str, List] = {}
+MESES_EVOLUCAO = 6
+
+
+def _evolucao(db: Session, partner_ids: Iterable[int], ate: Optional[date], agora: datetime,
+              seller_member_id: Optional[int] = None) -> List[dict]:
+    """Vendas dos 6 meses que terminam no mês de `ate` (sem `ate`, o mês de hoje em São Paulo).
+    Meses sem venda vêm com zero, para a linha não pular."""
+    fim = ate or agora.replace(tzinfo=timezone.utc).astimezone(comissoes.FUSO).date()
+    ultimo = date(fim.year, fim.month, 1)
+    primeiro = ultimo - relativedelta(months=MESES_EVOLUCAO - 1)
+    vendas = _vendas(db, partner_ids, primeiro, ultimo + relativedelta(months=1) - timedelta(days=1),
+                     seller_member_id)
+    meses: Dict[str, List] = {f"{primeiro + relativedelta(months=i):%Y-%m}": [0, ZERO]
+                              for i in range(MESES_EVOLUCAO)}
     for op, valor in vendas:
-        m = meses.setdefault(_mes_local(op.won_confirmed_at), [0, ZERO])
-        m[0] += 1
-        m[1] += valor
-    return [{"mes": mes, "quantidade": q, "valor": _txt(v)} for mes, (q, v) in sorted(meses.items())]
+        m = meses.get(_mes_local(op.won_confirmed_at))
+        if m is not None:
+            m[0] += 1
+            m[1] += valor
+    return [{"mes": mes, "quantidade": q, "valor": _txt(v)} for mes, (q, v) in meses.items()]
 
 
-def serie_mensal(db: Session, partner_ids: Iterable[int], de: Optional[date] = None,
-                 ate: Optional[date] = None, seller_member_id: Optional[int] = None) -> List[dict]:
-    """Vendas por mês de São Paulo, em ordem; meses sem venda ficam de fora."""
-    return _serie(_vendas(db, partner_ids, de, ate, seller_member_id))
+def _secoes(db: Session, escopo: "secoes.Escopo", de, ate, agora: datetime, da_hs: bool = False) -> dict:
+    resumo, pipeline = secoes.resumo_e_pipeline(db, escopo, de, ate)
+    return {"resumo": resumo, "pipeline": pipeline, "conversao": secoes.conversao(db, escopo, de, ate),
+            "riscos": secoes.riscos(db, escopo, agora, da_hs)}
 
 
 def _bloco_vendas(vendas) -> dict:
@@ -184,10 +198,13 @@ def _indicados(db: Session, partner_id: int) -> List[Partner]:
             if p.id != partner_id]
 
 
-def painel_vendedor(db: Session, user: User, de, ate) -> dict:
+def painel_vendedor(db: Session, user: User, de, ate, agora: Optional[datetime] = None) -> dict:
+    agora = agora or datetime.utcnow()
     membro = acesso.membro_do_login(db, user)
     vendas = _vendas(db, [membro.partner_id], de, ate, seller_member_id=membro.id)
-    return {"visao": "vendedor", "vendas": _bloco_vendas(vendas), "serie": _serie(vendas)}
+    return {"visao": "vendedor", "vendas": _bloco_vendas(vendas),
+            "evolucao": _evolucao(db, [membro.partner_id], ate, agora, membro.id),
+            **_secoes(db, secoes.Escopo((membro.partner_id,), membro.id), de, ate, agora)}
 
 
 def painel_empresa(db: Session, user: User, de, ate, agora: Optional[datetime] = None) -> dict:
@@ -208,17 +225,24 @@ def painel_empresa(db: Session, user: User, de, ate, agora: Optional[datetime] =
     if sobra:
         por_vendedor.append({"membro_id": None, "nome": SEM_VENDEDOR, **_bloco_vendas(sobra)})
     unidades, _ = _carteira(db, _indicados(db, proprio), de, ate, False, agora)
-    return {"visao": "empresa", "vendas": _bloco_vendas(vendas), "serie": _serie(vendas),
-            "por_vendedor": por_vendedor, "unidades": unidades, "comissoes": _comissoes(db, user, de, ate)}
+    return {"visao": "empresa", "vendas": _bloco_vendas(vendas),
+            "evolucao": _evolucao(db, [proprio], ate, agora),
+            "por_vendedor": por_vendedor, "unidades": unidades, "comissoes": _comissoes(db, user, de, ate),
+            **_secoes(db, secoes.Escopo((proprio,)), de, ate, agora)}
 
 
 def painel_hunter(db: Session, user: User, de, ate, agora: Optional[datetime] = None) -> dict:
     agora = agora or datetime.utcnow()
     proprio = acesso.parceiro_do_login(user)
     proprias = _vendas(db, [proprio], de, ate)
-    carteira, da_carteira = _carteira(db, _indicados(db, proprio), de, ate, True, agora)
+    indicados = _indicados(db, proprio)
+    carteira, da_carteira = _carteira(db, indicados, de, ate, True, agora)
+    # A evolução soma as vendas da carteira (como o gráfico de antes); o pipeline e os riscos, não:
+    # o hunter não enxerga as oportunidades das empresas que indicou.
     return {"visao": "hunter", "vendas": _bloco_vendas(proprias), "carteira_vendas": _bloco_vendas(da_carteira),
-            "serie": _serie(proprias + da_carteira), "carteira": carteira, "comissoes": _comissoes(db, user, de, ate)}
+            "evolucao": _evolucao(db, [proprio, *[p.id for p in indicados]], ate, agora),
+            "carteira": carteira, "comissoes": _comissoes(db, user, de, ate),
+            **_secoes(db, secoes.Escopo((proprio,)), de, ate, agora)}
 
 
 MAX_RANKING = 20
@@ -290,10 +314,12 @@ def painel_hs(db: Session, user: User, de, ate, hunter_id: Optional[int] = None,
 
     filtrado = hunter_id is not None or partner_id is not None
     return {
-        "visao": "hs", "vendas": _bloco_vendas(vendas), "serie": _serie(vendas),
+        "visao": "hs", "vendas": _bloco_vendas(vendas),
+        "evolucao": _evolucao(db, escopo.keys(), ate, agora),
         "ranking_empresas": ranking_empresas[:MAX_RANKING], "ranking_hunters": ranking_hunters[:MAX_RANKING],
         "paradas": paradas[:MAX_RANKING],
         "comissoes": _comissoes(db, user, de, ate, list(escopo) if filtrado else None),
+        **_secoes(db, secoes.Escopo(tuple(escopo)), de, ate, agora, da_hs=True),
     }
 
 

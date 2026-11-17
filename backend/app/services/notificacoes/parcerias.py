@@ -12,7 +12,7 @@ dias, para não disparar sobre casos antigos quando a função entrar no ar.
 """
 import logging
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -35,7 +35,8 @@ JANELA = timedelta(days=2)
 LOGINS_DO_PARCEIRO = ("partner", "hunter")
 
 
-def _dia_local(quando: datetime):
+def dia_local(quando: datetime):
+    """Dia do calendário de São Paulo (o dashboard usa a mesma conta)."""
     return (quando + BRASILIA).date()
 
 
@@ -92,7 +93,7 @@ def _texto_protecao(op: PartnerOpportunity, cai: datetime, agora: datetime, dias
     """(sufixo da referência, título, mensagem) ou None se não é dia de avisar."""
     nome = f'"{op.title}" ({op.company_name})'
     if cai >= agora:
-        faltam = (_dia_local(cai) - _dia_local(agora)).days
+        faltam = (dia_local(cai) - dia_local(agora)).days
         if faltam > AVISO_ANTES_DIAS:
             return None
         quando = "hoje" if faltam == 0 else ("em 1 dia" if faltam == 1 else f"em {faltam} dias")
@@ -104,6 +105,20 @@ def _texto_protecao(op: PartnerOpportunity, cai: datetime, agora: datetime, dias
                 f"{nome} ficou {dias} dias sem atividade. O CNPJ ficou livre para outros "
                 "parceiros e para Vendas.")
     return None
+
+
+def prazos_em_aberto(db: Session, ids: List[int]) -> Dict[int, List[Optional[datetime]]]:
+    """Prazos das atividades em aberto de cada oportunidade (o que segura a proteção)."""
+    prazos: Dict[int, List[Optional[datetime]]] = {}
+    if not ids:
+        return prazos
+    for op_id, prazo in db.query(PartnerActivity.opportunity_id, PartnerActivity.due_date).filter(
+        PartnerActivity.opportunity_id.in_(ids),
+        PartnerActivity.category == "atividade",
+        PartnerActivity.is_completed.is_(False),
+    ).all():
+        prazos.setdefault(op_id, []).append(prazo)
+    return prazos
 
 
 def avisar_protecao(db: Session, agora: datetime) -> int:
@@ -119,13 +134,7 @@ def avisar_protecao(db: Session, agora: datetime) -> int:
     if not ops:
         return 0
 
-    prazos = {}
-    for a in db.query(PartnerActivity).filter(
-        PartnerActivity.opportunity_id.in_([o.id for o in ops]),
-        PartnerActivity.category == "atividade",
-        PartnerActivity.is_completed.is_(False),
-    ).all():
-        prazos.setdefault(a.opportunity_id, []).append(a.due_date)
+    prazos = prazos_em_aberto(db, [o.id for o in ops])
 
     total = 0
     for op in ops:
@@ -155,7 +164,7 @@ def _admins(db: Session) -> List[User]:
     ).order_by(User.id).all()
 
 
-def _convidado_desde(db: Session, p: Partner) -> Optional[datetime]:
+def convidado_desde(db: Session, p: Partner) -> Optional[datetime]:
     """Criação do primeiro login do parceiro (o convite). Sem login, None."""
     datas = [u.created_at for u in db.query(User).join(Role, Role.id == User.role_id).filter(
         User.partner_id == p.id, Role.name.in_(LOGINS_DO_PARCEIRO)).all() if u.created_at]
@@ -166,10 +175,10 @@ def avisar_convites(db: Session, agora: datetime) -> int:
     """Returns: quantos avisos foram criados."""
     total = 0
     for p in db.query(Partner).filter(Partner.is_deleted.is_(False), Partner.stage == "convidado").all():
-        desde = _convidado_desde(db, p)
+        desde = convidado_desde(db, p)
         if desde is None:
             continue
-        dias = (_dia_local(agora) - _dia_local(desde)).days
+        dias = (dia_local(agora) - dia_local(desde)).days
         if DIA_AVISO_CONVITE <= dias < DIA_LIMITE_CONVITE:
             marco, titulo = DIA_AVISO_CONVITE, "Convite sem ativação"
             faltam = DIA_LIMITE_CONVITE - dias

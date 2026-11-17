@@ -1010,29 +1010,84 @@ class DashComissoes(BaseModel):
     por_tipo: Dict[str, DashComissaoTipo]
 
 
-class DashVendedor(BaseModel):
+class DashResumo(BaseModel):
+    novas: int
+    em_negociacao: DashVendas
+
+
+class DashEtapa(BaseModel):
+    etapa: str
+    nome: str
+    quantidade: int
+    valor: str
+
+
+class DashConversao(BaseModel):
+    ganhos: int
+    perdidos: int
+    taxa_fechamento: Optional[float] = None
+    validadas: int
+    rejeitadas: int
+    taxa_elegibilidade: Optional[float] = None
+    tempo_medio_ganho_dias: Optional[float] = None
+
+
+class DashRiscoItem(BaseModel):
+    id: int
+    titulo: str
+    empresa: Optional[str] = None
+    detalhe: str
+    quando: Optional[datetime] = None
+    link: str
+
+
+class DashRisco(BaseModel):
+    total: int
+    itens: List[DashRiscoItem]
+
+
+class DashRiscos(BaseModel):
+    protecao: DashRisco
+    atividades_vencidas: DashRisco
+
+
+class DashRiscosHS(DashRiscos):
+    ganho_a_confirmar: DashRisco
+    elegibilidade_em_analise: DashRisco
+    convites: DashRisco
+
+
+class DashSecoes(BaseModel):
+    """O que as 4 visões têm em comum (spec 2026-11-16)."""
+    resumo: DashResumo
+    evolucao: List[DashMes]
+    pipeline: List[DashEtapa]
+    conversao: DashConversao
+
+
+class DashVendedor(DashSecoes):
     """Vendedor da equipe: nenhum campo de comissão."""
     visao: Literal["vendedor"]
     vendas: DashVendas
-    serie: List[DashMes]
+    riscos: DashRiscos
 
 
-class DashEmpresa(BaseModel):
+class DashEmpresa(DashSecoes):
     visao: Literal["empresa"]
     vendas: DashVendas
-    serie: List[DashMes]
     por_vendedor: List[DashPorVendedor]
     unidades: List[DashCarteiraItem]
     comissoes: DashComissoes
+    riscos: DashRiscos
 
 
-class DashHunter(BaseModel):
+class DashHunter(DashSecoes):
     visao: Literal["hunter"]
     vendas: DashVendas
     carteira_vendas: DashVendas
-    serie: List[DashMes]
     carteira: List[DashCarteiraHunterItem]
     comissoes: DashComissoes
+    riscos: DashRiscos
 
 
 class DashRankingEmpresa(BaseModel):
@@ -1051,14 +1106,14 @@ class DashRankingHunter(BaseModel):
     valor: str
 
 
-class DashHS(BaseModel):
+class DashHS(DashSecoes):
     visao: Literal["hs"]
     vendas: DashVendas
-    serie: List[DashMes]
     ranking_empresas: List[DashRankingEmpresa]
     ranking_hunters: List[DashRankingHunter]
     paradas: List[DashCarteiraItem]
     comissoes: DashComissoes
+    riscos: DashRiscosHS
 
 
 class DashFiltroItem(BaseModel):

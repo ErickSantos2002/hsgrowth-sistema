@@ -92,7 +92,7 @@ def test_periodo_no_fuso_de_sao_paulo(client, db, admin_headers):
     db.commit()
     r = _painel(client, admin_headers, de="2026-11-10", ate="2026-11-10")
     assert r["vendas"]["quantidade"] == 1
-    assert [m["mes"] for m in r["serie"]] == ["2026-11"]
+    assert r["evolucao"][-1] == {"mes": "2026-11", "quantidade": 1, "valor": "1000.00"}
     assert _painel(client, admin_headers, de="2026-11-11", ate="2026-11-11")["vendas"]["quantidade"] == 0
     assert _painel(client, admin_headers, ate="2026-10-31")["vendas"]["quantidade"] == 0
 
