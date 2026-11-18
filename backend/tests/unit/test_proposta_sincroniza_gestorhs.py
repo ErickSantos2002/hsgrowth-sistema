@@ -124,6 +124,16 @@ def test_mesmo_numero_string_nao_chama(cenario, chamadas):
     card = _card(db, cenario["lista"])
     ServiceBoardService(db).update_card(card.id, _upd(proposal_number="474"), user)
     assert chamadas == []
+    # o valor é gravado como veio ("474"); o que importa é que continua 474
+    assert int(_atual(db, card).business_info["proposal_number"]) == 474
+    assert _eventos(db, card, "proposal_number_changed") == []
+
+
+def test_business_info_none_nao_chama(cenario, chamadas):
+    db, user = cenario["db"], cenario["user"]
+    card = _card(db, cenario["lista"])
+    ServiceBoardService(db).update_card(card.id, ServiceCardUpdate(description="novo", business_info=None), user)
+    assert chamadas == []
 
 
 def test_outros_campos_do_resumo_nao_chamam(cenario, chamadas):

@@ -469,7 +469,7 @@ CAMPOS_PROIBIDOS_AGENTE_PUT = frozenset({"list_id", "position", "is_deleted", "a
 
 
 @router.put("/{board_id}/cards/{card_id}", response_model=ServiceCardResponse)
-async def update_service_card(
+def update_service_card(  # def (não async): chamada síncrona ao GestorHS não pode travar o event loop
     board_id: int = Path(...),
     card_id: int = Path(...),
     data: ServiceCardUpdate = ...,

@@ -113,8 +113,9 @@ def test_trocar_proposta_4xx_sem_json_tem_detail_generico(ligada, monkeypatch):
     assert exc.value.detail == "O GestorHS recusou o número da proposta (HTTP 422)."
 
 
-def test_trocar_proposta_5xx_vira_indisponivel(ligada, monkeypatch):
-    monkeypatch.setattr(httpx, "put", _put_resp(500))
+@pytest.mark.parametrize("status", [302, 500])
+def test_trocar_proposta_nao_2xx_nem_4xx_vira_indisponivel(ligada, monkeypatch, status):
+    monkeypatch.setattr(httpx, "put", _put_resp(status))
     with pytest.raises(gestorhs_client.GestorHSIndisponivel):
         gestorhs_client.trocar_proposta("42", 476, "obs")
 

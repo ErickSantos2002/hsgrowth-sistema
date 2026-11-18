@@ -582,7 +582,7 @@ class ServiceBoardService:
 
     def _sincronizar_proposta_gestorhs(
         self, card: ServiceCard, data: ServiceCardUpdate, user: User
-    ) -> Optional[tuple]:
+    ) -> Optional[tuple[Optional[int], int, bool]]:
         """Confere a troca do número da proposta com o GestorHS ANTES de gravar.
 
         Só vale para cards vindos de OS do GestorHS. Retorna (antigo, novo, avisado)

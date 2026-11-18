@@ -6,7 +6,7 @@ Duas chamadas:
   (fase 6) para Financeiro (fase 10). Best-effort, em background.
 - `trocar_proposta`: pede ao GestorHS que troque o número da proposta da caixa. É
   síncrona — o CRM só salva o card se o GestorHS aceitar.
- Ver docs/integracao-growthhs-inbound.md (contrato) e
+Ver docs/integracao-growthhs-inbound.md (contrato) e
 docs/superpowers/specs/2026-07-29-fase2-ganho-move-caixa-gestorhs-design.md.
 
 Gating por env, no mesmo padrão do webhook de Vendas (_send_automacao01_webhook):
@@ -27,6 +27,18 @@ logger = logging.getLogger(__name__)
 
 def integracao_ativa() -> bool:
     return bool(settings.GESTORHS_INBOUND_URL and settings.GESTORHS_INBOUND_API_KEY)
+
+
+class GestorHSRecusou(Exception):
+    """O GestorHS respondeu 4xx: o número da proposta não foi aceito."""
+
+    def __init__(self, detail: str):
+        super().__init__(detail)
+        self.detail = detail
+
+
+class GestorHSIndisponivel(Exception):
+    """O GestorHS não respondeu de forma utilizável (5xx, timeout ou erro de rede)."""
 
 
 def mover_caixa_ganho(caixa_id: str, numero_proposta: Optional[int], observacao: str) -> None:
@@ -58,18 +70,6 @@ def mover_caixa_ganho(caixa_id: str, numero_proposta: Optional[int], observacao:
         timeout=10,
     )
     resp.raise_for_status()
-
-
-class GestorHSRecusou(Exception):
-    """O GestorHS respondeu 4xx: o número da proposta não foi aceito."""
-
-    def __init__(self, detail: str):
-        super().__init__(detail)
-        self.detail = detail
-
-
-class GestorHSIndisponivel(Exception):
-    """O GestorHS não respondeu de forma utilizável (5xx, timeout ou erro de rede)."""
 
 
 def trocar_proposta(caixa_id: str, numero: int, observacao: str) -> bool:
@@ -109,6 +109,6 @@ def trocar_proposta(caixa_id: str, numero: int, observacao: str) -> bool:
         if not isinstance(detail, str) or not detail:
             detail = f"O GestorHS recusou o número da proposta (HTTP {resp.status_code})."
         raise GestorHSRecusou(detail)
-    if resp.status_code >= 500:
+    if not resp.is_success:
         raise GestorHSIndisponivel(f"GestorHS respondeu HTTP {resp.status_code}")
     return True
