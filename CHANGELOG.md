@@ -9,6 +9,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.30] — 18/11/2026
+
+### Corrigido
+- **Envio de e-mail pelo card dava "Erro" com o e-mail já enviado:** com vários destinatários e
+  anexos, o envio passava dos 30 segundos de espera da tela. A pessoa via "Erro ao enviar e-mail."
+  e reenviava, e o cliente recebia em dobro (6 casos entre 02 e 15/10).
+  - Os destinatários recebem ao mesmo tempo (até 4 por vez, o limite da Microsoft), não mais um
+    por um.
+  - A tela espera até 3 minutos só neste envio.
+  - Se mesmo assim a tela não receber resposta, o aviso diz que o e-mail pode ter saído e pede
+    para conferir a lista de e-mails do card antes de reenviar. A lista é recarregada.
+  - Enquanto um e-mail é enviado, o resto do sistema não fica mais travado para os outros
+    usuários.
+- **Falha parcial no envio aparecia como sucesso:** se o e-mail saía para um destinatário e falhava
+  para outro, a tela dizia "enviado". Agora avisa para quem falhou, e a atividade do card registra
+  só quem recebeu.
+
+### Banco de dados
+- Nenhuma migration.
+
+---
+
 ## [1.11.29] — 17/11/2026
 
 ### Alterado

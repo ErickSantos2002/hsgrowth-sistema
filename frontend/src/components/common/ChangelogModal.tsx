@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.30",
+    date: "18/11/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Envio de e-mail pelo card: com vários destinatários e anexos a tela dava \"Erro\" com o e-mail já enviado. Agora envia para todos ao mesmo tempo, espera mais e, se não conseguir confirmar, avisa para conferir a lista antes de reenviar.",
+      },
+      {
+        type: "fix",
+        text: "Envio de e-mail pelo card: quando o e-mail falha só para parte dos destinatários, a tela avisa para quem falhou, e a atividade registra só quem recebeu.",
+      },
+    ],
+  },
+  {
     version: "1.11.29",
     date: "17/11/2026",
     entries: [
