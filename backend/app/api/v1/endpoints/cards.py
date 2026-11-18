@@ -1484,7 +1484,7 @@ class SendEmailRequest(BaseModel):
 
 
 @router.post("/{card_id}/send-email", summary="Enviar e-mail pelo card via Microsoft 365")
-async def send_email_from_card(
+def send_email_from_card(
     card_id: int,
     payload: SendEmailRequest,
     current_user: User = Depends(get_current_active_user),
@@ -1497,6 +1497,11 @@ async def send_email_from_card(
     Suporta anexos (base64) e appenda automaticamente a assinatura do usuário.
 
     Requer que o usuário tenha autenticado via SSO Microsoft (tem ms_access_token).
+
+    `def` (e não `async def`) de propósito: o envio ao Graph é síncrono e demora; numa
+    rota async ele travava a API inteira para todo mundo até terminar.
+    Se o e-mail saiu só para parte dos destinatários, a resposta traz `partial_errors`
+    e a atividade registra só quem recebeu.
     """
     from app.models.card_task import CardTask, TaskType
     from app.services.microsoft_graph_service import microsoft_graph_service
@@ -1534,10 +1539,11 @@ async def send_email_from_card(
     if not result["success"]:
         raise HTTPException(status_code=502, detail=f"Erro ao enviar e-mail: {result.get('error')}")
 
-    # Registra atividade de e-mail no card
+    # Registra atividade de e-mail no card (só com quem recebeu, se a falha foi parcial)
     full_body = payload.body.replace("<br>", "\n").strip() if payload.body else ""
     attachment_names = ", ".join(att.name for att in payload.attachments) if payload.attachments else None
-    recipients = ", ".join(addr.strip() for addr in payload.to if addr.strip())
+    nao_receberam = set(result.get("failed_addresses") or [])
+    recipients = ", ".join(addr.strip() for addr in payload.to if addr.strip() and addr.strip() not in nao_receberam)
 
     if payload.task_id:
         # Conclui a task existente (criada pela cadência) em vez de criar uma nova
@@ -1578,6 +1584,12 @@ async def send_email_from_card(
         db.add(task)
         db.commit()
 
+    if result.get("partial_errors"):
+        return {
+            "success": True,
+            "message": "E-mail enviado só para parte dos destinatários. A atividade registrou quem recebeu.",
+            "partial_errors": result["partial_errors"],
+        }
     return {"success": True, "message": "E-mail enviado e atividade registrada no card."}
 
 

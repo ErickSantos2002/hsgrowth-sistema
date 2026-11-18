@@ -10,6 +10,7 @@ Requer que o usuário tenha autenticado via SSO e tenha ms_access_token salvo.
 """
 import httpx
 import base64
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -22,6 +23,8 @@ GRAPH_BASE = "https://graph.microsoft.com/v1.0"
 GRAPH_SEND_MAIL_URL = f"{GRAPH_BASE}/users/{{email}}/sendMail"
 GRAPH_MEETINGS_URL = f"{GRAPH_BASE}/me/onlineMeetings"
 GRAPH_EVENTS_URL = f"{GRAPH_BASE}/me/events"
+# Limite da Microsoft: 4 pedidos simultâneos por caixa de e-mail.
+ENVIOS_SIMULTANEOS = 4
 
 # Todos os escopos necessários para o serviço completo
 ALL_SCOPES = [
@@ -122,39 +125,49 @@ class MicrosoftGraphService:
         ] if attachments else None
 
         url = GRAPH_SEND_MAIL_URL.format(email=user.email)
-        errors = []
 
-        with httpx.Client(timeout=30) as client:
-            for addr in valid_addresses:
-                message: dict = {
-                    "subject": subject,
-                    "body": {"contentType": "HTML", "content": body},
-                    "toRecipients": [{"emailAddress": {"address": addr}}],
-                    "from": {"emailAddress": {"address": user.email}},
-                }
-                if graph_attachments:
-                    message["attachments"] = graph_attachments
-
-                try:
+        def enviar_para(addr: str) -> Optional[str]:
+            """Um destinatário. Returns: None se saiu, senão o texto do erro."""
+            message: dict = {
+                "subject": subject,
+                "body": {"contentType": "HTML", "content": body},
+                "toRecipients": [{"emailAddress": {"address": addr}}],
+                "from": {"emailAddress": {"address": user.email}},
+            }
+            if graph_attachments:
+                message["attachments"] = graph_attachments
+            try:
+                with httpx.Client(timeout=30) as client:
                     resp = client.post(
                         url,
                         json={"message": message, "saveToSentItems": True},
                         headers=self._auth_headers(access_token),
                     )
-                    if resp.status_code != 202:
-                        error_data = resp.json() if resp.content else {}
-                        error_msg = error_data.get("error", {}).get("message", f"HTTP {resp.status_code}")
-                        errors.append(f"{addr}: {error_msg}")
-                except Exception as e:
-                    errors.append(f"{addr}: {str(e)}")
+                if resp.status_code != 202:
+                    error_data = resp.json() if resp.content else {}
+                    return error_data.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                return None
+            except Exception as e:
+                return str(e)
 
-        if errors:
+        # Em paralelo: um por um, com anexo, passava do tempo de espera da tela, que mostrava
+        # "Erro" com o e-mail já saindo (e a pessoa reenviava). Até 4 ao mesmo tempo, o limite
+        # da Microsoft de pedidos simultâneos por caixa.
+        if len(valid_addresses) == 1:
+            resultados = [enviar_para(valid_addresses[0])]
+        else:
+            with ThreadPoolExecutor(max_workers=min(ENVIOS_SIMULTANEOS, len(valid_addresses))) as pool:
+                resultados = list(pool.map(enviar_para, valid_addresses))
+
+        falhas = [(addr, erro) for addr, erro in zip(valid_addresses, resultados) if erro is not None]
+        if falhas:
             # Se houve falhas parciais, informa quais falharam
-            failed = "; ".join(errors)
-            sent = len(valid_addresses) - len(errors)
+            failed = "; ".join(f"{addr}: {erro}" for addr, erro in falhas)
+            sent = len(valid_addresses) - len(falhas)
             if sent == 0:
                 return {"success": False, "error": failed}
-            return {"success": True, "partial_errors": failed, "sent": sent, "failed": len(errors)}
+            return {"success": True, "partial_errors": failed, "sent": sent, "failed": len(falhas),
+                    "failed_addresses": [addr for addr, _ in falhas]}
 
         return {"success": True}
 

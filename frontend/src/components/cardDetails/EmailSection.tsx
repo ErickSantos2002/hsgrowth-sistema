@@ -4,7 +4,7 @@ import { BaseModal, Button, FormField, Input, Textarea, Alert } from "../common"
 import cardService from "../../services/cardService";
 import cardTaskService, { CardTask } from "../../services/cardTaskService";
 import emailTemplateService, { EmailTemplate } from "../../services/emailTemplateService";
-import { showSuccess, showError } from "../../utils/toast";
+import { showSuccess, showError, showWarning } from "../../utils/toast";
 import { useAuth } from "../../context/AuthContext";
 
 interface EmailSectionProps {
@@ -222,7 +222,7 @@ const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate,
     sendingRef.current = true;
     setSending(true);
     try {
-      await cardService.sendEmail(
+      const resposta = await cardService.sendEmail(
         cardId,
         validTo,
         subject,
@@ -230,13 +230,26 @@ const EmailSection: React.FC<EmailSectionProps> = ({ cardId, personId, onUpdate,
         attachments.length > 0 ? attachments.map(({ name, content_type, data_base64 }) => ({ name, content_type, data_base64 })) : undefined,
         pendingTaskId,
       );
-      showSuccess("E-mail enviado e registrado!");
+      if (resposta?.partial_errors) {
+        // Saiu para parte: a atividade já registrou quem recebeu; diz quem ficou de fora.
+        showWarning(`E-mail enviado, mas falhou para: ${resposta.partial_errors}`, 12000);
+      } else {
+        showSuccess("E-mail enviado e registrado!");
+      }
       setShowModal(false);
       onModalClose?.();
       await loadEmails();
       onUpdate();
     } catch (err: any) {
-      showError(err?.response?.data?.detail || "Erro ao enviar e-mail.");
+      if (!err?.response) {
+        // Sem resposta (tempo esgotado ou conexão caiu): o servidor pode ter enviado mesmo
+        // assim. Reenviar às cegas mandaria o e-mail duas vezes ao cliente.
+        showWarning("Não deu para confirmar o envio. O e-mail pode ter saído: confira a lista de e-mails do card antes de reenviar.", 12000);
+        loadEmails();
+        onUpdate();
+      } else {
+        showError(err.response.data?.detail || "Erro ao enviar e-mail.");
+      }
     } finally {
       sendingRef.current = false;
       setSending(false);

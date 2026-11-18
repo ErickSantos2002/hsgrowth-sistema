@@ -163,13 +163,17 @@ class CardService {
     body: string,
     attachments?: { name: string; content_type: string; data_base64: string }[],
     taskId?: number,
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; partial_errors?: string }> {
     const response = await api.post(`/api/v1/cards/${cardId}/send-email`, {
       to,
       subject,
       body,
       attachments: attachments ?? [],
       ...(taskId ? { task_id: taskId } : {}),
+    }, {
+      // Com vários destinatários e anexos, o envio passa dos 30 s do padrão: a tela dava
+      // "Erro" com o e-mail já saindo. Só este pedido espera mais.
+      timeout: 180000,
     });
     return response.data;
   }
