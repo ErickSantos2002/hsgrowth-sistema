@@ -15,6 +15,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   - **Dependência de deploy:** exige a rota `PUT /integracao/growthhs/caixas/{id}/proposta`
     no GestorHS já em produção antes de subir esta versão.
 
+### Corrigido
+- **Build do frontend no Easypanel:** o rollup 4.68.6 (publicado em 18/11/2026) quebra o
+  `vite build` no Alpine (`Code is nested too deeply` em `react-dom/client.js`). Como o
+  Dockerfile apaga o `package-lock.json`, a versão nova entrava sozinha. Fixado em `4.68.5`
+  via `overrides` no `package.json` — retirar quando sair uma versão corrigida.
+
 ---
 
 ## [1.11.29] — 17/11/2026
