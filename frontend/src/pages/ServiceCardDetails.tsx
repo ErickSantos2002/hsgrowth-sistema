@@ -117,8 +117,13 @@ const ServiceSummarySection: React.FC<{
   }, [card.due_date, card.description, card.business_info]);
 
   const handleSaveBiz = async () => {
-    await onUpdate({ business_info: biz });
-    setEditingBiz(false);
+    try {
+      await onUpdate({ business_info: biz });
+      setEditingBiz(false);
+    } catch (e: any) {
+      // Mantém a edição aberta: o que foi digitado não se perde
+      showError(e?.response?.data?.detail || "Erro ao salvar o resumo");
+    }
   };
   const setBizField = (k: keyof ServiceBusinessInfo, v: string | boolean | number | null) =>
     setBiz((prev) => ({ ...prev, [k]: v }));
@@ -174,13 +179,23 @@ const ServiceSummarySection: React.FC<{
   };
 
   const handleSaveDue = async () => {
-    await onUpdate({ due_date: dueValue ? `${dueValue}T00:00:00` : null });
-    setEditingDue(false);
+    try {
+      await onUpdate({ due_date: dueValue ? `${dueValue}T00:00:00` : null });
+      setEditingDue(false);
+    } catch (e: any) {
+      // Mantém a edição aberta: o que foi digitado não se perde
+      showError(e?.response?.data?.detail || "Erro ao salvar o prazo");
+    }
   };
 
   const handleSaveDesc = async () => {
-    await onUpdate({ description: descValue });
-    setEditingDesc(false);
+    try {
+      await onUpdate({ description: descValue });
+      setEditingDesc(false);
+    } catch (e: any) {
+      // Mantém a edição aberta: o que foi digitado não se perde
+      showError(e?.response?.data?.detail || "Erro ao salvar a descrição");
+    }
   };
 
   return (
