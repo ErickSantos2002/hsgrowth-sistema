@@ -25,6 +25,20 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.32",
+    date: "19/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Vendas: quando a trava de CNPJ bloqueia, o vendedor ou SDR pode pedir a liberação ao gerente, explicando o motivo. O card só é criado quando o gerente liberar.",
+      },
+      {
+        type: "feature",
+        text: "Consulta de CNPJ: nova aba Liberações. Admin e gerente liberam ou recusam os pedidos (com aviso no sino e contador no menu); o vendedor acompanha os próprios pedidos.",
+      },
+    ],
+  },
+  {
     version: "1.11.31",
     date: "19/11/2026",
     entries: [

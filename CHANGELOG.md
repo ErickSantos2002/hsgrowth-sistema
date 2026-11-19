@@ -9,6 +9,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.32] — 19/11/2026
+
+### Adicionado
+- **Pedido de liberação de CNPJ em Vendas:** o vendedor ou SDR barrado pela trava de CNPJ (CNPJ
+  com um parceiro ou com outro vendedor) não fica mais só com o "Fale com o gerente". A janela do
+  bloqueio pede o motivo e envia um **pedido de liberação**. Vale para criar card no board e para
+  vincular empresa no card.
+  - O card **só é criado quando a gestão liberar**. Até lá, o pedido guarda os dados preenchidos.
+  - Admin e gerente recebem aviso no sino e decidem na nova aba **Liberações** da **Consulta de
+    CNPJ**: **Liberar** (observação opcional) cria o card, ou vincula a empresa, em nome de quem
+    pediu, e o histórico do card registra quem liberou e por quê; **Recusar** exige o motivo.
+  - Quem pediu recebe a decisão no sino, acompanha os próprios pedidos na mesma aba e pode
+    cancelar um pedido pendente.
+  - O menu mostra, para admin e gerente, quantos pedidos estão esperando.
+  - Reabrir e clonar card perdido, e a tela de editar card, continuam como antes.
+
+### Banco de dados
+- Migration `3b4c5d6e7f8a`: tabela nova `cnpj_release_requests`. **Aditiva**: pode rodar antes de
+  subir o código.
+
+---
+
 ## [1.11.31] — 19/11/2026
 
 ### Adicionado
