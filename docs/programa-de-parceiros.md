@@ -27,7 +27,7 @@ venda, porque o Financeiro valida a elegibilidade e confirma o ganho.
 | `salesperson` | Vendedor H&S. Vê só os parceiros em que é o **Responsável H&S** (onboarding), sem PIX nem comissões. | Usuários |
 | `partner` | **Dono da empresa parceira.** Cuida das oportunidades da empresa, da Equipe e das unidades que indicou. | Usuários → Novo Usuário → *Parceiro*, ou Acessos no card do parceiro, ou automático ao ser indicado |
 | `partner_member` | **Vendedor da empresa parceira.** Vê só as próprias oportunidades. Vê as vendas no Dashboard, mas não a comissão. | Equipe do parceiro → Dar acesso (feito pelo dono ou pela gestão) |
-| `hunter` | **Pessoa (CPF) ou empresa (CNPJ)** que indica empresas parceiras e também pode vender. | Usuários → Novo Usuário → *Hunter* (só admin) |
+| `hunter` | **Pessoa (CPF) ou empresa (CNPJ)** que indica empresas parceiras e também pode vender. | Board de Aquisição → Novo Parceiro → aba *Hunter* (admin e gerente), ou Usuários → Novo Usuário → *Hunter* (admin) |
 
 - **`sdr`, `service` e `viewer` não entram em Parcerias.**
 - **Perfis trancados:** `partner`, `partner_member`, `hunter` e `finance` só enxergam Parcerias e
@@ -149,7 +149,10 @@ Todo dia às 8h, pelo sino e por e-mail (`app/services/notificacoes/parcerias.py
 | Indicações | `/parcerias/indicacoes` | dono do parceiro e hunter |
 | Comissões (consulta e pagamento) | `/parcerias/comissoes` | parceiro e hunter (as próprias); admin, gerente e Financeiro (A pagar, CSV, marcar pago, todos os lançamentos) |
 | Dashboard de Parcerias | Dashboard → Parcerias (admin e gerente); `/parcerias/dashboard` (perfis trancados) | — |
-| **Cadastro de hunter e de login de parceiro** | **Usuários → Novo Usuário**, perfis *Hunter* e *Parceiro* | admin |
+| **Cadastro de hunter** (card + login na hora) | **Board de Aquisição → Novo Parceiro → aba Hunter** | admin, gerente |
+| **Cadastro de empresa parceira** (card em Potencial, sem login) | **Board de Aquisição → Novo Parceiro → aba Empresa parceira** | admin, gerente |
+| **Login do dono da empresa** | card do parceiro → **Acessos ao CRM** | admin, gerente |
+| Cadastro de hunter e de login de parceiro (caminho alternativo) | **Usuários → Novo Usuário**, perfis *Hunter* e *Parceiro* | admin |
 | **Bloquear/desbloquear hunter** | **Usuários → Editar** o hunter | admin |
 | Bloquear/desbloquear empresa | card do parceiro em Aquisição | gestão |
 | **Termos (publicar versão)** | **Configurações → aba Termos** (`/settings?aba=termos`) | admin, gerente |
@@ -203,7 +206,8 @@ A antiga página `/parcerias/hunters` **não existe mais**.
   `src/components/acessos/` (convite ou senha, status do convite),
   `src/components/dashboard/DashboardParcerias.tsx`.
 - **Configurações:** `src/components/settings/TermosConfig.tsx` e `ComissoesConfig.tsx`.
-- **Cadastro de hunter e parceiro:** `src/components/users/UserModal.tsx`.
+- **Cadastro de hunter e parceiro:** `src/components/parcerias/NovoParceiroModal.tsx` (board, abas
+  Empresa parceira / Hunter) e `src/components/users/UserModal.tsx` (Usuários).
 - **API:** `src/services/parceriasService.ts`. **Perfis:** `src/constants/parcerias.ts`.
 - **Guards** das rotas em `src/router.tsx`; menu em `src/layouts/MainLayout.tsx`.
 
@@ -253,8 +257,9 @@ no CHANGELOG. As que convertem dados exigem subir o código antes da migration (
   Hoje o lançamento é manual, por número de série.
 
 **Decisões técnicas tomadas durante a construção (conferir):**
-- Só o admin cadastra hunter (pela tela Usuários). O gerente cria login de parceiro pelo card
-  do parceiro. **Confirmado pelo usuário em 13/11/2026.**
+- Admin **e gerente** cadastram hunter pelo board de Aquisição (Novo Parceiro → aba Hunter). Mudado
+  em 19/11/2026: antes era só o admin, pela tela Usuários (que continua valendo para o admin).
+  O gerente cria login de parceiro pelo card do parceiro (Acessos ao CRM).
 - O hunter já cria o login da empresa ao indicá-la (convite na hora). Confirmado em 13/11/2026.
 - Hunter pode ser criado por convite **ou** com senha inicial.
 - O e-mail de um vendedor do parceiro que já tem login não muda pela Equipe.

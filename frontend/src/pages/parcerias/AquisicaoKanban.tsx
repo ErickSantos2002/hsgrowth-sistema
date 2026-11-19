@@ -161,6 +161,10 @@ export default function AquisicaoKanban() {
           setNovo(false);
           navigate(`/parcerias/aquisicao/${p.id}`);
         }}
+        onHunterCriado={() => {
+          setNovo(false);
+          carregar();
+        }}
       />
     </div>
   );
