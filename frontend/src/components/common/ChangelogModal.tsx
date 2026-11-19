@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.31",
+    date: "19/11/2026",
+    entries: [
+      {
+        type: "feature",
+        text: "Parcerias: o Novo Parceiro do board de Aquisição agora cadastra também hunter (aba Hunter), já com o login, por convite ou senha inicial. Admin e gerente podem cadastrar.",
+      },
+    ],
+  },
+  {
     version: "1.11.30",
     date: "18/11/2026",
     entries: [

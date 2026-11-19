@@ -9,6 +9,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.31] — 19/11/2026
+
+### Adicionado
+- **Cadastro de hunter pelo board de Parcerias:** o botão Novo Parceiro (e o Adicionar card) do
+  board de Aquisição agora tem duas abas, *Empresa parceira* e *Hunter*. Na aba Hunter, admin e
+  gerente cadastram o hunter (pessoa ou empresa, com CPF/CNPJ, PIX e login por convite ou senha
+  inicial): o card entra em Convidado e o login é criado na hora. Antes só o admin cadastrava
+  hunter, pela tela Usuários (que continua funcionando).
+
+### Banco de dados
+- Nenhuma migration.
+
+---
+
 ## [1.11.30] — 18/11/2026
 
 ### Corrigido
