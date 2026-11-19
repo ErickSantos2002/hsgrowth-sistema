@@ -12,6 +12,7 @@ import { showError } from "../../utils/toast";
 import { ehCpf, formatarDocumento, limparDocumento } from "../../utils/formatters";
 import { useConfirm } from "../../contexts/ConfirmContext";
 import { textoDoErro, useLiberacaoCnpj } from "../../hooks/useLiberacaoCnpj";
+import liberacoesCnpjService from "../../services/liberacoesCnpjService";
 
 interface ClientSectionProps {
   card: Card;
@@ -60,6 +61,9 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
   const { confirm } = useConfirm();
   // Trava de CNPJ (parceiro ou outro vendedor): janela da justificativa para a gestão.
   const { comLiberacao, janela: janelaCnpj } = useLiberacaoCnpj();
+  // Vendedor/SDR barrado: pede à gestão para vincular esta empresa a este card.
+  const pedirVinculo = (clientId: number, motivo: string) =>
+    liberacoesCnpjService.pedir({ kind: "vincular_empresa", client_id: clientId, card_id: card.id, reason: motivo });
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(false);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
@@ -149,11 +153,14 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
     try {
       setLoading(true);
 
-      const feito = await comLiberacao((j) => cardService.update(card.id, {
-        client_id: clientId,
-        cnpj_justificativa: j,
-      }));
-      if (feito === null) return; // trava de CNPJ: cancelado ou sem permissão
+      const feito = await comLiberacao(
+        (j) => cardService.update(card.id, { client_id: clientId, cnpj_justificativa: j }),
+        async (motivo) => {
+          await pedirVinculo(clientId, motivo);
+          handleCloseModal(); // pedido enviado: a busca não serve mais
+        },
+      );
+      if (feito === null) return; // trava de CNPJ: cancelado, sem permissão ou pedido enviado
 
       setSearchTerm("");
       setShowModal(false);
@@ -215,10 +222,10 @@ const ClientSection: React.FC<ClientSectionProps> = ({ card, onUpdate, readOnly 
         const newClient = response.clients[0];
 
         // Vincula automaticamente ao card
-        const feito = await comLiberacao((j) => cardService.update(card.id, {
-          client_id: newClient.id,
-          cnpj_justificativa: j,
-        }));
+        const feito = await comLiberacao(
+          (j) => cardService.update(card.id, { client_id: newClient.id, cnpj_justificativa: j }),
+          (motivo) => pedirVinculo(newClient.id, motivo),
+        );
         if (feito === null) return;
 
         onUpdate();

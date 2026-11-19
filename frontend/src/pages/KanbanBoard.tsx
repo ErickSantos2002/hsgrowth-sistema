@@ -44,6 +44,7 @@ import BoardModal from "../components/kanban/BoardModal";
 import { useAuth } from "../context/AuthContext";
 import { useBoardStream } from "../hooks/useBoardStream";
 import { textoDoErro, useLiberacaoCnpj } from "../hooks/useLiberacaoCnpj";
+import liberacoesCnpjService from "../services/liberacoesCnpjService";
 
 const KanbanBoard: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -1066,7 +1067,13 @@ const KanbanBoard: React.FC = () => {
         // Editar card existente
         ? await comLiberacao((j) => cardService.update(editingCard.id, { ...cardData, cnpj_justificativa: j }))
         // Criar novo card
-        : await comLiberacao((j) => cardService.create({ ...cardData, cnpj_justificativa: j }));
+        : await comLiberacao(
+            (j) => cardService.create({ ...cardData, cnpj_justificativa: j }),
+            // Vendedor/SDR barrado: o pedido guarda os dados e o card nasce quando a gestão liberar.
+            (motivo) => liberacoesCnpjService.pedir({
+              kind: "criar_card", client_id: cardData.client_id, reason: motivo, payload: { ...cardData },
+            }),
+          );
       if (feito === null) return; // trava de CNPJ: cancelado ou sem permissão
       // Recarrega apenas os cards — board e listas não mudam ao criar/editar um card
       await loadCardsOnly(statusFilter);

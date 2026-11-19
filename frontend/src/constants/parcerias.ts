@@ -54,6 +54,10 @@ export const PERFIS_DO_PARCEIRO = ["partner", "partner_member", "hunter"];
 /** Quem indica empresas ao Programa. */
 export const PERFIS_QUE_INDICAM = ["partner", "hunter"];
 export const PERFIS_GESTAO = ["admin", "manager"];
+/** Aba Liberações da Consulta de CNPJ: vendedor e SDR pedem, admin e gerente decidem. */
+export const PERFIS_LIBERACAO_CNPJ = ["admin", "manager", "salesperson", "sdr"];
+/** Disparado quando a contagem de pedidos pendentes muda (o menu recarrega o número). */
+export const EVENTO_LIBERACOES = "liberacoes-cnpj-mudou";
 /** Veem a página de Comissões (parceiro e hunter só as próprias; gestão e Financeiro, tudo). */
 export const PERFIS_COMISSOES = ["admin", "manager", "finance", "partner", "hunter"];
 export const PERFIS_COMISSOES_TUDO = ["admin", "manager", "finance"];

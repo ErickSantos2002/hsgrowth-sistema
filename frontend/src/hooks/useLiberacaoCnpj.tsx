@@ -1,20 +1,26 @@
 import { useRef, useState } from "react";
 import { BaseModal, Button, FormField, Textarea } from "../components/common";
-import { showError } from "../utils/toast";
+import { showError, showSuccess } from "../utils/toast";
 
 /**
  * Trava de CNPJ em Vendas (CNPJ com um parceiro ou com outro vendedor).
  * O backend responde 409 com detail {code: "cnpj_bloqueado", message, pode_liberar}.
  * Admin/gerente: abre a janela da justificativa e repete o pedido com ela.
- * Os demais: mostra a mensagem ("Fale com o gerente").
+ * Vendedor/SDR: se quem chama passou `pedirLiberacao`, a janela vira "Pedir liberação"
+ * (o card só nasce quando a gestão liberar, na aba Liberações da Consulta de CNPJ).
+ * Sem `pedirLiberacao` (reabrir, clonar, editar): mostra a mensagem ("Fale com o gerente").
  *
  * Uso:
  *   const { comLiberacao, janela } = useLiberacaoCnpj();
- *   const card = await comLiberacao((j) => cardService.create({ ...dados, cnpj_justificativa: j }));
- *   if (card === null) return; // cancelado ou sem permissão
+ *   const card = await comLiberacao(
+ *     (j) => cardService.create({ ...dados, cnpj_justificativa: j }),
+ *     (motivo) => liberacoesCnpjService.pedir({ kind: "criar_card", client_id, reason: motivo, payload: dados }),
+ *   );
+ *   if (card === null) return; // cancelado, sem permissão ou pedido enviado
  *   ...e renderizar {janela} no JSX.
  */
 type Bloqueio = { code: string; message: string; pode_liberar: boolean };
+type Modo = "liberar" | "pedir";
 
 export function bloqueioDeCnpj(err: unknown): Bloqueio | null {
   const resposta = (err as { response?: { status?: number; data?: { detail?: unknown } } })?.response;
@@ -34,13 +40,16 @@ export function textoDoErro(err: unknown, padrao: string): string {
 
 export function useLiberacaoCnpj() {
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [modo, setModo] = useState<Modo>("liberar");
   const [texto, setTexto] = useState("");
   const resolver = useRef<((v: string | null) => void) | null>(null);
 
-  const pedirJustificativa = (msg: string) =>
+  // Abre a janela e espera a pessoa escrever (o texto) ou cancelar (null).
+  const perguntar = (msg: string, m: Modo) =>
     new Promise<string | null>((resolve) => {
       resolver.current = resolve;
       setTexto("");
+      setModo(m);
       setMensagem(msg);
     });
 
@@ -50,22 +59,40 @@ export function useLiberacaoCnpj() {
     resolver.current = null;
   };
 
-  async function comLiberacao<T>(pedido: (justificativa?: string) => Promise<T>): Promise<T | null> {
+  async function comLiberacao<T>(
+    pedido: (justificativa?: string) => Promise<T>,
+    pedirLiberacao?: (motivo: string) => Promise<unknown>,
+  ): Promise<T | null> {
     try {
       return await pedido();
     } catch (err) {
       const bloqueio = bloqueioDeCnpj(err);
       if (!bloqueio) throw err;
-      if (!bloqueio.pode_liberar) {
+
+      if (bloqueio.pode_liberar) {
+        const justificativa = await perguntar(bloqueio.message, "liberar");
+        if (!justificativa) return null;
+        return await pedido(justificativa);
+      }
+
+      if (!pedirLiberacao) {
         showError(bloqueio.message);
         return null;
       }
-      const justificativa = await pedirJustificativa(bloqueio.message);
-      if (!justificativa) return null;
-      return await pedido(justificativa);
+      // Vendedor/SDR: a mensagem do backend termina em "Fale com o gerente."; aqui ele pede pelo sistema.
+      const motivo = await perguntar(bloqueio.message.replace(/\s*Fale com o gerente\.?$/, ""), "pedir");
+      if (!motivo) return null;
+      try {
+        await pedirLiberacao(motivo);
+        showSuccess("Pedido enviado. Você recebe um aviso quando o gerente decidir.");
+      } catch (e) {
+        showError(textoDoErro(e, "Erro ao pedir a liberação."));
+      }
+      return null;
     }
   }
 
+  const pedindo = modo === "pedir";
   const janela = (
     <BaseModal
       isOpen={mensagem !== null}
@@ -75,21 +102,31 @@ export function useLiberacaoCnpj() {
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={() => fechar(null)}>Cancelar</Button>
-          <Button onClick={() => fechar(texto.trim())} disabled={!texto.trim()}>Liberar e continuar</Button>
+          <Button onClick={() => fechar(texto.trim())} disabled={!texto.trim()}>
+            {pedindo ? "Pedir liberação" : "Liberar e continuar"}
+          </Button>
         </div>
       }
     >
       <p className="mb-3 text-sm text-slate-700 dark:text-slate-300">{mensagem}</p>
-      <FormField label="Justificativa" required hint={`${texto.length}/500`}>
+      <FormField
+        label={pedindo ? "Por que você precisa deste CNPJ?" : "Justificativa"}
+        required
+        hint={`${texto.length}/500`}
+      >
         <Textarea
           value={texto}
           maxLength={500}
           rows={3}
           onChange={(e) => setTexto(e.target.value)}
-          placeholder="Por que este card pode seguir mesmo assim"
+          placeholder={pedindo ? "Ex.: o cliente me procurou direto pelo telefone" : "Por que este card pode seguir mesmo assim"}
         />
       </FormField>
-      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">A justificativa fica registrada no histórico do card.</p>
+      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+        {pedindo
+          ? "O pedido vai para o gerente. O card só é criado quando ele liberar, e você recebe um aviso no sino."
+          : "A justificativa fica registrada no histórico do card."}
+      </p>
     </BaseModal>
   );
 

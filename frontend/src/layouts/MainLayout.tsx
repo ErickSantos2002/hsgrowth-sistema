@@ -36,7 +36,10 @@ import GlobalSearch from "../components/GlobalSearch";
 import { UserAvatar } from "../components/common";
 import ChangelogModal from "../components/common/ChangelogModal";
 import { AgentGrowthWidget } from "../components/agentGrowth";
-import { PERFIS_COMISSOES, PERFIS_CONSULTA_CNPJ, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM, PERFIS_TRANCADOS } from "../constants/parcerias";
+import {
+    EVENTO_LIBERACOES, PERFIS_COMISSOES, PERFIS_CONSULTA_CNPJ, PERFIS_GESTAO, PERFIS_PARCERIAS, PERFIS_QUE_INDICAM, PERFIS_TRANCADOS,
+} from "../constants/parcerias";
+import liberacoesCnpjService from "../services/liberacoesCnpjService";
 
 const menuItems = [
     { path: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false, managerOrAdminOnly: false, viewerAllowed: true },
@@ -122,6 +125,20 @@ export default function MainLayout() {
 
         return () => window.removeEventListener("resize", handleResize);
     }, []);
+
+    // Pedidos de liberação de CNPJ pendentes (admin e gerente): o número ao lado de "Consulta de CNPJ".
+    // Recarrega ao trocar de página e quando a aba Liberações decide um pedido (EVENTO_LIBERACOES).
+    const [liberacoesPendentes, setLiberacoesPendentes] = useState(0);
+    const veContador = PERFIS_GESTAO.includes(user?.role ?? "") && !user?.termos_pendentes && !user?.must_change_password;
+    useEffect(() => {
+        if (!veContador) return;
+        const carregar = () => {
+            liberacoesCnpjService.contarPendentes().then(setLiberacoesPendentes).catch(() => setLiberacoesPendentes(0));
+        };
+        carregar();
+        window.addEventListener(EVENTO_LIBERACOES, carregar);
+        return () => window.removeEventListener(EVENTO_LIBERACOES, carregar);
+    }, [veContador, location.pathname]);
 
     const handleLogout = async () => {
         await logout();
@@ -302,6 +319,15 @@ export default function MainLayout() {
                                             {sidebarOpen && (
                                                 <>
                                                     <span>{rotulo}</span>
+                                                    {/* Pedidos de liberação de CNPJ esperando a gestão */}
+                                                    {item.path === "/parcerias/consulta-cnpj" && liberacoesPendentes > 0 && (
+                                                        <span
+                                                            className="ml-auto rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white"
+                                                            title={`${liberacoesPendentes} pedido(s) de liberação esperando`}
+                                                        >
+                                                            {liberacoesPendentes}
+                                                        </span>
+                                                    )}
                                                     {/* Badge de Admin */}
                                                     {item.adminOnly && (
                                                         <span

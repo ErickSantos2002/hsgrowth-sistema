@@ -737,7 +737,8 @@ class CardService:
             total_pages=total_pages
         )
 
-    def create_card(self, card_data: CardCreate, current_user: User, at_top: bool = False) -> Card:
+    def create_card(self, card_data: CardCreate, current_user: User, at_top: bool = False,
+                    liberacao_cnpj: Optional[str] = None) -> Card:
         """
         Cria um novo card.
 
@@ -746,6 +747,8 @@ class CardService:
             current_user: Usuário autenticado
             at_top: se True, o card nasce no TOPO da lista (criação manual pelo
                 board). O resgate/clone (reopen) mantém o padrão (final).
+            liberacao_cnpj: texto de um pedido de liberação de CNPJ já aprovado pela
+                gestão (parcerias/liberacoes.py): dispensa a trava e vai para o histórico.
 
         Returns:
             Card criado
@@ -806,6 +809,7 @@ class CardService:
         from app.services.parcerias import vendas as parcerias_vendas
         aviso_parcerias = parcerias_vendas.conferir(
             self.db, current_user, card_data.client_id, card_data.cnpj_justificativa,
+            liberacao=liberacao_cnpj,
         )
 
         # Valida contato vinculado: deve ter pelo menos e-mail ou telefone
@@ -939,7 +943,8 @@ class CardService:
 
         return card
 
-    def update_card(self, card_id: int, card_data: CardUpdate, current_user: User) -> Card:
+    def update_card(self, card_id: int, card_data: CardUpdate, current_user: User,
+                    liberacao_cnpj: Optional[str] = None) -> Card:
         """
         Atualiza um card.
 
@@ -963,7 +968,8 @@ class CardService:
             parcerias_vendas.registrar(
                 self.db, card.id, current_user,
                 parcerias_vendas.conferir(self.db, current_user, card_data.client_id,
-                                          card_data.cnpj_justificativa, ignorar_card_id=card.id),
+                                          card_data.cnpj_justificativa, ignorar_card_id=card.id,
+                                          liberacao=liberacao_cnpj),
             )
 
         # Guarda valores antigos para detectar mudanças

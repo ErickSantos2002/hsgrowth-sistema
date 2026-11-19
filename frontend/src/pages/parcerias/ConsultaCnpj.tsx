@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Search, ShieldAlert, ShieldCheck, TrendingUp } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { CheckCircle2, Search, ShieldAlert, ShieldCheck, ShieldQuestion, TrendingUp } from "lucide-react";
+import LiberacoesCnpj from "../../components/parcerias/LiberacoesCnpj";
 import { Button, FormField, Input, Pagination, SelectMenu } from "../../components/common";
 import KpiCard from "../../components/dashboard/KpiCard";
 import { PageHeader } from "../../components/layout/PageHeader";
 import ResultadoSemaforo from "../../components/parcerias/ResultadoSemaforo";
 import { BotaoRegrasSemaforo } from "../../components/parcerias/RegrasSemaforo";
 import { cnpjValido, limparCnpj, mascarar } from "../../components/parcerias/campos";
-import { MOTIVO_SEMAFORO, PERFIS_GESTAO, SEMAFORO_COR, SEMAFORO_LABEL } from "../../constants/parcerias";
+import {
+  EVENTO_LIBERACOES, MOTIVO_SEMAFORO, PERFIS_GESTAO, PERFIS_LIBERACAO_CNPJ, SEMAFORO_COR, SEMAFORO_LABEL,
+} from "../../constants/parcerias";
 import { useAuth } from "../../hooks/useAuth";
 import parceriasService, {
   ConsultaCnpj as Consulta, ConsultaHistoricoItem, FiltroHistorico, Parceiro, ResumoConsultas, mensagemDeErro,
@@ -23,6 +27,14 @@ const rotuloDoResultado = (resultado: string, motivo: string) =>
 export default function ConsultaCnpj() {
   const { user } = useAuth();
   const gestao = PERFIS_GESTAO.includes(user?.role ?? "");
+  // Pedidos de liberação: só Vendas (vendedor e SDR pedem; admin e gerente decidem).
+  const veLiberacoes = PERFIS_LIBERACAO_CNPJ.includes(user?.role ?? "");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const aba: "consulta" | "liberacoes" = veLiberacoes && searchParams.get("aba") === "liberacoes" ? "liberacoes" : "consulta";
+  const mudarAba = (nova: "consulta" | "liberacoes") =>
+    setSearchParams(nova === "consulta" ? {} : { aba: nova }, { replace: true });
+  // O contador de pendentes do menu escuta este evento (MainLayout).
+  const avisarMenu = () => window.dispatchEvent(new Event(EVENTO_LIBERACOES));
 
   const [cnpj, setCnpj] = useState("");
   const [consultando, setConsultando] = useState(false);
@@ -97,6 +109,28 @@ export default function ConsultaCnpj() {
         actions={<BotaoRegrasSemaforo comTexto />}
       />
 
+      {/* Abas no mesmo formato das de Configurações; parceiro e hunter não têm Liberações. */}
+      {veLiberacoes && (
+        <div className="mb-6 grid grid-cols-2 overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50">
+          {([["consulta", "Consulta", Search], ["liberacoes", "Liberações", ShieldQuestion]] as const).map(([id, rotulo, Icone]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => mudarAba(id)}
+              className={`flex items-center justify-center gap-2 px-3 py-3 font-medium transition-colors ${
+                aba === id
+                  ? "bg-emerald-600 text-white"
+                  : "text-slate-500 hover:bg-gray-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-white"
+              }`}
+            >
+              <Icone size={18} />
+              {rotulo}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {aba === "consulta" ? (
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard
@@ -233,6 +267,11 @@ export default function ConsultaCnpj() {
           )}
         </div>
       </div>
+      ) : (
+        <div className="rounded-xl border border-gray-200 bg-white dark:border-slate-700/50 dark:bg-slate-800/50">
+          <LiberacoesCnpj onMudou={avisarMenu} />
+        </div>
+      )}
     </div>
   );
 }

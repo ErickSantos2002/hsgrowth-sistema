@@ -140,6 +140,22 @@ Todo dia às 8h, pelo sino e por e-mail (`app/services/notificacoes/parcerias.py
   sino e e-mail juntos). O "perdeu" e o "30 dias" só saem até 2 dias depois do fato, para não
   disparar sobre casos antigos.
 
+### Pedido de liberação de CNPJ em Vendas (desde 1.11.32)
+- O vendedor ou SDR barrado pela trava de CNPJ (`vendas.conferir`) ao **criar card** ou **vincular
+  empresa** pode **pedir a liberação** na própria janela do bloqueio, com o motivo.
+- O card **só nasce quando a gestão libera**. O pedido (`cnpj_release_requests`) guarda os dados
+  do card (`payload`) ou o card alvo (`card_id`, no vincular). Pedido pendente igual não duplica.
+- Admin e gerente recebem aviso no sino e decidem em **Consulta de CNPJ → aba Liberações**:
+  - **Liberar** refaz a ação em nome de quem pediu (`CardService` com `liberacao_cnpj`, que
+    dispensa a trava só para esse pedido) e grava a atividade `parcerias_cnpj` no card. Se a ação
+    falhar (lista apagada, contato sem e-mail/telefone, card excluído), nada é gravado e o pedido
+    continua pendente;
+  - **Recusar** exige o motivo.
+- Quem pediu recebe a decisão no sino e pode cancelar o pedido enquanto estiver pendente.
+- Reabrir e clonar card perdido, e o modal de editar card, continuam com "Fale com o gerente".
+- Código: `app/services/parcerias/liberacoes.py`, `app/api/v1/endpoints/liberacoes_cnpj.py`,
+  `frontend/src/hooks/useLiberacaoCnpj.tsx`, `frontend/src/components/parcerias/LiberacoesCnpj.tsx`.
+
 ## 4. Onde fica cada tela (após 12/11/2026)
 
 | Tela | Caminho | Quem |
@@ -241,6 +257,7 @@ Na edição de um hunter, o bloqueio usa `POST /parcerias/parceiros/{partner_id}
 | `0e1f2a3b4c5d` | % de venda própria do hunter e anuidade de referência | aditiva |
 | `1f2a3b4c5d6e` | Regras configuráveis da Consulta de CNPJ (`cnpj_rules_config`) | aditiva |
 | `2a3b4c5d6e7f` | Preferências dos alertas (`user_notification_settings`) | aditiva |
+| `3b4c5d6e7f8a` | Pedidos de liberação de CNPJ em Vendas (`cnpj_release_requests`) | aditiva |
 
 **Para levar à produção:** seguir a ordem acima e ler a seção "Banco de dados" de cada versão
 no CHANGELOG. As que convertem dados exigem subir o código antes da migration (veja
@@ -301,5 +318,6 @@ no CHANGELOG. As que convertem dados exigem subir o código antes da migration (
 | 11/11 | `specs/2026-11-11-parcerias-hunter-indicacao-comissoes-design.md` | `plans/2026-11-11-parcerias-hunter-parte-1-estrutura.md`, `...-parte-2-comissoes.md`, `plans/2026-11-12-parcerias-hunter-parte-3-dashboard.md` | Vigente. Os ajustes de 12/11 estão no §10 do spec. |
 | 13/11 | `specs/2026-11-13-trava-cnpj-vendedores-regras-configuraveis-design.md` | `plans/2026-11-13-trava-cnpj-vendedores-regras-configuraveis.md` | Vigente |
 | 16/11 | `specs/2026-11-16-parcerias-entrega-4-alertas-design.md` | `plans/2026-11-16-parcerias-entrega-4-alertas.md` | Vigente |
+| 19/11 | `specs/2026-11-19-liberacao-cnpj-vendas-design.md` | `plans/2026-11-19-liberacao-cnpj-vendas.md` | Vigente |
 
 Todos os caminhos são relativos a `docs/superpowers/`.

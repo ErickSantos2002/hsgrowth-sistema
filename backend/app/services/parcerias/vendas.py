@@ -54,20 +54,30 @@ def _com_quem(db: Session, user: User, cnpj: str, ignorar_card_id: Optional[int]
     return texto
 
 
-def conferir(db: Session, user: User, client_id: Optional[int], justificativa: Optional[str] = None,
-             ignorar_card_id: Optional[int] = None) -> Optional[str]:
-    """
-    None quando o CNPJ está livre (ou quem cria é integração). Admin e gerente com
-    justificativa passam e recebem o texto a registrar no card; os demais (e a gestão
-    sem justificativa) recebem 409 com {code, message, pode_liberar}.
-    `ignorar_card_id`: o card de origem (vincular, reabrir, clonar) não bloqueia.
-    """
+def com_quem_bloqueia(db: Session, user: User, client_id: Optional[int],
+                      ignorar_card_id: Optional[int] = None) -> Optional[str]:
+    """Com quem o CNPJ da empresa está (texto), ou None se está livre para este usuário."""
     if getattr(user, "is_integracao", False):
         return None
     cnpj = _cnpj_do_cliente(db, client_id)
     if not cnpj:
         return None
-    com_quem = _com_quem(db, user, cnpj, ignorar_card_id)
+    return _com_quem(db, user, cnpj, ignorar_card_id)
+
+
+def conferir(db: Session, user: User, client_id: Optional[int], justificativa: Optional[str] = None,
+             ignorar_card_id: Optional[int] = None, liberacao: Optional[str] = None) -> Optional[str]:
+    """
+    None quando o CNPJ está livre (ou quem cria é integração). Admin e gerente com
+    justificativa passam e recebem o texto a registrar no card; os demais (e a gestão
+    sem justificativa) recebem 409 com {code, message, pode_liberar}.
+    `ignorar_card_id`: o card de origem (vincular, reabrir, clonar) não bloqueia.
+    `liberacao`: pedido de liberação já aprovado pela gestão (liberacoes.py); passa sem
+    conferir e devolve esse texto para o card registrar.
+    """
+    if liberacao:
+        return liberacao
+    com_quem = com_quem_bloqueia(db, user, client_id, ignorar_card_id)
     if not com_quem:
         return None
     gestao = acesso.eh_gestao(user)

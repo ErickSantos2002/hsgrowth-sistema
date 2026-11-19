@@ -106,6 +106,7 @@ from app.models.partner_terms import PartnerTerms, PartnerTermsAcceptance  # noq
 from app.models.partner_commission import PartnerCommission, PartnerCommissionConfig, PartnerCalibration  # noqa
 from app.models.cnpj_rules_config import CnpjRulesConfig  # noqa
 from app.models.cnpj_consulta import CnpjConsulta  # noqa
+from app.models.cnpj_release_request import CnpjReleaseRequest  # noqa
 from app.models.user_access_token import UserAccessToken  # noqa
 
 # Token de agente do HS.OS: "via <bot>" no histórico (listeners before_insert).
