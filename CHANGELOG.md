@@ -7,6 +7,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não lançado]
 
+### Adicionado
+- **Troca do número da proposta no card de Serviços (de OS) confere com o GestorHS:** ao
+  alterar o número, o CRM consulta o GestorHS e corrige a caixa. Se o GestorHS recusar, a
+  troca é bloqueada e o motivo aparece na tela, mantendo o Resumo em edição com o que foi
+  digitado.
+  - **Dependência de deploy:** exige a rota `PUT /integracao/growthhs/caixas/{id}/proposta`
+    no GestorHS já em produção antes de subir esta versão.
+
+### Corrigido
+- **Build do frontend no Easypanel:** o rollup 4.68.6 (publicado em 18/11/2026) quebra o
+  `vite build` no Alpine (`Code is nested too deeply` em `react-dom/client.js`). Como o
+  Dockerfile apaga o `package-lock.json`, a versão nova entrava sozinha. Fixado em `4.68.5`
+  via `overrides` no `package.json` — retirar quando sair uma versão corrigida.
+
 ---
 
 ## [1.11.32] — 19/11/2026

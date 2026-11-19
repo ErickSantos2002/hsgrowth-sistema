@@ -572,11 +572,60 @@ class ServiceBoardService:
         self.log_event(novo.id, user, "card_created", f"Card clonado do #{card_id}")
         return novo
 
+    @staticmethod
+    def _numero_proposta(valor) -> Optional[int]:
+        """Normaliza o número da proposta; vazio ou inválido conta como nulo."""
+        try:
+            return int(valor)
+        except (TypeError, ValueError):
+            return None
+
+    def _sincronizar_proposta_gestorhs(
+        self, card: ServiceCard, data: ServiceCardUpdate, user: User
+    ) -> Optional[tuple[Optional[int], int, bool]]:
+        """Confere a troca do número da proposta com o GestorHS ANTES de gravar.
+
+        Só vale para cards vindos de OS do GestorHS. Retorna (antigo, novo, avisado)
+        quando houve troca, ou None quando não se aplica. Recusa vira 422 e
+        indisponibilidade vira 503 — em ambos nada é gravado.
+        """
+        from app.integrations import gestorhs_client
+
+        if card.external_source != "gestorhs.os" or not card.external_id:
+            return None
+        changed = data.model_dump(exclude_unset=True)
+        if "business_info" not in changed:
+            return None
+        novo = self._numero_proposta((changed["business_info"] or {}).get("proposal_number"))
+        antigo = self._numero_proposta((card.business_info or {}).get("proposal_number"))
+        if novo is None or novo == antigo:
+            return None
+        observacao = f"card #{card.id} · por {user.name or user.email}"
+        try:
+            avisado = gestorhs_client.trocar_proposta(str(card.external_id), novo, observacao)
+        except gestorhs_client.GestorHSRecusou as e:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e.detail)
+        except gestorhs_client.GestorHSIndisponivel:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Não consegui confirmar o número da proposta com o GestorHS. Tente de novo.",
+            )
+        return antigo, novo, bool(avisado)
+
     def update_card(self, card_id: int, data: ServiceCardUpdate, user: User) -> ServiceCard:
         card = self.get_card(card_id)
         old_title, old_client, old_person = card.title, card.client_id, card.person_id
+        troca_proposta = self._sincronizar_proposta_gestorhs(card, data, user)
         updated = self.repo.update_card(card, data)
         changed = data.model_dump(exclude_unset=True)
+        if troca_proposta is not None:
+            antigo, novo, avisado = troca_proposta
+            texto = (
+                f"Número da proposta alterado de "
+                f"{'#' + str(antigo) if antigo is not None else '(nenhum)'} para #{novo}"
+            )
+            texto += " — GestorHS atualizado" if avisado else " — GestorHS não avisado (integração desligada)"
+            self.log_event(card_id, user, "proposal_number_changed", texto)
         if "title" in changed and old_title != updated.title:
             self.log_event(card_id, user, "card_title_changed", f"Título alterado para: {updated.title}")
         if "client_id" in changed and old_client != updated.client_id:
