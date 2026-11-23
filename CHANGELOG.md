@@ -23,6 +23,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.33] — 23/11/2026
+
+### Alterado
+- **Aba Liberações da Consulta de CNPJ com paginação:** a lista de pedidos mostra 10 por
+  página, com a mesma paginação do Histórico de consultas. Trocar o filtro de situação volta
+  para a página 1. Antes a lista cortava sem aviso nos 200 pedidos mais recentes.
+  - `GET /api/v1/parcerias/liberacoes-cnpj` recebe `pagina` e devolve `{ total, itens }`.
+  - Sem migration.
+
+---
+
 ## [1.11.32] — 19/11/2026
 
 ### Adicionado

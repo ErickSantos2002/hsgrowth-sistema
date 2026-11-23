@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.33",
+    date: "23/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Consulta de CNPJ: a aba Liberações agora tem paginação, com 10 pedidos por página.",
+      },
+    ],
+  },
+  {
     version: "1.11.32",
     date: "19/11/2026",
     entries: [
