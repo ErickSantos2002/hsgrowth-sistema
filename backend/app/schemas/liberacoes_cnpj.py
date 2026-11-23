@@ -1,6 +1,6 @@
 """Schemas dos pedidos de liberação de CNPJ em Vendas (1.11.32)."""
 from datetime import datetime
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -42,3 +42,9 @@ class LiberacaoCnpjResponse(BaseModel):
 
 class LiberacaoCnpjContagem(BaseModel):
     total: int
+
+
+class LiberacaoCnpjPagina(BaseModel):
+    """Uma página da lista (1.11.33): o total para a paginação e os itens da página."""
+    total: int
+    itens: List[LiberacaoCnpjResponse]

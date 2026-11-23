@@ -40,12 +40,21 @@ export interface Liberacao {
   created_at: string;
 }
 
+/** Uma página da lista (1.11.33). O backend manda 10 por página. */
+export interface PaginaDeLiberacoes {
+  total: number;
+  itens: Liberacao[];
+}
+
+export const LIBERACOES_POR_PAGINA = 10;
+
 const liberacoesCnpjService = {
   async pedir(dados: PedidoDeLiberacao) {
     return (await api.post<Liberacao>(BASE, dados)).data;
   },
-  async listar(situacao?: SituacaoDaLiberacao) {
-    return (await api.get<Liberacao[]>(BASE, { params: situacao ? { situacao } : {} })).data;
+  async listar(situacao: SituacaoDaLiberacao | undefined, pagina: number) {
+    const params = situacao ? { situacao, pagina } : { pagina };
+    return (await api.get<PaginaDeLiberacoes>(BASE, { params })).data;
   },
   async contarPendentes() {
     return (await api.get<{ total: number }>(`${BASE}/pendentes/contagem`)).data.total;

@@ -159,11 +159,28 @@ def test_listar_e_contar(db, cena):
     liberacoes.pedir(db, sdr, "criar_card", cena.empresa.id, "lead quente",
                      payload={"title": "Do SDR", "list_id": cena.v.lead_novo.id})
 
-    assert len(liberacoes.listar(db, cena.gerente)) == 2
-    assert [p.requested_by_id for p in liberacoes.listar(db, cena.outro)] == [cena.outro.id]
+    assert liberacoes.listar(db, cena.gerente)[0] == 2
+    total, itens = liberacoes.listar(db, cena.outro)
+    assert total == 1 and [p.requested_by_id for p in itens] == [cena.outro.id]
     assert liberacoes.contar_pendentes(db, cena.admin) == 2
     assert liberacoes.contar_pendentes(db, cena.outro) == 0
-    assert liberacoes.listar(db, cena.gerente, "recusado") == []
+    assert liberacoes.listar(db, cena.gerente, "recusado") == (0, [])
+
+
+def test_listar_pagina_de_10_em_10(db, cena):
+    for i in range(12):
+        db.add(CnpjReleaseRequest(kind="criar_card", status="recusado", cnpj="11111111000111",
+                                  reason=f"pedido {i}", blocked_with="com alguém",
+                                  requested_by_id=cena.outro.id))
+    db.commit()
+
+    total, primeira = liberacoes.listar(db, cena.gerente)
+    assert total == 12 and len(primeira) == 10
+    total, segunda = liberacoes.listar(db, cena.gerente, pagina=2)
+    assert total == 12 and len(segunda) == 2
+    assert not {p.id for p in primeira} & {p.id for p in segunda}
+    # Página além do fim: vazia, mas o total continua certo.
+    assert liberacoes.listar(db, cena.gerente, pagina=5) == (12, [])
 
 
 def test_conferir_com_liberacao_passa_sem_checar(db, cena):
@@ -187,6 +204,8 @@ def test_endpoints_pedir_e_decidir(client, db, cena):
 
     assert client.post(f"{url}/{pedido['id']}/liberar", headers=headers(cena.outro), json={}).status_code == 403
     assert client.get(f"{url}/pendentes/contagem", headers=headers(cena.gerente)).json() == {"total": 1}
+    lista = client.get(url, headers=headers(cena.gerente), params={"pagina": 1}).json()
+    assert lista["total"] == 1 and [p["id"] for p in lista["itens"]] == [pedido["id"]]
 
     r = client.post(f"{url}/{pedido['id']}/liberar", headers=headers(cena.gerente), json={"nota": "ok"})
     assert r.status_code == 200, r.text

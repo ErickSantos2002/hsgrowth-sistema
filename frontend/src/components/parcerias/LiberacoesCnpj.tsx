@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { BaseModal, Button, FormField, SelectMenu, Textarea } from "../common";
+import { BaseModal, Button, FormField, Pagination, SelectMenu, Textarea } from "../common";
 import { mascarar } from "./campos";
 import { PERFIS_GESTAO } from "../../constants/parcerias";
 import { useAuth } from "../../hooks/useAuth";
 import { useConfirm } from "../../contexts/ConfirmContext";
-import liberacoesCnpjService, { Liberacao, SituacaoDaLiberacao } from "../../services/liberacoesCnpjService";
+import liberacoesCnpjService, {
+  LIBERACOES_POR_PAGINA,
+  Liberacao,
+  SituacaoDaLiberacao,
+} from "../../services/liberacoesCnpjService";
 import { textoDoErro } from "../../hooks/useLiberacaoCnpj";
 import { showError, showSuccess } from "../../utils/toast";
 
@@ -44,7 +48,9 @@ export default function LiberacoesCnpj({ onMudou }: Props) {
   const { confirm } = useConfirm();
 
   const [situacao, setSituacao] = useState<string>("pendente");
+  const [pagina, setPagina] = useState(1);
   const [pedidos, setPedidos] = useState<Liberacao[]>([]);
+  const [total, setTotal] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [decisao, setDecisao] = useState<Decisao | null>(null);
   const [nota, setNota] = useState("");
@@ -53,17 +59,35 @@ export default function LiberacoesCnpj({ onMudou }: Props) {
   const carregar = useCallback(async () => {
     setCarregando(true);
     try {
-      setPedidos(await liberacoesCnpjService.listar((situacao || undefined) as SituacaoDaLiberacao | undefined));
+      const resposta = await liberacoesCnpjService.listar(
+        (situacao || undefined) as SituacaoDaLiberacao | undefined,
+        pagina,
+      );
+      // Decidir o último pedido da última página deixa a página vazia: volta uma.
+      if (resposta.itens.length === 0 && pagina > 1) {
+        setPagina(pagina - 1);
+        return;
+      }
+      setPedidos(resposta.itens);
+      setTotal(resposta.total);
     } catch (err) {
       showError(textoDoErro(err, "Erro ao carregar os pedidos."));
     } finally {
       setCarregando(false);
     }
-  }, [situacao]);
+  }, [situacao, pagina]);
 
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  const paginas = Math.max(1, Math.ceil(total / LIBERACOES_POR_PAGINA));
+  const irPara = (p: number) => setPagina(Math.min(Math.max(p, 1), paginas));
+  // Trocar o filtro sempre volta para a página 1.
+  const mudarSituacao = (valor: string) => {
+    setSituacao(valor);
+    setPagina(1);
+  };
 
   const abrirDecisao = (pedido: Liberacao, acao: Decisao["acao"]) => {
     setNota("");
@@ -123,7 +147,7 @@ export default function LiberacoesCnpj({ onMudou }: Props) {
           </p>
         </div>
         <div className="w-full sm:w-48">
-          <SelectMenu value={situacao} options={FILTROS} onChange={setSituacao} />
+          <SelectMenu value={situacao} options={FILTROS} onChange={mudarSituacao} />
         </div>
       </div>
 
@@ -194,6 +218,21 @@ export default function LiberacoesCnpj({ onMudou }: Props) {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        currentPage={pagina}
+        totalPages={paginas}
+        totalItems={total}
+        startIndex={(pagina - 1) * LIBERACOES_POR_PAGINA}
+        endIndex={Math.min(pagina * LIBERACOES_POR_PAGINA, total)}
+        hasNextPage={pagina < paginas}
+        hasPrevPage={pagina > 1}
+        goToPage={irPara}
+        goToNextPage={() => irPara(pagina + 1)}
+        goToPrevPage={() => irPara(pagina - 1)}
+        itemLabel="pedidos"
+        alwaysShow
+      />
 
       <BaseModal
         isOpen={decisao !== null}

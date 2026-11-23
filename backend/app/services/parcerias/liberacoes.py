@@ -12,7 +12,7 @@ Tipos:
 - `vincular_empresa`: `card_id` é o card do vendedor; ao liberar, vincula a empresa.
 """
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
@@ -150,8 +150,15 @@ def pedir(db: Session, user: User, kind: str, client_id: int, reason: Optional[s
 
 # ─── Consultar ───────────────────────────────────────────────────────────────
 
-def listar(db: Session, user: User, situacao: Optional[str] = None, limite: int = 200) -> List[CnpjReleaseRequest]:
-    """Gestão vê todos; vendedor e SDR veem só os próprios. Pendentes primeiro, depois os mais novos."""
+POR_PAGINA = 10
+
+
+def listar(db: Session, user: User, situacao: Optional[str] = None, pagina: int = 1,
+           por_pagina: int = POR_PAGINA) -> Tuple[int, List[CnpjReleaseRequest]]:
+    """Gestão vê todos; vendedor e SDR veem só os próprios. Mais novos primeiro.
+
+    Devolve (total, itens da página).
+    """
     q = db.query(CnpjReleaseRequest)
     if not acesso.eh_gestao(user):
         q = q.filter(CnpjReleaseRequest.requested_by_id == user.id)
@@ -159,7 +166,11 @@ def listar(db: Session, user: User, situacao: Optional[str] = None, limite: int 
         if situacao not in SITUACOES:
             raise _erro(status.HTTP_422_UNPROCESSABLE_ENTITY, "Situação inválida.")
         q = q.filter(CnpjReleaseRequest.status == situacao)
-    return q.order_by(CnpjReleaseRequest.created_at.desc(), CnpjReleaseRequest.id.desc()).limit(limite).all()
+    total = q.count()
+    pagina = max(pagina, 1)
+    itens = (q.order_by(CnpjReleaseRequest.created_at.desc(), CnpjReleaseRequest.id.desc())
+             .offset((pagina - 1) * por_pagina).limit(por_pagina).all())
+    return total, itens
 
 
 def contar_pendentes(db: Session, user: User) -> int:

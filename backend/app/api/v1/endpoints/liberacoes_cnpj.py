@@ -4,7 +4,7 @@ Pedidos de liberação de CNPJ em Vendas (1.11.32).
 Vendedor e SDR pedem; admin e gerente liberam ou recusam. As regras ficam em
 app/services/parcerias/liberacoes.py.
 """
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -13,7 +13,8 @@ from app.api.deps import get_current_active_user, get_db
 from app.models.cnpj_release_request import CnpjReleaseRequest
 from app.models.user import User
 from app.schemas.liberacoes_cnpj import (
-    LiberacaoCnpjContagem, LiberacaoCnpjCreate, LiberacaoCnpjDecisao, LiberacaoCnpjResponse,
+    LiberacaoCnpjContagem, LiberacaoCnpjCreate, LiberacaoCnpjDecisao, LiberacaoCnpjPagina,
+    LiberacaoCnpjResponse,
 )
 from app.services.parcerias import liberacoes
 
@@ -46,10 +47,11 @@ def pedir(dados: LiberacaoCnpjCreate, db: Session = Depends(get_db),
                                    payload=dados.payload, card_id=dados.card_id))
 
 
-@router.get("", response_model=List[LiberacaoCnpjResponse])
-def listar(situacao: Optional[str] = Query(None), db: Session = Depends(get_db),
-           user: User = Depends(_usuario_de_vendas)):
-    return [_saida(p) for p in liberacoes.listar(db, user, situacao)]
+@router.get("", response_model=LiberacaoCnpjPagina)
+def listar(situacao: Optional[str] = Query(None), pagina: int = Query(1, ge=1),
+           db: Session = Depends(get_db), user: User = Depends(_usuario_de_vendas)):
+    total, itens = liberacoes.listar(db, user, situacao, pagina)
+    return LiberacaoCnpjPagina(total=total, itens=[_saida(p) for p in itens])
 
 
 @router.get("/pendentes/contagem", response_model=LiberacaoCnpjContagem)
