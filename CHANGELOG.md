@@ -23,6 +23,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.34] — 24/11/2026
+
+### Alterado
+- **Cobrança: Número da proposta no Resumo, igual ao Serviço:** o card de Cobrança ganhou o
+  campo Número da proposta em Informações de Negócio.
+  - Para avançar de **Proposta → Operações** passa a ser obrigatório o **número** (mais o
+    Formulário enviado, como antes). O anexo da Proposta em Documentos ficou **opcional**,
+    como já era no Serviço.
+  - O número fica só no CRM: os cards de Cobrança vêm de calibração/atrasados, não de uma OS,
+    então não há caixa no GestorHS para conferir.
+  - A troca do número entra no histórico do card ("Número da proposta alterado de #X para #Y").
+  - Sem migration (o número fica no `business_info`).
+
+---
+
 ## [1.11.33] — 23/11/2026
 
 ### Alterado

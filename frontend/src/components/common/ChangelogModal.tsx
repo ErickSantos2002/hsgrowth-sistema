@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.34",
+    date: "24/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Cobrança: o Resumo do card agora tem o Número da proposta, como no Serviço. Ele passa a ser obrigatório para avançar de Proposta para Operações, e o anexo da proposta fica opcional.",
+      },
+    ],
+  },
+  {
     version: "1.11.33",
     date: "23/11/2026",
     entries: [
