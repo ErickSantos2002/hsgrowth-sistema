@@ -181,20 +181,18 @@ def test_endpoint_blocks_salesperson(client, salesperson_headers):
     assert r.status_code == 403
 
 
-# NOTA: a regra de avanço "proposta vinculada ao card" foi substituída por
-# "proposta anexada no Resumo (documento, slot 'proposta')" — o módulo de
-# Propostas ficou dormente (dados preservados, sem UI). Ver test_advance_proposta_slot.
+# NOTA: a regra de avanço "proposta vinculada ao card" saiu. Desde a 1.11.34 os dois
+# boards (Serviço e Cobrança) travam pelo Número da proposta no Resumo; o anexo é
+# opcional. Os testes de comportamento estão em test_cobranca_numero_proposta.py.
 
 
-def test_advance_proposta_slot_required(db):
-    """Proposta → Operações (board 2) e Proposta → Ganho (board 1) exigem a
-    Proposta anexada como documento (slot 'proposta'), não mais vínculo N:N."""
+def test_advance_nao_usa_proposta_vinculada(db):
+    """A regra de avanço não depende mais da proposta vinculada (N:N) nem do anexo."""
     import inspect
     from app.services import service_board_service as mod
 
     src = inspect.getsource(mod.ServiceBoardService._validate_advance)
-    # A regra passou a depender de has_slot("proposta") e não do helper removido.
-    assert 'has_slot("proposta")' in src
+    assert 'has_slot("proposta")' not in src
     assert "_has_linked_proposal" not in src
     assert not hasattr(mod.ServiceBoardService, "_has_linked_proposal")
 

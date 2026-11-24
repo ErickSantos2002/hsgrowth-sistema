@@ -107,6 +107,7 @@ Layout confirmado do Resumo do card de Serviço (coluna esquerda):
 **Impacto nas regras de avanço:**
 - O antigo anexo "Proposta Comercial" foi **removido da seção Documentos do Resumo** (permanecem lá apenas OS e OC).
 - A regra de avanço nas etapas **Proposta** (board de Serviço, transições 4 e 5) e **Proposta → Operações** (board de Cobrança) exige a **Proposta anexada** (documento no Resumo → Documentos, slot `proposta`).
+  - **Atualização 1.11.34:** nos dois boards o que trava é o **Número da proposta** no Resumo; o anexo ficou opcional (ver a tabela de transições de cada board).
 
 > ✅ **Geração de PDF** (WeasyPrint, marca H&S) implementada — o PDF é anexado automaticamente a cada card vinculado e pode ser visto/baixado pela seção Propostas e pela página da sidebar.
 
@@ -442,7 +443,7 @@ Além de **Produtos**, o card de Serviço agora vincula **Serviços** (tipos de 
 |---|---|---|
 | 1 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** + **≥1 serviço** no card + **Empresa (Cliente)** vinculada + **Pessoa (Contato)** vinculada + **Tipo de cobrança** (`collection_type`) selecionado + **Canal de aquisição** (`acquisition_channel`) selecionado |
 | 2 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** (qualquer tipo) + **Recalibração/Manutenção** (`service_type`) preenchido |
-| 3 | Proposta → Operações | **Proposta anexada** (documento no Resumo → Documentos) + **Formulário enviado** (checkbox `form_answered`) |
+| 3 | Proposta → Operações | **Número da proposta** (`business_info.proposal_number`, no Resumo) + **Formulário enviado** (checkbox `form_answered`). Desde a 1.11.34 o anexo da Proposta (Documentos) é opcional, igual ao Serviço. O número fica só no CRM: cards de Cobrança não têm OS no GestorHS |
 | 4 | Operações → **Negócio Ganho** | botão Ganho acende em **Operações** · **Confirmação de envio = "Sim"** (`business_info.shipping_confirmed`, no Resumo → Informações de Negócio) |
 | 5 | → **Negócio Perdido** | só pelo botão Perdido · **Motivo da perda** (modal) |
 

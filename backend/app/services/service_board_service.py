@@ -615,9 +615,21 @@ class ServiceBoardService:
     def update_card(self, card_id: int, data: ServiceCardUpdate, user: User) -> ServiceCard:
         card = self.get_card(card_id)
         old_title, old_client, old_person = card.title, card.client_id, card.person_id
+        old_proposta = self._numero_proposta((card.business_info or {}).get("proposal_number"))
         troca_proposta = self._sincronizar_proposta_gestorhs(card, data, user)
         updated = self.repo.update_card(card, data)
         changed = data.model_dump(exclude_unset=True)
+        if card.external_source != "gestorhs.os" and isinstance(changed.get("business_info"), dict):
+            # Cards sem OS no GestorHS (Cobrança e cards manuais): o número fica só no
+            # CRM, mas a troca entra no histórico do card (1.11.34).
+            nova_proposta = self._numero_proposta(changed["business_info"].get("proposal_number"))
+            if nova_proposta != old_proposta:
+                if nova_proposta is None:
+                    texto = f"Número da proposta #{old_proposta} removido"
+                else:
+                    texto = (f"Número da proposta alterado de "
+                             f"{'#' + str(old_proposta) if old_proposta is not None else '(nenhum)'} para #{nova_proposta}")
+                self.log_event(card_id, user, "proposal_number_changed", texto)
         if troca_proposta is not None:
             antigo, novo, avisado = troca_proposta
             texto = (
@@ -661,9 +673,6 @@ class ServiceBoardService:
 
         acts = self.repo.list_card_activities(card.id)
         biz = card.business_info or {}
-        has_slot = lambda slot: any(  # noqa: E731
-            a.category == "arquivo" and (a.activity_metadata or {}).get("doc_slot") == slot for a in acts
-        )
 
         # Momento em que o card entrou na etapa atual (última mudança para old_list)
         def _entered_current_stage_at():
@@ -803,9 +812,10 @@ class ServiceBoardService:
                 if not biz.get("service_type"):
                     miss.append("Recalibração e/ou Manutenção (no Resumo)")
             elif old_name == "proposta":
-                # Proposta → Operações
-                if not has_slot("proposta"):
-                    miss.append("Proposta anexada no Resumo (Documentos)")
+                # Proposta → Operações (1.11.34: igual ao Serviço, o que trava é o
+                # Número da proposta; o anexo em Documentos ficou opcional).
+                if (self._numero_proposta(biz.get("proposal_number")) or 0) <= 0:
+                    miss.append("Número da proposta preenchido no Resumo")
                 if not biz.get("form_answered"):
                     miss.append("Formulário de Coleta de Dados enviado (marque o checkbox no Resumo)")
 

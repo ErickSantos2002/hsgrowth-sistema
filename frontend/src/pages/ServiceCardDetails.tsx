@@ -366,20 +366,22 @@ const ServiceSummarySection: React.FC<{
                     onChange={(v) => setBizField("closing_type", v)} />
                 </div>
               )}
-              {!isCobranca && (
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-400">Número da proposta</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={biz.proposal_number ?? ""}
-                    onChange={(e) => setBizField("proposal_number",
-                      e.target.value === "" ? null : Number(e.target.value))}
-                    placeholder="Ex: 123"
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                  />
-                </div>
-              )}
+              {/* Nos dois boards. Na Cobrança o número fica só no CRM (não há OS no GestorHS). */}
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400">Número da proposta</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={biz.proposal_number ?? ""}
+                  onChange={(e) => setBizField("proposal_number",
+                    e.target.value === "" ? null : Number(e.target.value))}
+                  placeholder="Ex: 123"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                />
+                {isCobranca && (
+                  <p className="text-[11px] text-slate-400">Obrigatório para avançar de Proposta para Operações.</p>
+                )}
+              </div>
               {!isCobranca && (
                 <div className="space-y-1">
                   <label className="text-xs text-slate-400">Número do pedido</label>
@@ -429,7 +431,7 @@ const ServiceSummarySection: React.FC<{
                 { label: "Recalibração/Manutenção", value: serviceTypeLabel(biz.service_type) },
                 { label: "Formulário enviado", value: biz.form_answered ? "Sim" : "Não" },
                 ...(isCobranca ? [] : [{ label: "Forma de fechamento", value: closingLabel(biz.closing_type) }]),
-                ...(isCobranca ? [] : [{ label: "Número da proposta", value: biz.proposal_number ? String(biz.proposal_number) : "" }]),
+                { label: "Número da proposta", value: biz.proposal_number ? String(biz.proposal_number) : "" },
                 ...(isCobranca ? [] : [{ label: "Número do pedido", value: biz.order_number ? String(biz.order_number) : "" }]),
                 ...(isCobranca ? [] : [{ label: "Origem: Cobrança?", value: biz.from_collection === "sim" ? "Sim" : biz.from_collection === "nao" ? "Não" : "" }]),
                 ...(isCobranca ? [{ label: "Confirmação de envio", value: biz.shipping_confirmed === "sim" ? "Sim" : biz.shipping_confirmed === "nao" ? "Não" : "" }] : []),

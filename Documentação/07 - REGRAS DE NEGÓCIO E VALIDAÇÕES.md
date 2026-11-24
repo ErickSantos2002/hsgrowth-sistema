@@ -1566,7 +1566,7 @@ Ver **RN-003.1**. Apenas admin, gerente e role "serviço" acessam board/dashboar
 |---|---|
 | Oportunidade Existente → Tentativa de Contato | **≥1 produto** + **Cliente** + **Pessoa** vinculados |
 | Tentativa de Contato → Proposta | **≥1 atividade concluída nesta etapa** + **Recalibração/Manutenção** (`service_type`) preenchido |
-| Proposta → Operações | **Proposta anexada** + **Formulário enviado** (checkbox `form_answered`) |
+| Proposta → Operações | **Número da proposta** no Resumo + **Formulário enviado** (checkbox `form_answered`); anexo opcional desde a 1.11.34 |
 | Operações → Negócio Ganho | botão Ganho em Operações · sem regra por enquanto (a definir) |
 | → Negócio Perdido | só pelo botão Perdido + **Motivo da perda** |
 
