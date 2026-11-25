@@ -223,7 +223,7 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
                 <XAxis dataKey="period" tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} />
                 <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} />
-                <Tooltip {...tooltipStyle} formatter={(v: number, name: string) => [v, name === "won" ? "Ganhos" : name === "lost" ? "Perdidos" : "Atividades"]} />
+                <Tooltip {...tooltipStyle} formatter={(v, name) => [v, name === "won" ? "Ganhos" : name === "lost" ? "Perdidos" : "Atividades"]} />
                 <Legend formatter={(value) => (value === "won" ? "Ganhos" : value === "lost" ? "Perdidos" : "Atividades")} wrapperStyle={{ fontSize: 11 }} />
                 <Line type="monotone" dataKey="activities" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, fill: "#3b82f6" }} name="activities" />
                 <Line type="monotone" dataKey="won" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: "#10b981" }} name="won" />
@@ -275,7 +275,7 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
                 <XAxis dataKey="stage_name" tick={{ fill: chartColors.content.secondary, fontSize: 9 }} angle={-35} textAnchor="end" height={70} interval={0} tickLine={false} />
                 <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip {...tooltipStyle} formatter={(v: number) => [v, funnelMode === "fluxo" ? "Entraram no período" : "Cards"]} />
+                <Tooltip {...tooltipStyle} formatter={(v) => [v, funnelMode === "fluxo" ? "Entraram no período" : "Cards"]} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {funnelData.map((s, i) => (
                     <Cell key={i} fill={stageColor(s.stage_name)} />
@@ -298,7 +298,7 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
                 <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border.default} vertical={false} />
                 <XAxis dataKey="name" tick={{ fill: chartColors.content.secondary, fontSize: 10 }} tickLine={false} />
                 <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip {...tooltipStyle} formatter={(v: number) => [v, "Atividades"]} />
+                <Tooltip {...tooltipStyle} formatter={(v) => [v, "Atividades"]} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {data.activities_by_type.map((_, i) => (
                     <Cell key={i} fill={ACTIVITY_COLORS[i % ACTIVITY_COLORS.length]} />
@@ -379,7 +379,7 @@ const ServiceDashboard: React.FC<Props> = ({ period, customStart, customEnd, per
                   tickFormatter={(v: string) => (v.length > 16 ? `${v.slice(0, 16)}…` : v)}
                 />
                 <YAxis tick={{ fill: chartColors.content.secondary, fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip {...tooltipStyle} formatter={(v: number) => [v, "Perdas"]} />
+                <Tooltip {...tooltipStyle} formatter={(v) => [v, "Perdas"]} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]} fill="#ef4444" />
               </BarChart>
             </ResponsiveContainer>

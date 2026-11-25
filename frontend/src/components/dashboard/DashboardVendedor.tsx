@@ -216,8 +216,8 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
                   contentStyle={{ backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" }}
                   labelStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
                   itemStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
-                  formatter={(v: number, name: string) => [
-                    name === "won_value" ? fmt(v) : v,
+                  formatter={(v, name) => [
+                    name === "won_value" ? fmt(Number(v ?? 0)) : v,
                     name === "won_count" ? "Ganhos" : name === "lost_count" ? "Perdidos" : "Receita",
                   ]}
                 />
@@ -267,7 +267,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
                   contentStyle={{ backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" }}
                   labelStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
                   itemStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
-                  formatter={(v: number) => [v, "Cards"]}
+                  formatter={(v) => [v, "Cards"]}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {funnelData.map((entry, i) => (
@@ -325,7 +325,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
                   contentStyle={{ backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" }}
                   labelStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
                   itemStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
-                  formatter={(v: number) => [v, "Atividades"]}
+                  formatter={(v) => [v, "Atividades"]}
                 />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {kpis.activity_counts_by_type.map((_, index) => (
@@ -369,7 +369,7 @@ const DashboardVendedor: React.FC<DashboardVendedorProps> = ({ kpis, periodLabel
                   contentStyle={{ backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" }}
                   labelStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
                   itemStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
-                  formatter={(v: number) => [v, "Cards"]}
+                  formatter={(v) => [v, "Cards"]}
                 />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {kpis.cards_by_channel.map((_, index) => (
