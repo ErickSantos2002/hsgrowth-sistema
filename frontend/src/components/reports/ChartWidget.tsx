@@ -534,7 +534,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 label={renderPieLabel}
                 style={{ cursor: onBarClick ? 'pointer' : 'default' }}
                 onClick={onBarClick
-                  ? (sliceData) => onBarClick(sliceData.name)
+                  ? (sliceData) => { if (sliceData.name) onBarClick(sliceData.name); }
                   : undefined}
               >
                 {rechartData.map((_, index) => (

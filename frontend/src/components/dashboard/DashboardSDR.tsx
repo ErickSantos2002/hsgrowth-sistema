@@ -231,7 +231,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
                   contentStyle={{ backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" }}
                   labelStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
                   itemStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
-                  formatter={(v: number, name: string) => [v, name === "new_leads_count" ? "Novos Leads" : name === "meetings_count" ? "Reuniões Agendadas" : name]}
+                  formatter={(v, name) => [v, name === "new_leads_count" ? "Novos Leads" : name === "meetings_count" ? "Reuniões Agendadas" : name]}
                 />
                 <Line type="monotone" dataKey="new_leads_count" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, fill: "#3b82f6" }} name="Novos Leads" />
                 <Line type="monotone" dataKey="meetings_count" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: "#10b981" }} name="Reuniões Agendadas" />
@@ -276,7 +276,7 @@ const DashboardSDR: React.FC<DashboardSDRProps> = ({ kpis, periodLabel }) => {
                   contentStyle={{ backgroundColor: chartColors.surface.elevated, border: `1px solid ${chartColors.border.default}`, borderRadius: 8, fontSize: 12, color: darkMode ? "#ffffff" : "#0f172a" }}
                   labelStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
                   itemStyle={{ color: darkMode ? "#ffffff" : "#0f172a" }}
-                  formatter={(v: number) => [v, "Atividades"]}
+                  formatter={(v) => [v, "Atividades"]}
                 />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {kpis.activity_counts_by_type.map((_, index) => (
