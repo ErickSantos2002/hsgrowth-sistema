@@ -1,0 +1,58 @@
+# CI — verificações automáticas a cada Pull Request para a main.
+#
+# Se alguma falhar, o PR fica com ❌ e dá para ver o motivo na aba "Checks".
+# Não usa nenhuma credencial: nada aqui acessa banco, GestorHS ou produção.
+#
+# Fora por enquanto (entram em PRs próprios): testes do backend (antes é preciso
+# tirar 3 testes que às vezes tentam o banco real), e2e, ESLint e cobertura.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  # Permite rodar na mão pela aba Actions do GitHub.
+  workflow_dispatch:
+
+# Um push novo no mesmo PR cancela a rodada antiga (economiza minutos).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificacoes:
+    name: Migrations e versão
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Alembic com uma cabeça só
+        run: python scripts/ci/checar_alembic.py
+      - name: Versão igual nos 3 lugares
+        run: python scripts/ci/checar_versao.py
+
+  frontend:
+    name: Front (tsc + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Mesmo ambiente do deploy (frontend/dockerfile): Node 20 no Alpine.
+    container: node:20-alpine
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar dependências (igual ao dockerfile)
+        # O dockerfile apaga o lock gerado no Windows e instala do zero; repetimos
+        # aqui para pegar no PR o que quebraria no EasyPanel (ex.: rollup 4.68.6).
+        run: rm -f package-lock.json && npm install --legacy-peer-deps
+      - name: Checagem de tipos (tsc)
+        run: npx tsc --noEmit -p .
+      - name: Build
+        env:
+          VITE_API_URL: https://ci.invalid/api
+          VITE_ENVIRONMENT: ci
+        run: npm run build
