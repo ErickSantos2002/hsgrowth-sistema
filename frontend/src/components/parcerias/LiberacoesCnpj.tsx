@@ -9,6 +9,7 @@ import liberacoesCnpjService, {
   LIBERACOES_POR_PAGINA,
   Liberacao,
   SituacaoDaLiberacao,
+  TIPOS_DE_LIBERACAO,
 } from "../../services/liberacoesCnpjService";
 import { textoDoErro } from "../../hooks/useLiberacaoCnpj";
 import { showError, showSuccess } from "../../utils/toast";
@@ -175,7 +176,7 @@ export default function LiberacoesCnpj({ onMudou }: Props) {
                   <div className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">{mascarar("cnpj", p.cnpj)}</div>
                 </td>
                 <td className="py-2 pr-3">
-                  <div>{p.kind === "criar_card" ? "Criar card" : "Vincular ao card"}</div>
+                  <div>{TIPOS_DE_LIBERACAO[p.kind]?.nome ?? p.kind}</div>
                   {p.card_id ? (
                     <Link to={`/cards/${p.card_id}`} className="text-xs text-blue-600 hover:underline dark:text-blue-400">
                       {p.titulo_do_card ?? `Card #${p.card_id}`}
@@ -257,7 +258,7 @@ export default function LiberacoesCnpj({ onMudou }: Props) {
           <div className="space-y-3">
             <p className="text-sm text-slate-700 dark:text-slate-300">
               <strong>{decisao.pedido.solicitante}</strong> pediu para{" "}
-              {decisao.pedido.kind === "criar_card" ? "criar um card" : "vincular ao card dele"} a empresa{" "}
+              {TIPOS_DE_LIBERACAO[decisao.pedido.kind]?.acao ?? "liberar o CNPJ da empresa"}{" "}
               <strong>{decisao.pedido.empresa}</strong>. O CNPJ estava {decisao.pedido.blocked_with}.
             </p>
             <p className="text-sm text-slate-700 dark:text-slate-300">Motivo: {decisao.pedido.reason}</p>

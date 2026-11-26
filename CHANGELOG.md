@@ -23,6 +23,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.35] — 26/11/2026
+
+### Alterado
+- **Pedido de liberação de CNPJ também no resgate e no clone:** o vendedor ou SDR barrado pela
+  trava de CNPJ ao reabrir um card perdido ou ao clonar um card agora pede a liberação na
+  própria janela do bloqueio, com o motivo, em vez de só ver "Fale com o gerente". Admin e
+  gerente decidem na aba Liberações da Consulta de CNPJ. Ao liberar, o resgate ou o clone é
+  feito em nome de quem pediu e o card novo registra a liberação no histórico. Sem migration.
+
+---
+
 ## [1.11.34] — 24/11/2026
 
 ### Alterado

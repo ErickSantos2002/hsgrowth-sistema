@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.35",
+    date: "26/11/2026",
+    entries: [
+      {
+        type: "improvement",
+        text: "Resgatar card perdido e clonar card: quando o CNPJ está com outro vendedor ou com um parceiro, o vendedor e o SDR agora pedem a liberação ao gerente pela própria janela, com o motivo. Ao liberar, o card é criado em Lead Novo e você recebe o aviso no sino.",
+      },
+    ],
+  },
+  {
     version: "1.11.34",
     date: "24/11/2026",
     entries: [

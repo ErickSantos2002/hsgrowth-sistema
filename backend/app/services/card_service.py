@@ -2583,8 +2583,12 @@ class CardService:
 
         return response_data
 
-    def reopen_card(self, card_id: int, reopen_data, current_user: User) -> Card:
+    def reopen_card(self, card_id: int, reopen_data, current_user: User,
+                    liberacao_cnpj: Optional[str] = None) -> Card:
         """
+        `liberacao_cnpj`: texto de um pedido de liberação de CNPJ já aprovado pela
+        gestão (parcerias/liberacoes.py); dispensa a trava e fica no histórico do card.
+
         Reabre um negócio perdido criando um clone na lista Lead Novo (list_id=22, board_id=6).
 
         O card original permanece inalterado (continua perdido).
@@ -2628,6 +2632,7 @@ class CardService:
         aviso_parcerias = parcerias_vendas.conferir(
             self.db, current_user, original_card.client_id,
             getattr(reopen_data, "cnpj_justificativa", None), ignorar_card_id=original_card.id,
+            liberacao=liberacao_cnpj,
         )
 
         if not original_card.is_lost:
@@ -2854,8 +2859,12 @@ class CardService:
 
         return new_card
 
-    def clone_card(self, card_id: int, current_user: User, cnpj_justificativa: Optional[str] = None) -> Card:
+    def clone_card(self, card_id: int, current_user: User, cnpj_justificativa: Optional[str] = None,
+                   liberacao_cnpj: Optional[str] = None) -> Card:
         """
+        `liberacao_cnpj`: texto de um pedido de liberação de CNPJ já aprovado pela
+        gestão (parcerias/liberacoes.py); dispensa a trava e fica no histórico do card.
+
         Clona um card existente na mesma lista.
 
         Copia:
@@ -2893,7 +2902,7 @@ class CardService:
         from app.services.parcerias import vendas as parcerias_vendas
         aviso_parcerias = parcerias_vendas.conferir(
             self.db, current_user, original_card.client_id, cnpj_justificativa,
-            ignorar_card_id=original_card.id,
+            ignorar_card_id=original_card.id, liberacao=liberacao_cnpj,
         )
 
         target_list = self.list_repository.find_by_id(TARGET_LIST_ID)

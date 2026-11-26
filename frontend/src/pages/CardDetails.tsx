@@ -49,6 +49,7 @@ import attachmentService from "../services/attachmentService";
 import callEvaluationService from "../services/callEvaluationService";
 import UserAvatar from "../components/common/UserAvatar";
 import { textoDoErro, useLiberacaoCnpj } from "../hooks/useLiberacaoCnpj";
+import liberacoesCnpjService from "../services/liberacoesCnpjService";
 
 /**
  * Página de detalhes do Card - Layout estilo Pipedrive com tema escuro
@@ -333,8 +334,14 @@ const CardDetails: React.FC = () => {
     if (!confirmed) return;
     setIsCloning(true);
     try {
-      const result = await comLiberacao((j) => cardService.clone(card.id, j));
-      if (!result) return; // trava de CNPJ: cancelado ou sem permissão
+      const result = await comLiberacao(
+        (j) => cardService.clone(card.id, j),
+        // Vendedor/SDR barrado: o pedido vai para a gestão e o clone nasce quando ela liberar.
+        (motivo) => liberacoesCnpjService.pedir({
+          kind: "clonar_card", client_id: card.client_id ?? 0, card_id: card.id, reason: motivo,
+        }),
+      );
+      if (!result) return; // trava de CNPJ: cancelado, sem permissão ou pedido enviado
       showSuccess(`Card clonado com sucesso! Abrindo card #${result.new_card_id}…`);
       navigate(`/cards/${result.new_card_id}`);
     } catch (error: any) {
@@ -369,12 +376,22 @@ const CardDetails: React.FC = () => {
     if (!card) return;
     setIsReopening(true);
     try {
-      const result = await comLiberacao((j) => cardService.reopen(card.id, {
-        title,
-        acquisition_channel_detail: acquisitionChannelDetail,
-        cnpj_justificativa: j,
-      }));
-      if (!result) return; // trava de CNPJ: cancelado ou sem permissão
+      const result = await comLiberacao(
+        (j) => cardService.reopen(card.id, {
+          title,
+          acquisition_channel_detail: acquisitionChannelDetail,
+          cnpj_justificativa: j,
+        }),
+        // Vendedor/SDR barrado: o pedido guarda título e canal; o resgate acontece quando a gestão liberar.
+        async (motivo) => {
+          await liberacoesCnpjService.pedir({
+            kind: "reabrir_card", client_id: card.client_id ?? 0, card_id: card.id, reason: motivo,
+            payload: { title, acquisition_channel_detail: acquisitionChannelDetail },
+          });
+          setShowReopenModal(false); // pedido enviado: fecha a janela do resgate
+        },
+      );
+      if (!result) return; // trava de CNPJ: cancelado, sem permissão ou pedido enviado
       setShowReopenModal(false);
       showSuccess(`Negócio reaberto com sucesso! Redirecionando para o novo card...`);
       // Navega para o novo card criado

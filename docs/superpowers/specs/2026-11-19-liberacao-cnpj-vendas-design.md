@@ -24,6 +24,8 @@ lista.
    (`/parcerias/consulta-cnpj`).
 3. Escopo desta entrega: **criar card** (board de Vendas) e **vincular empresa** (seção Empresa
    do card). Reabrir perdido, clonar e o modal de editar card continuam com "Fale com o gerente".
+   *(Atualização 1.11.35, 26/11/2026: reabrir perdido e clonar também passaram a pedir liberação,
+   tipos `reabrir_card` e `clonar_card`. Só o modal de editar card segue com "Fale com o gerente".)*
 4. Pedem liberação: `salesperson` e `sdr`. Decidem: `admin` e `manager`.
 
 ## 3. Fluxo

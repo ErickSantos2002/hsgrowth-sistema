@@ -7,16 +7,25 @@ import api from "./api";
  */
 const BASE = "/api/v1/parcerias/liberacoes-cnpj";
 
-export type TipoDeLiberacao = "criar_card" | "vincular_empresa";
+export type TipoDeLiberacao = "criar_card" | "vincular_empresa" | "reabrir_card" | "clonar_card";
 export type SituacaoDaLiberacao = "pendente" | "liberado" | "recusado" | "cancelado";
+
+/** Nome do tipo na lista ("Criar card") e na frase da decisão ("pediu para criar um card da empresa X"). */
+export const TIPOS_DE_LIBERACAO: Record<TipoDeLiberacao, { nome: string; acao: string }> = {
+  criar_card: { nome: "Criar card", acao: "criar um card da empresa" },
+  vincular_empresa: { nome: "Vincular ao card", acao: "vincular ao card dele a empresa" },
+  reabrir_card: { nome: "Reabrir card perdido", acao: "resgatar um card perdido da empresa" },
+  clonar_card: { nome: "Clonar card", acao: "clonar um card da empresa" },
+};
 
 export interface PedidoDeLiberacao {
   kind: TipoDeLiberacao;
+  /** Reabrir e clonar: o backend usa a empresa do card de origem. */
   client_id: number;
   reason: string;
-  /** criar_card: os dados do card que a pessoa tentou criar. */
+  /** criar_card: os dados do card. reabrir_card: título e detalhamento do canal. */
   payload?: Record<string, unknown>;
-  /** vincular_empresa: o card dela. */
+  /** vincular_empresa: o card dela. reabrir_card/clonar_card: o card de origem. */
   card_id?: number;
 }
 
