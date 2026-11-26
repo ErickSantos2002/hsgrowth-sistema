@@ -17,13 +17,14 @@ class CnpjReleaseRequest(Base):
     __tablename__ = "cnpj_release_requests"
 
     id = Column(Integer, primary_key=True, index=True)
-    # criar_card | vincular_empresa
+    # criar_card | vincular_empresa | reabrir_card | clonar_card (os dois últimos desde a 1.11.35)
     kind = Column(String(20), nullable=False)
     # pendente | liberado | recusado | cancelado
     status = Column(String(20), nullable=False, default="pendente", index=True)
     client_id = Column(Integer, ForeignKey("clients.id", ondelete="SET NULL"), nullable=True)
     cnpj = Column(String(14), nullable=False, index=True)
     # Vincular: o card alvo. Criar: o card criado ao liberar.
+    # Reabrir/clonar: o card de origem até liberar; depois, o card novo.
     card_id = Column(Integer, ForeignKey("cards.id", ondelete="SET NULL"), nullable=True)
     # Criar: os dados do CardCreate. Vincular: {}.
     payload = Column(JSON, nullable=False, default=dict)

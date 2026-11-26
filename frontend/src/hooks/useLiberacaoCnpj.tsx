@@ -8,7 +8,8 @@ import { showError, showSuccess } from "../utils/toast";
  * Admin/gerente: abre a janela da justificativa e repete o pedido com ela.
  * Vendedor/SDR: se quem chama passou `pedirLiberacao`, a janela vira "Pedir liberação"
  * (o card só nasce quando a gestão liberar, na aba Liberações da Consulta de CNPJ).
- * Sem `pedirLiberacao` (reabrir, clonar, editar): mostra a mensagem ("Fale com o gerente").
+ * Passam `pedirLiberacao`: criar card, vincular empresa e, desde a 1.11.35, reabrir perdido e clonar.
+ * Sem `pedirLiberacao` (modal de editar card): mostra a mensagem ("Fale com o gerente").
  *
  * Uso:
  *   const { comLiberacao, janela } = useLiberacaoCnpj();

@@ -152,7 +152,11 @@ Todo dia às 8h, pelo sino e por e-mail (`app/services/notificacoes/parcerias.py
     continua pendente;
   - **Recusar** exige o motivo.
 - Quem pediu recebe a decisão no sino e pode cancelar o pedido enquanto estiver pendente.
-- Reabrir e clonar card perdido, e o modal de editar card, continuam com "Fale com o gerente".
+- Desde a 1.11.35 também valem **reabrir card perdido** (`reabrir_card`: o pedido guarda o card
+  perdido, o título e o detalhamento do canal) e **clonar card** (`clonar_card`: guarda o card de
+  origem). A empresa é sempre a do card de origem. Ao liberar, o resgate ou o clone é feito em nome
+  de quem pediu; `card_id` passa a ser o card novo e `payload.original_card_id` guarda o de origem.
+- Só o modal de editar card continua com "Fale com o gerente".
 - Código: `app/services/parcerias/liberacoes.py`, `app/api/v1/endpoints/liberacoes_cnpj.py`,
   `frontend/src/hooks/useLiberacaoCnpj.tsx`, `frontend/src/components/parcerias/LiberacoesCnpj.tsx`.
 

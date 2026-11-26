@@ -10,6 +10,11 @@ liberou e por quê.
 Tipos:
 - `criar_card`: `payload` guarda o CardCreate; ao liberar, cria o card.
 - `vincular_empresa`: `card_id` é o card do vendedor; ao liberar, vincula a empresa.
+- `reabrir_card` (1.11.35): `card_id` é o card perdido; `payload` guarda o título e o
+  detalhamento do canal; ao liberar, resgata o card.
+- `clonar_card` (1.11.35): `card_id` é o card de origem; ao liberar, clona.
+Nos dois, ao liberar `card_id` passa a ser o card novo e `payload.original_card_id`
+guarda o de origem.
 """
 from datetime import datetime
 from typing import List, Optional, Tuple
@@ -22,12 +27,19 @@ from app.models.client import Client
 from app.models.cnpj_release_request import CnpjReleaseRequest
 from app.models.role import Role
 from app.models.user import User
-from app.schemas.card import CardCreate, CardUpdate
+from app.schemas.card import CardCreate, CardReopenRequest, CardUpdate
 from app.services.notificacoes.enviar import notificar
 from app.services.parcerias import acesso, vendas
 from app.services.parcerias.cnpj import normalizar_cnpj
 
-TIPOS = ("criar_card", "vincular_empresa")
+TIPOS = ("criar_card", "vincular_empresa", "reabrir_card", "clonar_card")
+# Texto do aviso para a gestão: "{vendedor} pediu ... para {ação}".
+ACOES = {
+    "criar_card": "criar um card",
+    "vincular_empresa": "vincular ao card dele",
+    "reabrir_card": "resgatar um card perdido",
+    "clonar_card": "clonar um card",
+}
 SITUACOES = ("pendente", "liberado", "recusado", "cancelado")
 QUEM_PEDE = ("salesperson", "sdr")
 LINK_DA_LISTA = "/parcerias/consulta-cnpj?aba=liberacoes"
@@ -105,6 +117,25 @@ def pedir(db: Session, user: User, kind: str, client_id: int, reason: Optional[s
         # Só os campos que o vendedor mandou: na liberação, o card nasce igual ao que ele tentou criar.
         dados = criar.model_dump(mode="json", exclude_unset=True, exclude={"cnpj_justificativa"})
         card_id = None
+    elif kind in ("reabrir_card", "clonar_card"):
+        if not card_id:
+            raise _erro(status.HTTP_422_UNPROCESSABLE_ENTITY, "Informe o card.")
+        from app.services.card_service import CardService
+        origem = CardService(db).get_card_by_id(card_id, user)
+        # A empresa é a do card de origem (é ela que o resgate/clone leva junto).
+        client_id = origem.client_id
+        if not client_id:
+            raise _erro(status.HTTP_422_UNPROCESSABLE_ENTITY, "Este card não tem empresa vinculada.")
+        if kind == "reabrir_card":
+            if not origem.is_lost:
+                raise _erro(status.HTTP_400_BAD_REQUEST, "Apenas negócios perdidos podem ser reabertos")
+            try:
+                resgate = CardReopenRequest(**(payload or {}))
+            except ValidationError as e:
+                raise _erro(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Dados do resgate inválidos: {e.errors()[0].get('msg')}")
+            dados = resgate.model_dump(mode="json", exclude={"cnpj_justificativa"})
+        dados["original_card_id"] = origem.id
+        ignorar_card_id = origem.id
     else:
         if not card_id:
             raise _erro(status.HTTP_422_UNPROCESSABLE_ENTITY, "Informe o card.")
@@ -139,7 +170,7 @@ def pedir(db: Session, user: User, kind: str, client_id: int, reason: Optional[s
     db.commit()
     db.refresh(p)
 
-    acao = "criar um card" if kind == "criar_card" else "vincular ao card dele"
+    acao = ACOES[kind]
     for gestor in _gestores(db):
         notificar(db, gestor.id, "cnpj_liberacao_pedido",
                   f"{user.name} pediu liberação de CNPJ",
@@ -211,6 +242,14 @@ def liberar(db: Session, gestor: User, pedido_id: int, nota: Optional[str] = Non
         if p.kind == "criar_card":
             dados = CardCreate(**{**(p.payload or {}), "client_id": p.client_id})
             card = servico.create_card(dados, vendedor, at_top=True, liberacao_cnpj=texto)
+        elif p.kind in ("reabrir_card", "clonar_card"):
+            if not p.card_id:
+                raise _erro(status.HTTP_422_UNPROCESSABLE_ENTITY, "O card de origem não existe mais. Recuse o pedido.")
+            if p.kind == "reabrir_card":
+                resgate = CardReopenRequest(**{k: v for k, v in (p.payload or {}).items() if k != "original_card_id"})
+                card = servico.reopen_card(p.card_id, resgate, vendedor, liberacao_cnpj=texto)
+            else:
+                card = servico.clone_card(p.card_id, vendedor, liberacao_cnpj=texto)
         else:
             if not p.card_id:
                 raise _erro(status.HTTP_422_UNPROCESSABLE_ENTITY, "O card do pedido não existe mais. Recuse o pedido.")
@@ -228,8 +267,11 @@ def liberar(db: Session, gestor: User, pedido_id: int, nota: Optional[str] = Non
     db.commit()
     db.refresh(p)
 
+    # Resgate e clone mantêm o vendedor do card de origem, que pode não ser quem pediu.
+    final = ("já está com você." if p.kind in ("criar_card", "vincular_empresa")
+             else "foi criado em Lead Novo.")
     _avisar_decisao(db, p, gestor, "Seu pedido de CNPJ foi liberado",
-                    f"{nome_da_empresa(p)}: {gestor.name} liberou. O card \"{card.title}\" já está com você.",
+                    f"{nome_da_empresa(p)}: {gestor.name} liberou. O card \"{card.title}\" {final}",
                     f"/cards/{card.id}")
     return p
 

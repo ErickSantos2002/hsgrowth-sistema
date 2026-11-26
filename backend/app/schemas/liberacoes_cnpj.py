@@ -6,12 +6,14 @@ from pydantic import BaseModel, Field
 
 
 class LiberacaoCnpjCreate(BaseModel):
-    kind: Literal["criar_card", "vincular_empresa"]
+    kind: Literal["criar_card", "vincular_empresa", "reabrir_card", "clonar_card"]
+    # Reabrir e clonar: o backend usa a empresa do card de origem.
     client_id: int
     reason: str = Field(..., max_length=500)
     # criar_card: os dados do card que o vendedor tentou criar (CardCreate).
+    # reabrir_card: {title, acquisition_channel_detail} (CardReopenRequest).
     payload: Optional[dict] = None
-    # vincular_empresa: o card do vendedor.
+    # vincular_empresa: o card do vendedor. reabrir_card/clonar_card: o card de origem.
     card_id: Optional[int] = None
 
 

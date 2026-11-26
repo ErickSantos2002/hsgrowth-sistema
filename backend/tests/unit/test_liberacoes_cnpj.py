@@ -127,6 +127,90 @@ def test_liberar_duas_vezes_ou_sem_ser_gestao(db, cena):
     assert _status(e) == 409
 
 
+# ─── Reabrir perdido e clonar (1.11.35) ──────────────────────────────────────
+
+def _lista_22(db):
+    """Resgate e clone vão sempre para a lista 22 (Lead Novo do board 6), como em produção."""
+    from app.models.list import List
+    db.add(List(id=22, board_id=6, name="Lead Novo", position=1))
+    db.commit()
+
+
+def test_pedir_reabrir_guarda_os_dados_e_nao_cria_card(db, cena):
+    _lista_22(db)
+    perdido = card_de_vendas(db, cena.v.lead_novo, assigned_to_id=cena.outro.id, is_won=-1)
+    antes = db.query(Card).count()
+
+    p = liberacoes.pedir(db, cena.outro, "reabrir_card", 0, "O cliente voltou a me procurar",
+                         payload={"title": "Resgate Empresa A", "acquisition_channel_detail": "Base - Resgate"},
+                         card_id=perdido.id)
+
+    assert p.status == "pendente" and p.kind == "reabrir_card" and p.card_id == perdido.id
+    assert p.client_id == perdido.client_id  # a empresa vem do card, não do que o front mandou
+    assert p.payload == {"title": "Resgate Empresa A", "acquisition_channel_detail": "Base - Resgate",
+                         "original_card_id": perdido.id}
+    assert db.query(Card).count() == antes
+    aviso = _avisos(db, "cnpj_liberacao_pedido")[0]
+    assert "resgatar um card perdido" in aviso.message
+
+
+def test_pedir_reabrir_card_que_nao_esta_perdido_recusa(db, cena):
+    aberto = card_de_vendas(db, cena.v.lead_novo, assigned_to_id=cena.dono.id)
+    with pytest.raises(HTTPException) as e:
+        liberacoes.pedir(db, cena.outro, "reabrir_card", 0, "motivo",
+                         payload={"title": "X", "acquisition_channel_detail": "Base - Resgate"}, card_id=aberto.id)
+    assert _status(e) == 400
+
+
+def test_liberar_reabrir_resgata_o_card_e_registra(db, cena):
+    _lista_22(db)
+    perdido = card_de_vendas(db, cena.v.lead_novo, assigned_to_id=cena.outro.id, is_won=-1)
+    p = liberacoes.pedir(db, cena.outro, "reabrir_card", 0, "O cliente voltou",
+                         payload={"title": "Resgate Empresa A", "acquisition_channel_detail": "Base - Resgate"},
+                         card_id=perdido.id)
+
+    p = liberacoes.liberar(db, cena.gerente, p.id)
+
+    novo = db.query(Card).filter(Card.id == p.card_id).one()
+    assert novo.id != perdido.id and novo.title == "Resgate Empresa A" and novo.list_id == 22
+    assert novo.reopened_from_card_id == perdido.id and novo.client_id == perdido.client_id
+    assert p.status == "liberado" and p.payload["original_card_id"] == perdido.id
+    registro = db.query(Activity).filter(Activity.card_id == novo.id, Activity.activity_type == "parcerias_cnpj").one()
+    assert "liberado por gerente a pedido de outro" in registro.description
+    aviso = _avisos(db, "cnpj_liberacao_decisao")[0]
+    assert aviso.user_id == cena.outro.id and "foi criado em Lead Novo" in aviso.message
+
+
+def test_liberar_clonar_clona_o_card_e_registra(db, cena):
+    _lista_22(db)
+    ganho = card_de_vendas(db, cena.v.proposta, assigned_to_id=cena.outro.id, is_won=1)
+    p = liberacoes.pedir(db, cena.outro, "clonar_card", 0, "Nova venda para a filial", card_id=ganho.id)
+    assert p.payload == {"original_card_id": ganho.id}
+
+    p = liberacoes.liberar(db, cena.admin, p.id)
+
+    novo = db.query(Card).filter(Card.id == p.card_id).one()
+    assert novo.title == "[CLONE] Card Empresa A" and novo.list_id == 22 and novo.client_id == ganho.client_id
+    assert db.query(Activity).filter(Activity.card_id == novo.id,
+                                     Activity.activity_type == "parcerias_cnpj").count() == 1
+
+
+def test_reabrir_e_clonar_direto_continuam_barrados(db, cena):
+    """Sem pedido aprovado, o vendedor segue barrado (a gestão libera com justificativa)."""
+    from app.schemas.card import CardReopenRequest
+    from app.services.card_service import CardService
+    _lista_22(db)
+    perdido = card_de_vendas(db, cena.v.lead_novo, assigned_to_id=cena.outro.id, is_won=-1)
+    servico = CardService(db)
+    with pytest.raises(HTTPException) as e:
+        servico.reopen_card(perdido.id, CardReopenRequest(title="X", acquisition_channel_detail="Base - Resgate"),
+                            cena.outro)
+    assert _status(e) == 409
+    with pytest.raises(HTTPException) as e:
+        servico.clone_card(perdido.id, cena.outro)
+    assert _status(e) == 409
+
+
 # ─── Recusar e cancelar ──────────────────────────────────────────────────────
 
 def test_recusar_exige_motivo_e_avisa(db, cena):
