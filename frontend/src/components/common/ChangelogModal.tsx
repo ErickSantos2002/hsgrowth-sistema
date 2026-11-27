@@ -32,6 +32,10 @@ const CHANGELOG: ChangelogVersion[] = [
         type: "fix",
         text: "Reunião por vídeo: ao remarcar a reunião, o link do cliente não aparece mais como expirado. Entrar na sala antes da hora e sair também não encerra mais a reunião: o link vale até o fim do horário marcado.",
       },
+      {
+        type: "fix",
+        text: "Reunião por vídeo: a tela de entrada do cliente mostrava o horário da reunião 3 horas adiantado. Agora mostra o horário de Brasília.",
+      },
     ],
   },
   {

@@ -19,6 +19,11 @@ import { Loader2, Video, CalendarX, Clock } from "lucide-react";
 
 import publicMeetingService, { PublicMeetingInfo } from "../services/publicMeetingService";
 
+/** Marca como UTC uma data que veio sem fuso ("2026-11-27T18:35:00"). */
+function comoUTC(data: string): string {
+  return /(Z|[+-]\d{2}:?\d{2})$/i.test(data) ? data : `${data}Z`;
+}
+
 const IFRAME_ALLOW =
   "camera; microphone; fullscreen; display-capture; autoplay; picture-in-picture";
 
@@ -182,12 +187,16 @@ const MeetingGate: React.FC = () => {
     );
   }
 
+  // O servidor guarda a hora em UTC e a manda sem o "Z" do fim; sem ele o
+  // navegador lê como hora local e o cliente via a reunião 3h adiantada.
+  // O fuso fixo mostra o horário de Brasília, onde quer que o cliente esteja.
   const horario = info?.scheduled_at
-    ? new Date(info.scheduled_at).toLocaleString("pt-BR", {
+    ? new Date(comoUTC(info.scheduled_at)).toLocaleString("pt-BR", {
         day: "2-digit",
         month: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
+        timeZone: "America/Sao_Paulo",
       })
     : null;
 

@@ -40,6 +40,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   `meeting.ended` e o link do cliente passava a dizer "Esta reunião já foi encerrada.". Agora
   a entrada vale pelo horário (fim previsto + 4h); o cliente continua na sala de espera até o
   vendedor aceitar. Sem migration.
+- **Horário errado na tela de entrada do cliente:** a página `/entrar/...` mostrava a hora em
+  UTC (3h adiantada — reunião das 15:35 aparecia como 18:35). Agora mostra o horário de Brasília.
 
 ---
 
