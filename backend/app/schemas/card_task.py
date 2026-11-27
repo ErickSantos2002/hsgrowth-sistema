@@ -218,6 +218,9 @@ class CardTaskResponse(BaseModel):
     # Campos do card vinculado (úteis na visão global do calendário)
     card_title: Optional[str] = Field(None, description="Título do card ao qual a tarefa pertence")
     card_client_name: Optional[str] = Field(None, description="Nome do cliente do card")
+    # Fechar o card não conclui as tarefas dele — quem consome de fora (Guardi,
+    # no HS.OS) usa este campo para não tratar lembrete de card fechado como pendência.
+    card_is_won: Optional[int] = Field(None, description="Estado do card: 0 aberto, 1 ganho, -1 perdido")
 
     # Microsoft Teams
     teams_meeting_id: Optional[str] = Field(None, description="ID da reunião no Microsoft Teams")
@@ -321,6 +324,9 @@ class CardTaskFilters(BaseModel):
     is_completed: Optional[bool] = Field(None, description="Filtrar por status de conclusão")
     due_date_start: Optional[datetime] = Field(None, description="Data de vencimento inicial")
     due_date_end: Optional[datetime] = Field(None, description="Data de vencimento final")
+    card_aberto: Optional[bool] = Field(
+        None, description="true: só tarefas de card aberto; false: só de card ganho/perdido"
+    )
     page: int = Field(1, ge=1, description="Número da página")
     page_size: int = Field(50, ge=1, le=500, description="Itens por página (máx: 500)")
 

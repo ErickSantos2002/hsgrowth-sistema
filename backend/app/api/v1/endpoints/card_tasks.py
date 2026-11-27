@@ -209,6 +209,7 @@ def create_task(
     - `is_completed`: Filtrar por status de conclusão (true/false)
     - `due_date_start`: Filtrar tarefas com due_date >= este valor (datetime ISO UTC)
     - `due_date_end`: Filtrar tarefas com due_date <= este valor (datetime ISO UTC)
+    - `card_aberto`: true = só tarefas de card aberto; false = só de card ganho/perdido
 
     **Paginação:**
     - `page`: Número da página (padrão: 1)
@@ -257,6 +258,7 @@ def list_tasks(
     is_completed: Optional[bool] = None,
     due_date_start: Optional[datetime] = None,
     due_date_end: Optional[datetime] = None,
+    card_aberto: Optional[bool] = None,
     page: int = 1,
     page_size: int = 50,
     db: Session = Depends(get_db),
@@ -283,6 +285,7 @@ def list_tasks(
         is_completed=is_completed,
         due_date_start=due_date_start,
         due_date_end=due_date_end,
+        card_aberto=card_aberto,
         page=page,
         page_size=page_size
     )
@@ -300,6 +303,7 @@ def list_tasks(
 
     **Parâmetros:**
     - `user_id` (opcional): Filtrar por responsável específico. Se não informado, retorna todas as tarefas atrasadas.
+    - `card_aberto` (opcional): true = só tarefas de card aberto; false = só de card ganho/perdido
 
     **Retorna:**
     - Lista de tarefas com due_date anterior ao momento atual e is_completed = false
@@ -332,6 +336,7 @@ def list_tasks(
 def get_overdue_tasks(
     user_id: int = None,
     assignee_role: Optional[str] = None,
+    card_aberto: Optional[bool] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
@@ -342,7 +347,7 @@ def get_overdue_tasks(
     assignee_role filtra pelo papel do responsável (ex: salesperson, sdr).
     """
     service = CardTaskService(db)
-    return service.get_overdue_tasks(user_id, assignee_role)
+    return service.get_overdue_tasks(user_id, assignee_role, card_aberto)
 
 
 @router.get(

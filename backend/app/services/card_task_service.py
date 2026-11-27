@@ -231,9 +231,14 @@ class CardTaskService:
         tasks = self.repository.get_pending_by_card(card_id, limit)
         return [self._build_response(t) for t in tasks]
 
-    def get_overdue_tasks(self, user_id: Optional[int] = None, assignee_role: Optional[str] = None) -> List[CardTaskResponse]:
+    def get_overdue_tasks(
+        self,
+        user_id: Optional[int] = None,
+        assignee_role: Optional[str] = None,
+        card_aberto: Optional[bool] = None,
+    ) -> List[CardTaskResponse]:
         """Busca tarefas atrasadas"""
-        tasks = self.repository.get_overdue_tasks(user_id, assignee_role)
+        tasks = self.repository.get_overdue_tasks(user_id, assignee_role, card_aberto)
         return [self._build_response(t) for t in tasks]
 
     def update_task(self, task_id: int, task_data: CardTaskUpdate, current_user: User) -> CardTaskResponse:
@@ -548,6 +553,7 @@ class CardTaskService:
         # Adiciona título e nome do cliente do card (útil na visão global do calendário)
         if hasattr(task, 'card') and task.card:
             response_data["card_title"] = task.card.title
+            response_data["card_is_won"] = task.card.is_won
             if task.card.client:
                 response_data["card_client_name"] = task.card.client.name
 

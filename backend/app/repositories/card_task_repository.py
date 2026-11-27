@@ -72,6 +72,9 @@ class CardTaskRepository:
         if filters.is_completed is not None:
             query = query.filter(CardTask.is_completed == filters.is_completed)
 
+        if filters.card_aberto is not None:
+            query = self._filtrar_card_aberto(query, filters.card_aberto)
+
         if filters.due_date_start is not None:
             # Remove timezone info para comparar com datetimes naive do banco
             dt_start = filters.due_date_start.replace(tzinfo=None) if filters.due_date_start.tzinfo else filters.due_date_start
@@ -128,7 +131,22 @@ class CardTaskRepository:
             .filter(Role.name == role_name)
         )
 
-    def get_overdue_tasks(self, user_id: Optional[int] = None, assignee_role: Optional[str] = None) -> List[CardTask]:
+    def _filtrar_card_aberto(self, query, card_aberto: bool):
+        """
+        Restringe pelo estado do card. Fica na query (e não em memória) para o
+        `total` e as páginas do list_by_filters baterem com o filtro.
+        """
+        query = query.join(Card, CardTask.card_id == Card.id)
+        if card_aberto:
+            return query.filter(Card.is_won == 0)
+        return query.filter(Card.is_won != 0)
+
+    def get_overdue_tasks(
+        self,
+        user_id: Optional[int] = None,
+        assignee_role: Optional[str] = None,
+        card_aberto: Optional[bool] = None,
+    ) -> List[CardTask]:
         """Busca tarefas atrasadas"""
         now = datetime.utcnow()
         query = self.db.query(CardTask).filter(
@@ -143,6 +161,9 @@ class CardTaskRepository:
 
         if assignee_role:
             query = query.filter(CardTask.assigned_to_id.in_(self._user_ids_for_role(assignee_role)))
+
+        if card_aberto is not None:
+            query = self._filtrar_card_aberto(query, card_aberto)
 
         return query.order_by(CardTask.due_date.asc()).all()
 

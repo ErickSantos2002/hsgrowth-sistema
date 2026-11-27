@@ -14,6 +14,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   digitado.
   - **Dependência de deploy:** exige a rota `PUT /integracao/growthhs/caixas/{id}/proposta`
     no GestorHS já em produção antes de subir esta versão.
+- **Filtro `card_aberto` nas tarefas (para o Guardi, no HS.OS):** `GET /card-tasks` e
+  `GET /card-tasks/overdue` aceitam `card_aberto=true` (só tarefas de card aberto) ou
+  `false` (só de card ganho/perdido); sem o parâmetro, nada muda. A resposta ganha
+  `card_is_won` (0 aberto, 1 ganho, -1 perdido). Fechar o card continua sem concluir as
+  tarefas dele — o time as usa de lembrete.
 
 ### Corrigido
 - **Build do frontend no Easypanel:** o rollup 4.68.6 (publicado em 18/11/2026) quebra o
