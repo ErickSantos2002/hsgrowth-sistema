@@ -80,7 +80,8 @@ def _task_da_sala(db: Session, nome_sala: Optional[str]) -> Optional[CardTask]:
     nome_sala = nome_sala.strip()
 
     prefixo = re.escape(settings.DAILY_ROOM_PREFIX)
-    correspondencia = re.fullmatch(rf"{prefixo}-(\d+)", nome_sala)
+    # `hsg-<id>` ou, em reunião remarcada depois do prazo, `hsg-<id>-2`
+    correspondencia = re.fullmatch(rf"{prefixo}-(\d+)(?:-\d+)?", nome_sala)
     if not correspondencia:
         return None
 
@@ -97,7 +98,7 @@ def _sala_deste_ambiente(nome_sala: Optional[str]) -> bool:
         return False
 
     prefixo = re.escape(settings.DAILY_ROOM_PREFIX)
-    return bool(re.fullmatch(rf"{prefixo}-\d+", nome_sala.strip()))
+    return bool(re.fullmatch(rf"{prefixo}-\d+(?:-\d+)?", nome_sala.strip()))
 
 
 def encaminhar_em_background(

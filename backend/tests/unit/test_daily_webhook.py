@@ -344,6 +344,95 @@ class TestSalaDeOutroAmbiente:
         assert chamou == []
 
 
+class TestSalaRecriadaComSufixo:
+    """
+    Reunião remarcada depois do prazo ganha sala nova (`hsg-<id>-2`). Os avisos
+    dessa sala — gravação, transcrição — precisam chegar à mesma reunião.
+    """
+
+    def test_gravacao_da_sala_com_sufixo_chega_a_reuniao(
+        self, client: TestClient, task, db, monkeypatch
+    ):
+        monkeypatch.setattr(settings, "DAILY_ROOM_PREFIX", "hsg")
+        task.daily_room_name = f"hsg-{task.id}-2"
+        db.commit()
+
+        chamou = []
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.processar_gravacao_em_background",
+            lambda **kw: chamou.append(kw),
+        )
+
+        enviar(client, {
+            "type": "recording.ready-to-download",
+            "payload": {"recording_id": "rec-z", "room_name": f"hsg-{task.id}-2"},
+        })
+
+        assert len(chamou) == 1
+        assert chamou[0]["task_id"] == task.id
+
+    def test_evento_da_sala_antiga_nao_casa_com_a_nova(
+        self, client: TestClient, task, db, monkeypatch
+    ):
+        """A sala vencida não é mais a da reunião: aviso atrasado dela é ignorado."""
+        monkeypatch.setattr(settings, "DAILY_ROOM_PREFIX", "hsg")
+        task.daily_room_name = f"hsg-{task.id}-2"
+        db.commit()
+
+        chamou = []
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.processar_gravacao_em_background",
+            lambda **kw: chamou.append(kw),
+        )
+
+        enviar(client, {
+            "type": "recording.ready-to-download",
+            "payload": {"recording_id": "rec-velha", "room_name": f"hsg-{task.id}"},
+        })
+
+        assert chamou == []
+
+    def test_sala_com_sufixo_do_homo_e_repassada(self, client: TestClient, monkeypatch):
+        monkeypatch.setattr(settings, "DAILY_ROOM_PREFIX", "hsg")
+        monkeypatch.setattr(
+            settings, "DAILY_WEBHOOK_FORWARD_URL", "https://homo.exemplo/api/v1/daily/webhook"
+        )
+        repassados = []
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.encaminhar_em_background",
+            lambda *a, **kw: repassados.append(a),
+        )
+
+        r = enviar(client, {
+            "type": "meeting.ended",
+            "payload": {"room_name": "hsg-homo-37045-2"},
+        })
+
+        assert r.json()["status"] == "repassado"
+        assert len(repassados) == 1
+
+    def test_sala_com_sufixo_deste_ambiente_nao_e_repassada(
+        self, client: TestClient, monkeypatch
+    ):
+        monkeypatch.setattr(settings, "DAILY_ROOM_PREFIX", "hsg")
+        monkeypatch.setattr(
+            settings, "DAILY_WEBHOOK_FORWARD_URL", "https://homo.exemplo/api/v1/daily/webhook"
+        )
+        repassados = []
+        monkeypatch.setattr(
+            "app.api.v1.endpoints.daily_webhook.encaminhar_em_background",
+            lambda *a, **kw: repassados.append(a),
+        )
+
+        r = enviar(client, {
+            "type": "meeting.ended",
+            "payload": {"room_name": "hsg-99999999-2"},
+        })
+
+        assert r.json()["status"] == "ignorado"
+        assert repassados == []
+
+
 class TestRepasseParaOutroAmbiente:
     """
     O Daily aceita um webhook por conta, e ele aponta para produção.

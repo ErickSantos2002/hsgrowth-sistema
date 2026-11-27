@@ -25,6 +25,16 @@ interface ChangelogVersion {
  */
 const CHANGELOG: ChangelogVersion[] = [
   {
+    version: "1.11.36",
+    date: "27/11/2026",
+    entries: [
+      {
+        type: "fix",
+        text: "Reunião por vídeo: ao remarcar a reunião, o link do cliente não aparece mais como expirado. Entrar na sala antes da hora e sair também não encerra mais a reunião: o link vale até o fim do horário marcado.",
+      },
+    ],
+  },
+  {
     version: "1.11.35",
     date: "26/11/2026",
     entries: [

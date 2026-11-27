@@ -391,22 +391,49 @@ class TestReagendamento:
         # o novo prazo precisa cobrir a data remarcada
         assert exp > (task.due_date.replace(tzinfo=timezone.utc)).timestamp()
 
-    def test_sala_ja_removida_e_recriada(self, db: Session, task):
-        """Passado o prazo, o Daily apaga a sala. Recriar mantém o mesmo endereço."""
-        task.daily_room_name = "hsg-77"
+    def test_sala_vencida_vira_sala_nova_com_outro_nome(self, db: Session, task):
+        """
+        Sala vencida continua ocupando o nome no Daily ("zumbi"), mas a API
+        responde que ela não existe. Recriar com o mesmo nome deixava a reunião
+        remarcada sem sala (visto em produção, tasks 44231 e 44092 em 09/11):
+        a sala nova ganha um sufixo.
+        """
+        from app.core.config import settings
+
+        task.daily_room_name = f"{settings.DAILY_ROOM_PREFIX}-{task.id}"
         db.commit()
 
+        nova = f"{settings.DAILY_ROOM_PREFIX}-{task.id}-2"
         svc = DailyService(db)
         respostas = [
             _Resp(404, {"error": "not-found"}),
-            _Resp(200, {"name": "hsg-77", "url": "https://x.daily.co/hsg-77"}),
+            _Resp(200, {"name": nova, "url": f"https://x.daily.co/{nova}"}),
         ]
         with patch("httpx.Client.post", side_effect=respostas) as m:
             svc.atualizar_expiracao(task)
 
         assert m.call_count == 2
         assert m.call_args.args[0].endswith("/rooms")  # criação
-        assert task.daily_room_name == "hsg-77"
+        assert m.call_args.kwargs["json"]["name"] == nova
+        assert task.daily_room_name == nova
+        assert task.daily_room_url == f"https://x.daily.co/{nova}"
+
+    def test_segunda_sala_vencida_vira_a_terceira(self, db: Session, task):
+        from app.core.config import settings
+
+        task.daily_room_name = f"{settings.DAILY_ROOM_PREFIX}-{task.id}-2"
+        db.commit()
+
+        nova = f"{settings.DAILY_ROOM_PREFIX}-{task.id}-3"
+        svc = DailyService(db)
+        with patch("httpx.Client.post", side_effect=[
+            _Resp(404, {"error": "not-found"}),
+            _Resp(200, {"name": nova, "url": f"https://x.daily.co/{nova}"}),
+        ]) as m:
+            svc.atualizar_expiracao(task)
+
+        assert m.call_args.kwargs["json"]["name"] == nova
+        assert task.daily_room_name == nova
 
     def test_recriar_mantem_o_link_do_convidado(self, db: Session, task):
         """O convite já enviado ao cliente precisa continuar funcionando."""
@@ -417,11 +444,65 @@ class TestReagendamento:
         svc = DailyService(db)
         with patch("httpx.Client.post", side_effect=[
             _Resp(404, {"error": "not-found"}),
-            _Resp(200, {"name": "hsg-77", "url": "https://x.daily.co/hsg-77"}),
+            _Resp(200, {"name": "hsg-77-2", "url": "https://x.daily.co/hsg-77-2"}),
         ]):
             svc.atualizar_expiracao(task)
 
         assert task.public_access_token == "token-que-o-cliente-ja-tem"
+
+    def test_falha_ao_criar_a_sala_nova_vira_erro(self, db: Session, task):
+        """Quem chama precisa saber, para avisar o vendedor."""
+        task.daily_room_name = "hsg-77"
+        db.commit()
+
+        svc = DailyService(db)
+        with patch("httpx.Client.post", side_effect=[
+            _Resp(404, {"error": "not-found"}),
+            _Resp(400, {"error": "invalid-request-error"}),
+        ]):
+            with pytest.raises(ValueError):
+                svc.atualizar_expiracao(task)
+
+
+class TestJanelaDaReuniao:
+    """
+    Até quando o link do cliente vale.
+
+    A sala ficar vazia NÃO encerra a reunião: o vendedor que entra antes para
+    testar e sai deixava o cliente barrado com "já foi encerrada". O que vale é
+    o horário: fim previsto mais a margem, o mesmo prazo da sala no Daily.
+    """
+
+    def test_antes_e_durante_a_janela_esta_aberta(self, task):
+        from datetime import datetime, timedelta
+        from app.services.daily_service import janela_encerrada
+
+        task.due_date = datetime.utcnow() + timedelta(days=1)
+        assert janela_encerrada(task) is False
+
+        task.due_date = datetime.utcnow() - timedelta(hours=2)  # 60 min + 4h de margem
+        assert janela_encerrada(task) is False
+
+    def test_depois_da_margem_esta_encerrada(self, task):
+        from datetime import datetime, timedelta
+        from app.services.daily_service import janela_encerrada
+
+        task.due_date = datetime.utcnow() - timedelta(hours=6)
+        assert janela_encerrada(task) is True
+
+    def test_sala_vazia_antes_do_horario_nao_encerra(self, task):
+        from datetime import datetime, timedelta
+        from app.services.daily_service import janela_encerrada
+
+        task.due_date = datetime.utcnow() + timedelta(hours=3)
+        task.meeting_ended_at = datetime.utcnow()  # vendedor testou e saiu
+        assert janela_encerrada(task) is False
+
+    def test_sem_data_nao_encerra(self, task):
+        from app.services.daily_service import janela_encerrada
+
+        task.due_date = None
+        assert janela_encerrada(task) is False
 
     def test_reuniao_sem_sala_nao_faz_nada(self, db: Session, task):
         """Reunião do Teams ou ainda sem sala: nada a estender."""

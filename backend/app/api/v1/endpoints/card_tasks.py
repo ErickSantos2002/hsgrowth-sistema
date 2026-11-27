@@ -596,6 +596,9 @@ def update_task(
     """
     _exigir_card_da_tarefa_do_dono_se_agente(db, current_user, task_id)
     service = CardTaskService(db)
+    # A tela manda a data em toda edição, mesmo quando só a pauta mudou: para
+    # saber se a reunião foi remarcada é preciso comparar com a de antes.
+    data_anterior = db.query(CardTask.due_date).filter(CardTask.id == task_id).scalar()
     task = service.update_task(task_id, task_data, current_user)
 
     # O evento no calendário precisa acompanhar data, duração e título: é ele
@@ -636,15 +639,33 @@ def update_task(
     # Reunião do CRM reagendada: a sala precisa acompanhar a nova data. Sem
     # isto o convite continua válido no calendário e a sala expira antes —
     # ninguém entra no dia remarcado.
+    sala_desatualizada = False
     if task_data.due_date is not None and task.meeting_provider == "daily":
-        try:
-            from app.services.daily_service import DailyService
+        from app.services.daily_service import DailyService
 
-            DailyService(db).atualizar_expiracao(task)
+        # O serviço precisa da reunião do banco: `task` aqui é a resposta da
+        # API, que não tem o nome da sala. Até a 1.11.35 era ela que ia, o
+        # serviço quebrava na primeira linha e o erro ficava só no log — a sala
+        # nunca era estendida ao remarcar.
+        reuniao = db.query(CardTask).filter(CardTask.id == task_id).first()
+
+        if _instante(data_anterior) != _instante(reuniao.due_date):
+            # O que foi registrado no horário antigo (o vendedor entrou, o
+            # cliente não veio) não vale para a reunião remarcada.
+            reuniao.meeting_started_at = None
+            reuniao.meeting_ended_at = None
+            reuniao.contact_joined_at = None
+            db.commit()
+
+        try:
+            DailyService(db).atualizar_expiracao(reuniao)
         except Exception as e:
-            # Não bloqueia a edição: a data muda de qualquer forma, e a sala
-            # pode ser recriada depois pelo próprio vendedor.
+            # Não bloqueia a edição: a data muda de qualquer forma. Mas a tela
+            # avisa — o vendedor precisa saber antes do cliente bater na porta.
+            sala_desatualizada = True
             print(f"[CardTask] Aviso: não foi possível estender a sala do Daily: {e}")
+
+        task = service.get_task(task_id)
 
     # Registra no audit log
     client_ip = request.client.host if request.client else "unknown"
@@ -679,15 +700,18 @@ def update_task(
     db.add(audit_log)
     db.commit()
 
-    if calendario_desatualizado:
-        # O vendedor precisa saber que o cliente continua com os dados antigos
-        # — e que quem criou a reunião é quem consegue alterar o evento.
-        resposta = task.model_dump() if hasattr(task, "model_dump") else task
-        if isinstance(resposta, dict):
-            resposta["calendario_desatualizado"] = True
-            return resposta
-
+    # O vendedor precisa saber que o cliente continua com os dados antigos
+    # — e que quem criou a reunião é quem consegue alterar o evento.
+    task.calendario_desatualizado = calendario_desatualizado
+    task.sala_desatualizada = sala_desatualizada
     return task
+
+
+def _instante(valor: Optional[datetime]) -> Optional[datetime]:
+    """Data sem fuso (UTC), para comparar o que veio da tela com o do banco."""
+    if valor is not None and valor.tzinfo is not None:
+        return valor.astimezone(timezone.utc).replace(tzinfo=None)
+    return valor
 
 
 @router.patch(

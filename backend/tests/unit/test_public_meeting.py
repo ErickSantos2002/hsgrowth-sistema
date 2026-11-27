@@ -141,12 +141,12 @@ class TestEntrada:
         )
         assert response.status_code == 404
 
-    def test_reuniao_encerrada_nao_aceita_entrada(
+    def test_reuniao_vencida_nao_aceita_entrada(
         self, client: TestClient, task_com_sala, db
     ):
-        """Depois de encerrada, o link para de funcionar."""
-        from datetime import datetime
-        task_com_sala.meeting_ended_at = datetime.utcnow()
+        """Passado o fim previsto mais a margem, o link para de funcionar."""
+        from datetime import datetime, timedelta
+        task_com_sala.due_date = datetime.utcnow() - timedelta(days=2)
         db.commit()
 
         response = client.post(
@@ -154,6 +154,38 @@ class TestEntrada:
             json={"name": "Fulano", "company": "ACME", "email": "f@acme.com"},
         )
         assert response.status_code == 410
+
+    def test_sala_que_ficou_vazia_ainda_aceita_entrada(
+        self, client: TestClient, task_com_sala, db
+    ):
+        """
+        O vendedor entrou antes para testar e saiu: o Daily avisa que a sala
+        esvaziou, mas a reunião ainda nem começou. O cliente precisa entrar
+        (cai na sala de espera, como sempre).
+        """
+        from datetime import datetime, timedelta
+        task_com_sala.due_date = datetime.utcnow() + timedelta(hours=1)
+        task_com_sala.meeting_ended_at = datetime.utcnow()
+        db.commit()
+
+        response = client.post(
+            f"/api/v1/public/meeting/{TOKEN_VALIDO}/join",
+            json={"name": "Fulano", "company": "ACME", "email": "f@acme.com"},
+        )
+        assert response.status_code == 200
+
+        info = client.get(f"/api/v1/public/meeting/{TOKEN_VALIDO}").json()
+        assert info["already_ended"] is False
+
+    def test_tela_de_entrada_avisa_reuniao_vencida(
+        self, client: TestClient, task_com_sala, db
+    ):
+        from datetime import datetime, timedelta
+        task_com_sala.due_date = datetime.utcnow() - timedelta(days=2)
+        db.commit()
+
+        info = client.get(f"/api/v1/public/meeting/{TOKEN_VALIDO}").json()
+        assert info["already_ended"] is True
 
     def test_nome_gigante_e_recusado(self, client: TestClient, task_com_sala):
         """Entrada pública não aceita payload abusivo."""

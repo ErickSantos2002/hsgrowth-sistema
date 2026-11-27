@@ -28,6 +28,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.11.36] — 27/11/2026
+
+### Corrigido
+- **Link da reunião por vídeo "expirado" depois de remarcar:** ao mudar a data da reunião, a
+  sala do Daily nunca era estendida (o endpoint passava a resposta da API, sem o nome da sala,
+  e o erro ficava só no log). Agora a sala acompanha a nova data; se ela já tiver vencido, nasce
+  uma sala nova (`hsg-<id>-2`) e o link do cliente continua o mesmo. Remarcar também limpa a
+  tentativa anterior, e a tela avisa o vendedor se a sala não acompanhar.
+- **Entrar no link antes da hora e sair "encerrava" a reunião:** a sala vazia disparava
+  `meeting.ended` e o link do cliente passava a dizer "Esta reunião já foi encerrada.". Agora
+  a entrada vale pelo horário (fim previsto + 4h); o cliente continua na sala de espera até o
+  vendedor aceitar. Sem migration.
+
+---
+
 ## [1.11.35] — 26/11/2026
 
 ### Alterado

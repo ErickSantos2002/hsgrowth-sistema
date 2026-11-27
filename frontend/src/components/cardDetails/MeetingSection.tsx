@@ -613,6 +613,14 @@ const MeetingSection: React.FC<MeetingSectionProps> = ({ cardId, assignedToId, o
             "a conta Microsoft de quem enviou o convite precisa ser reconectada."
         );
       }
+      if (atualizada?.sala_desatualizada) {
+        // Sem este aviso o vendedor só descobria na hora, com o cliente
+        // vendo "link expirado".
+        showError(
+          "A data mudou, mas a sala de vídeo não acompanhou a nova data — " +
+            "o cliente pode não conseguir entrar. Tente salvar de novo ou chame o suporte."
+        );
+      }
       setEditingMeeting(null);
       await loadMeetings();
     } catch (error: any) {
