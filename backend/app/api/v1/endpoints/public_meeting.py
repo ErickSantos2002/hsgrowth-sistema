@@ -7,7 +7,8 @@ Esta é a única superfície do sistema acessível sem login, então:
 - a resposta de consulta não inclui chave, token, URL da sala nem dado
   interno do CRM — só o suficiente para o convidado se situar;
 - a URL da sala só é devolvida depois que o convidado se identifica;
-- reunião encerrada deixa de aceitar entrada.
+- passado o fim previsto mais a margem, o link deixa de aceitar entrada
+  (a sala ficar vazia não conta: o vendedor pode ter entrado só para testar).
 """
 from datetime import datetime
 from typing import Any, Optional
@@ -18,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.models.card_task import CardTask
+from app.services.daily_service import janela_encerrada
 
 router = APIRouter()
 
@@ -71,7 +73,8 @@ async def get_public_meeting(public_token: str, db: Session = Depends(get_db)) -
         "scheduled_at": task.due_date.isoformat() if task.due_date else None,
         "duration_minutes": task.duration_minutes,
         "already_started": task.meeting_started_at is not None,
-        "already_ended": task.meeting_ended_at is not None,
+        # Pelo horário, e não por "a sala ficou vazia": ver janela_encerrada()
+        "already_ended": janela_encerrada(task),
     }
 
 
@@ -93,7 +96,7 @@ async def join_public_meeting(
 
     task = _get_task_or_404(db, public_token)
 
-    if task.meeting_ended_at:
+    if janela_encerrada(task):
         raise HTTPException(status_code=410, detail="Esta reunião já foi encerrada.")
 
     if not task.contact_joined_at:

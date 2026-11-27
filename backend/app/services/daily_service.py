@@ -7,6 +7,7 @@ endpoints; aqui é só a conversa com a API.
 Segurança: a chave da API nunca sai deste módulo. Nenhum token do Daily é
 devolvido ao frontend sem passar por validação de acesso no endpoint.
 """
+import re
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -40,6 +41,39 @@ WEBHOOK_EVENTOS = [
     "participant.joined",
     "meeting.ended",
 ]
+
+
+def janela_encerrada(task: CardTask) -> bool:
+    """
+    Diz se já passou a hora de entrar nesta reunião: fim previsto + margem.
+
+    É o mesmo prazo da sala no Daily. A sala ficar vazia NÃO encerra a
+    reunião: o vendedor que entrava antes para testar e saía deixava o cliente
+    barrado com "já foi encerrada", com a reunião ainda por acontecer.
+    """
+    if not task.due_date:
+        return False
+
+    duracao = timedelta(minutes=task.duration_minutes or DEFAULT_DURATION_MINUTES)
+    fim = task.due_date + duracao + timedelta(hours=ROOM_EXPIRY_MARGIN_HOURS)
+
+    base = task.due_date
+    agora = datetime.now(timezone.utc) if base.tzinfo else datetime.utcnow()
+    return agora > fim
+
+
+def nome_da_proxima_sala(task: CardTask) -> str:
+    """
+    Nome para uma sala nova desta reunião: `hsg-<id>-2`, depois `-3`...
+
+    Sala vencida continua ocupando o nome no Daily, embora a API responda que
+    ela não existe — recriar com o mesmo nome deixou reuniões remarcadas sem
+    sala em produção (09/11/2026).
+    """
+    base = f"{settings.DAILY_ROOM_PREFIX}-{task.id}"
+    atual = re.fullmatch(rf"{re.escape(base)}(?:-(\d+))?", task.daily_room_name or "")
+    versao = int(atual.group(1) or 1) + 1 if atual else 2
+    return f"{base}-{versao}"
 
 
 class DailyService:
@@ -94,14 +128,17 @@ class DailyService:
 
     # ── sala ────────────────────────────────────────────────────────────────
 
-    def create_room(self, task: CardTask) -> dict:
+    def create_room(self, task: CardTask, room_name: Optional[str] = None) -> dict:
         """
         Cria a sala no Daily e guarda os dados na tarefa.
 
         Também gera o token opaco do link público do convidado, se ainda não
         houver — ele é o que permite o cliente entrar sem login.
+
+        `room_name` só vem preenchido ao trocar a sala vencida de uma reunião
+        remarcada; o padrão é `hsg-<id>`.
         """
-        room_name = f"{settings.DAILY_ROOM_PREFIX}-{task.id}"
+        room_name = room_name or f"{settings.DAILY_ROOM_PREFIX}-{task.id}"
 
         payload = {
             "name": room_name,
@@ -153,8 +190,10 @@ class DailyService:
         mexer nisso deixa o convite apontando para uma sala que expira antes da
         nova data — e o vendedor só descobre na hora, com o cliente esperando.
 
-        Sala que o Daily já removeu (prazo vencido) é recriada com o mesmo
-        nome, para o link já enviado ao cliente continuar valendo.
+        Sala vencida o Daily responde como inexistente, mas o nome continua
+        ocupado. Ela é trocada por uma sala nova, com sufixo no nome
+        (`hsg-<id>-2`). O link do cliente não muda: ele é nosso
+        (`/entrar/<token>`) e a sala é buscada na hora em que ele entra.
         """
         if not task.daily_room_name:
             return
@@ -169,9 +208,7 @@ class DailyService:
             raise ValueError(f"Não foi possível falar com o Daily: {e}") from e
 
         if resp.status_code == 404:
-            # O Daily apaga a sala depois do prazo. Recriar com o mesmo nome
-            # devolve o mesmo endereço — o convite já enviado continua válido.
-            self.create_room(task)
+            self.create_room(task, room_name=nome_da_proxima_sala(task))
             return
 
         if resp.status_code >= 400:

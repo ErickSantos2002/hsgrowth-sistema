@@ -200,6 +200,11 @@ class CardTaskResponse(BaseModel):
     calendario_desatualizado: bool = Field(
         False, description="A alteração não chegou ao evento no calendário"
     )
+    # Reunião do CRM remarcada cuja sala de vídeo não acompanhou a nova data:
+    # sem o aviso, o vendedor só descobria com o cliente barrado na porta.
+    sala_desatualizada: bool = Field(
+        False, description="A sala de vídeo não acompanhou a nova data"
+    )
     notes: Optional[str] = Field(None, description="Notas adicionais")
     contact_name: Optional[str] = Field(None, description="Nome do contato")
     status: str = Field(..., description="Status de disponibilidade")

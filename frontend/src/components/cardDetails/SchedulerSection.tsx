@@ -369,7 +369,7 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
         ? convertBrazilToUTC(editFormData.date, editFormData.time || "12:00")
         : undefined;
 
-      await cardTaskService.update(selectedTask.id, {
+      const atualizada = await cardTaskService.update(selectedTask.id, {
         title: editFormData.title,
         task_type: editFormData.task_type,
         priority: editFormData.priority,
@@ -380,6 +380,13 @@ const SchedulerSection: React.FC<SchedulerSectionProps> = ({
         location: editFormData.location || undefined,
         video_link: editFormData.video_link || undefined,
       });
+      if (atualizada?.sala_desatualizada) {
+        // Reunião do CRM remarcada por aqui: mesma situação do quadro de reuniões
+        showError(
+          "A data mudou, mas a sala de vídeo não acompanhou a nova data — " +
+            "o cliente pode não conseguir entrar. Tente salvar de novo ou chame o suporte."
+        );
+      }
 
       setShowEditModal(false);
       setSelectedTask(null);

@@ -40,6 +40,8 @@ export interface CardTask {
   invite_message?: string | null;
   /** A edição não chegou ao evento do calendário (quem criou é quem altera). */
   calendario_desatualizado?: boolean;
+  /** Reunião do CRM remarcada cuja sala de vídeo não acompanhou a nova data. */
+  sala_desatualizada?: boolean;
   daily_room_url?: string | null;
   public_access_token?: string | null;
   meeting_started_at?: string | null;

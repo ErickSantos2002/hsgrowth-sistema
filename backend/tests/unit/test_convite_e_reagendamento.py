@@ -445,3 +445,103 @@ class TestCancelarNoOutlook:
             self._chamar(403, {"error": {"message": "Acesso negado"}})
 
 
+
+
+class TestReagendamentoDaSalaDeVideo:
+    """
+    Reunião do CRM (Daily) remarcada: a sala acompanha a nova data e o que foi
+    registrado na tentativa anterior não vale para a nova.
+    """
+
+    ESTENDER = "app.services.daily_service.DailyService.atualizar_expiracao"
+    CALENDARIO = (
+        "app.services.microsoft_graph_service.microsoft_graph_service.update_calendar_event"
+    )
+
+    @pytest.fixture
+    def reuniao_daily(self, db, reuniao):
+        reuniao.meeting_provider = "daily"
+        reuniao.daily_room_name = f"hsg-{reuniao.id}"
+        reuniao.daily_room_url = f"https://x.daily.co/hsg-{reuniao.id}"
+        reuniao.public_access_token = "tok-do-cliente"
+        # tentativa no horário antigo: o vendedor entrou, o cliente não veio
+        reuniao.meeting_started_at = datetime(2026, 10, 1, 17, 0)
+        reuniao.meeting_ended_at = datetime(2026, 10, 1, 17, 20)
+        reuniao.contact_joined_at = datetime(2026, 10, 1, 17, 5)
+        db.commit()
+        return reuniao
+
+    def _editar(self, client, headers, task_id, **campos):
+        return client.put(f"/api/v1/card-tasks/{task_id}", json=campos, headers=headers)
+
+    def test_mudar_a_data_limpa_a_tentativa_anterior(
+        self, client: TestClient, salesperson_headers, reuniao_daily, db
+    ):
+        with patch(self.ESTENDER, MagicMock()), patch(self.CALENDARIO, MagicMock()):
+            r = self._editar(
+                client, salesperson_headers, reuniao_daily.id, due_date="2026-10-03T18:00:00"
+            )
+
+        assert r.status_code == 200
+        db.refresh(reuniao_daily)
+        assert reuniao_daily.meeting_started_at is None
+        assert reuniao_daily.meeting_ended_at is None
+        assert reuniao_daily.contact_joined_at is None
+        assert reuniao_daily.public_access_token == "tok-do-cliente"
+
+    def test_salvar_com_a_mesma_data_nao_apaga_nada(
+        self, client: TestClient, salesperson_headers, reuniao_daily, db
+    ):
+        """A tela sempre manda a data, mesmo quando só a pauta mudou."""
+        with patch(self.ESTENDER, MagicMock()), patch(self.CALENDARIO, MagicMock()):
+            self._editar(
+                client,
+                salesperson_headers,
+                reuniao_daily.id,
+                due_date="2026-10-01T17:00:00",
+                description="nova pauta",
+            )
+
+        db.refresh(reuniao_daily)
+        assert reuniao_daily.meeting_ended_at is not None
+        assert reuniao_daily.meeting_started_at is not None
+
+    def test_sala_que_nao_acompanhou_avisa_o_vendedor(
+        self, client: TestClient, salesperson_headers, reuniao_daily
+    ):
+        """Antes ficava só no log e o vendedor via "Reunião atualizada!"."""
+        with patch(self.ESTENDER, MagicMock(side_effect=ValueError("Daily fora"))), \
+                patch(self.CALENDARIO, MagicMock()):
+            r = self._editar(
+                client, salesperson_headers, reuniao_daily.id, due_date="2026-10-03T18:00:00"
+            )
+
+        assert r.status_code == 200
+        assert r.json()["sala_desatualizada"] is True
+
+    def test_remarcar_estende_a_sala_de_verdade(
+        self, client: TestClient, salesperson_headers, reuniao_daily
+    ):
+        """
+        Sem simular o serviço do Daily: o endpoint passava a resposta da API
+        (sem `daily_room_name`) em vez da reunião do banco, o serviço quebrava
+        na primeira linha e o erro ia só para o log — a sala nunca era
+        estendida ao remarcar.
+        """
+        class _Resp:
+            status_code = 200
+            text = "{}"
+
+            def json(self):
+                return {}
+
+        with patch("httpx.Client.post", MagicMock(return_value=_Resp())) as post, \
+                patch(self.CALENDARIO, MagicMock()):
+            r = self._editar(
+                client, salesperson_headers, reuniao_daily.id, due_date="2026-10-03T18:00:00"
+            )
+
+        assert r.status_code == 200
+        assert r.json()["sala_desatualizada"] is False
+        urls = [c.args[0] for c in post.call_args_list]
+        assert any(u.endswith(f"/rooms/hsg-{reuniao_daily.id}") for u in urls)
